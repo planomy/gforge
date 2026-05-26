@@ -3306,6 +3306,10 @@ const STORIES = [
 ];
 
 /* --------------------- STATE / STORAGE --------------------- */
+// Dev mode is opt-in via "?dev" on the URL. It exposes the Test Fly button
+// in the Hangar (and a quick "unlock all" helper) so the arcade can be
+// launched without forging a story. Kids on the public URL never see it.
+const DEV_MODE = (() => { try { return new URLSearchParams(location.search).has('dev'); } catch (_) { return false; } })();
 const STORE_KEY = 'gforge.v1';
 const LEGACY_STORE_KEY = 'gforce.v1'; // pre-rename; migrated on load
 
@@ -4355,6 +4359,22 @@ function openHangar() {
   m.appendChild(grid);
   const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
   btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
+  if (DEV_MODE) {
+    btns.appendChild(el('button', {
+      class: 'btn ghost',
+      title: 'Dev: unlock every ship for testing',
+      onclick: () => {
+        state.ships.owned = SHIPS.map(s => s.id);
+        saveState(); closeModal(); openHangar();
+        toast('All ships unlocked (dev)', '🔓');
+      }
+    }, '🔓 Unlock all (dev)'));
+    btns.appendChild(el('button', {
+      class: 'btn primary lg',
+      title: 'Dev: launch the arcade with the equipped ship',
+      onclick: () => { closeModal(); startArcade({ reward: false, level: 3 }); }
+    }, '🚀 Test Fly →'));
+  }
   m.appendChild(btns);
   openModal(m);
   $('#modal').classList.add('wide');
