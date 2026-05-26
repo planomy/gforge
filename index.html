@@ -168,7 +168,19 @@
   .story-card .l.l2 { color: var(--accent-2); }
   .story-card .l.l3 { color: var(--bad); }
   .story-card .ctx { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.45; }
-  .story-card h3 { margin: 16px 0 0; font-size: 18px; }
+  .story-card h3 {
+    margin: 16px 0 0; font-size: 18px; font-weight: 900; letter-spacing: 0.2px;
+    color: #ffd9a8; /* fallback for browsers without gradient text */
+    background: linear-gradient(135deg, #ffd9a8, #ffc24a 55%, #ff8a3d);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+  }
+  .story-card.done h3 {
+    background: linear-gradient(135deg, #fff4e8, #ffd166 60%, #ff8a3d);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
   .story-card .meta { display: flex; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 12px; }
   .story-card.done .meta { color: var(--gold); }
 
@@ -252,7 +264,12 @@
   .typing-card .ref {
     background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 14px; margin: 8px 0; font-family: Georgia, serif; font-size: 17px; line-height: 1.5; color: #fff4e8;
+    user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    cursor: default;
   }
+  .typing-card .ref::selection { background: transparent; }
+  .typing-card .ref::-moz-selection { background: transparent; }
   .typing-card textarea {
     width: 100%; padding: 12px 14px; font-size: 16px; color: var(--text); background: rgba(0,0,0,0.3);
     border: 1px solid var(--border); border-radius: 10px; outline: none; font-family: Georgia, serif; line-height: 1.5;
@@ -3464,14 +3481,50 @@ function renderForge() {
     const correct = correctSentenceText(s.sentences[i]);
     const card = el('div', { class: 'typing-card', style: { marginTop: '12px' } });
     card.appendChild(el('h3', {}, '✓ Sentence built! Now type it exactly to lock it in.'));
-    card.appendChild(el('div', { class: 'ref' }, correct));
-    const ta = el('textarea', { placeholder: 'Type the sentence exactly…', spellcheck: 'false' });
+    const refEl = el('div', { class: 'ref' }, correct);
+    // Block easy ways to lift the reference text
+    const blockEvt = (e) => { e.preventDefault(); return false; };
+    refEl.addEventListener('copy', blockEvt);
+    refEl.addEventListener('cut', blockEvt);
+    refEl.addEventListener('contextmenu', blockEvt);
+    refEl.addEventListener('dragstart', blockEvt);
+    refEl.addEventListener('selectstart', blockEvt);
+    refEl.addEventListener('mousedown', (e) => { if (e.detail > 1) e.preventDefault(); }); // block double/triple-click select
+    card.appendChild(refEl);
+    const ta = el('textarea', {
+      placeholder: 'Type the sentence exactly…',
+      spellcheck: 'false',
+      autocomplete: 'off',
+      autocorrect: 'off',
+      autocapitalize: 'off'
+    });
     ta.value = f.typed[i] || '';
+    let prevValue = ta.value;
     const matchBar = el('div', { class: 'matchbar' });
     const matchFill = el('div'); matchBar.appendChild(matchFill);
     const helper = el('div', { class: 'helper' }, '');
-    const updateMatch = () => {
+    const rejectPaste = (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      toast('No pasting — type it out yourself ✍️', '🚫');
+    };
+    ta.addEventListener('paste', rejectPaste);
+    ta.addEventListener('drop', rejectPaste);
+    ta.addEventListener('dragover', (e) => e.preventDefault());
+    const updateMatch = (e) => {
+      // Backstop: if value jumped by many chars in a single input event, treat as a paste.
+      // Normal typing/IME adds at most a few characters; bulk insertions are almost certainly paste/drop.
+      if (e && e.type === 'input' && e.inputType && /paste|drop/i.test(e.inputType)) {
+        ta.value = prevValue;
+        rejectPaste();
+        return;
+      }
       const t = ta.value;
+      if (t.length - prevValue.length > 8) {
+        ta.value = prevValue;
+        rejectPaste();
+        return;
+      }
+      prevValue = t;
       f.typed[i] = t;
       const pct = computeTypeMatchPct(t, correct);
       matchFill.style.width = pct + '%';
@@ -3482,7 +3535,7 @@ function renderForge() {
         helper.textContent = 'Close — fix small differences (case, punctuation, spelling).';
         helper.style.color = 'var(--accent-2)';
       } else {
-        helper.textContent = 'Copy the sample above word-for-word.';
+        helper.textContent = 'Type the sample above word-for-word.';
         helper.style.color = 'var(--muted)';
       }
     };
