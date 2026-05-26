@@ -118,6 +118,8 @@
   .icon-btn img { display: block; height: 40px; width: 40px; object-fit: contain; }
   .icon-btn:hover { transform: translateY(-2px) scale(1.06); filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) brightness(1.1); }
   .icon-btn:active { transform: translateY(0) scale(1); }
+  /* The hangar topbar button shows the player's currently equipped ship. */
+  .icon-btn.hangar-btn img { height: 44px; width: 44px; filter: drop-shadow(0 0 6px rgba(80,180,255,0.55)); }
 
   @media (max-width: 520px) {
     .top-chip img { height: 30px; }
@@ -125,7 +127,53 @@
     .top-chip .name { max-width: 80px; font-size: 12px; }
     .top-chip .pts { font-size: 12px; }
     .icon-btn img { height: 32px; width: 32px; }
+    .icon-btn.hangar-btn img { height: 36px; width: 36px; }
   }
+
+  /* Hangar modal */
+  .hangar { max-width: 960px; }
+  .hangar-sub { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+  .hangar-sub strong { color: var(--gold); }
+  .hangar-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+  }
+  @media (min-width: 760px) { .hangar-grid { grid-template-columns: repeat(4, 1fr); } }
+  .hangar-card {
+    position: relative;
+    background: linear-gradient(180deg, rgba(20,30,50,0.7) 0%, rgba(8,10,20,0.85) 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .hangar-card.equipped { border-color: #4ad6ff; box-shadow: 0 0 0 2px rgba(74,214,255,0.35) inset, 0 8px 24px rgba(74,214,255,0.18); }
+  .hangar-card.owned:not(.equipped):hover { transform: translateY(-3px); border-color: var(--accent-2); }
+  .hangar-card.locked { opacity: 0.92; }
+  .hangar-shots {
+    position: absolute; top: 8px; right: 10px;
+    background: linear-gradient(135deg, #ff8a3d, #ffd166);
+    color: #1a0a04; font-weight: 900; font-size: 12px;
+    padding: 2px 8px; border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    letter-spacing: 0.5px;
+  }
+  .hangar-img-wrap {
+    width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 55%, rgba(74,214,255,0.18), transparent 65%);
+  }
+  .hangar-img {
+    max-width: 100%; max-height: 100%;
+    filter: drop-shadow(0 6px 14px rgba(74,214,255,0.45));
+    user-select: none; pointer-events: none;
+  }
+  .hangar-name { margin: 4px 0 2px; font-size: 15px; color: #e6f3ff; }
+  .hangar-blurb { font-size: 11.5px; color: var(--muted); margin: 0 0 10px; min-height: 30px; }
+  .hangar-btn-cta { width: 100%; font-size: 13px; padding: 8px 10px; }
+  .hangar-cta { padding: 6px; font-weight: 800; }
+  .hangar-cta.cta-equipped { color: #4ad6ff; letter-spacing: 1px; }
+  .hangar-cta.cta-locked { color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .hangar-need { font-size: 11px; color: var(--gold); margin-top: 2px; font-weight: 700; }
 
   /* Buttons */
   .btn {
@@ -468,6 +516,7 @@
     box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: pop .25s ease;
     max-height: 92vh; overflow-y: auto;
   }
+  .modal.wide { max-width: 960px; }
   @keyframes pop { from { transform: scale(.9); opacity: 0;} to { transform: scale(1); opacity: 1;} }
   .modal h2 { margin: 0 0 6px; font-size: 28px; }
   .modal p { color: var(--muted); margin: 0 0 14px; }
@@ -3270,7 +3319,8 @@ function defaultState() {
     badges: [],
     streak: 0,
     lastSession: null,
-    history: []
+    history: [],
+    ships: { owned: ['mk1'], equipped: 'mk1' }
   };
 }
 function pushHistory(entry) {
@@ -3292,7 +3342,13 @@ function loadState() {
       }
     }
     if (!raw) return defaultState();
-    return Object.assign(defaultState(), JSON.parse(raw));
+    const merged = Object.assign(defaultState(), JSON.parse(raw));
+    // Make sure the ship slot is always in a sane shape, even on old saves.
+    if (!merged.ships || typeof merged.ships !== 'object') merged.ships = { owned: ['mk1'], equipped: 'mk1' };
+    if (!Array.isArray(merged.ships.owned) || merged.ships.owned.length === 0) merged.ships.owned = ['mk1'];
+    if (!merged.ships.owned.includes('mk1')) merged.ships.owned.unshift('mk1');
+    if (!merged.ships.equipped || !merged.ships.owned.includes(merged.ships.equipped)) merged.ships.equipped = 'mk1';
+    return merged;
   } catch (e) { return defaultState(); }
 }
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
@@ -3312,6 +3368,100 @@ const BADGES = {
   arcade:     { name: 'Arcade Ace',       icon: '🕹️', desc: 'Score 200+ in the reward game.' },
   defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear all aliens in the reward game.' }
 };
+
+/* --------------------- SHIPS (hangar / upgrades) --------------------- */
+// Each barrel is a position on the ship sprite expressed as a fraction of the
+// cropped sprite's width/height (0,0 = top-left, 1,1 = bottom-right). Optional
+// vx adds a horizontal velocity component for angled wingtip shots.
+const SHIPS = [
+  {
+    id: 'mk1', name: 'Cadet Mk I', cost: 0,
+    src: 'ships/ship1.png',
+    blurb: 'Standard cadet trainer. One trusty cannon.',
+    barrels: [{ fx: 0.486, fy: 0.00 }]
+  },
+  {
+    id: 'mk2', name: 'Twin Striker Mk II', cost: 5000,
+    src: 'ships/ship2.png',
+    blurb: 'Twin-cannon spread — double the firepower.',
+    barrels: [
+      { fx: 0.405, fy: 0.00 },
+      { fx: 0.579, fy: 0.00 }
+    ]
+  },
+  {
+    id: 'mk3', name: 'Tri-Lance Mk III', cost: 10000,
+    src: 'ships/ship3.png',
+    blurb: 'Three barrels. Wave-clearing speed.',
+    barrels: [
+      { fx: 0.443, fy: 0.088 },
+      { fx: 0.488, fy: 0.000 },
+      { fx: 0.547, fy: 0.088 }
+    ]
+  },
+  {
+    id: 'mk4', name: 'Vanguard Mk IV', cost: 25000,
+    src: 'ships/ship4.png',
+    blurb: '5-bullet spread with wingtip missiles. Top-tier warship.',
+    barrels: [
+      { fx: 0.488, fy: 0.000 },
+      { fx: 0.439, fy: 0.050 },
+      { fx: 0.555, fy: 0.050 },
+      { fx: 0.080, fy: 0.410, vx: -0.16 },
+      { fx: 0.920, fy: 0.410, vx:  0.16 }
+    ]
+  }
+];
+// Alien rows for Forge Invaders, drawn from these 5 monster PNGs (row r uses
+// MONSTER_SRC[r % 5]). Sprites are pre-rasterised into 64×64 offscreen canvases
+// on boot so the arcade never has to text-render emojis (which was the iPad
+// perf killer that caused the 7s-mark freeze).
+const MONSTER_SRC = [
+  'monsters/monster1.png',
+  'monsters/monster2.png',
+  'monsters/monster3.png',
+  'monsters/monster4.png',
+  'monsters/monster5.png'
+];
+const MONSTER_SPRITES = {};
+function buildMonsterSprite(src) {
+  if (MONSTER_SPRITES[src]) return MONSTER_SPRITES[src];
+  const SZ = 64;
+  const off = document.createElement('canvas');
+  off.width = SZ; off.height = SZ;
+  const entry = { canvas: off, loaded: false };
+  MONSTER_SPRITES[src] = entry;
+  const img = new Image();
+  img.decoding = 'async';
+  img.onload = () => {
+    const c = off.getContext('2d');
+    const ratio = Math.min(SZ / img.naturalWidth, SZ / img.naturalHeight);
+    const dw = img.naturalWidth * ratio;
+    const dh = img.naturalHeight * ratio;
+    c.clearRect(0, 0, SZ, SZ);
+    c.drawImage(img, (SZ - dw) / 2, (SZ - dh) / 2, dw, dh);
+    entry.loaded = true;
+  };
+  img.src = src;
+  return entry;
+}
+for (const src of MONSTER_SRC) buildMonsterSprite(src); // preload at boot
+
+const SHIP_SPRITES = {};
+function getShipSprite(id) {
+  if (SHIP_SPRITES[id]) return SHIP_SPRITES[id];
+  const def = SHIPS.find(s => s.id === id) || SHIPS[0];
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = def.src;
+  SHIP_SPRITES[id] = img;
+  return img;
+}
+function getEquippedShip() {
+  return SHIPS.find(s => s.id === state.ships.equipped) || SHIPS[0];
+}
+// Kick off a preload of the equipped ship sprite so it's ready by arcade-time.
+getShipSprite(state.ships.equipped);
 function awardBadge(id) {
   if (!state.badges.includes(id)) {
     state.badges.push(id);
@@ -3387,7 +3537,7 @@ function openModal(content) {
   back.classList.add('show');
   back.onclick = (e) => { if (e.target === back) closeModal(); };
 }
-function closeModal() { $('#modalBack').classList.remove('show'); }
+function closeModal() { $('#modalBack').classList.remove('show'); const m = $('#modal'); if (m) m.classList.remove('wide'); }
 function confetti(durationMs = 2200, count = 80) {
   const wrap = $('#confetti');
   const colors = ['#ff8a3d', '#ffc24a', '#ff5a3d', '#ffd166', '#ffaa66', '#ff77b7', '#4ade80'];
@@ -3458,6 +3608,9 @@ function topbar() {
       ),
       el('button', { class: 'icon-btn', title: 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
+      ),
+      el('button', { class: 'icon-btn hangar-btn', title: 'Hangar — upgrade your ship', onclick: openHangar },
+        el('img', { src: getEquippedShip().src, alt: 'Hangar' })
       ),
       el('button', { class: 'icon-btn', title: 'Trophies', onclick: openTrophyModal },
         el('img', { src: 'topbar/trophy.png', alt: 'Trophies' })
@@ -4187,6 +4340,68 @@ function openTrophyModal() {
   openModal(m);
 }
 
+/* --------------------- HANGAR (ship upgrades) --------------------- */
+function openHangar() {
+  const m = el('div', { class: 'hangar' });
+  m.appendChild(el('div', { style: { fontSize: '40px', textAlign: 'center' } }, '🛸'));
+  m.appendChild(el('h2', { style: { textAlign: 'center', margin: '4px 0 2px' } }, 'Hangar'));
+  m.appendChild(el('p', { class: 'hangar-sub' },
+    `Equip a starfighter for the arcade. You have `,
+    el('strong', {}, state.points.toLocaleString() + ' XP'),
+    ` to spend.`
+  ));
+  const grid = el('div', { class: 'hangar-grid' });
+  for (const s of SHIPS) grid.appendChild(buildShipCard(s));
+  m.appendChild(grid);
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
+  btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
+  m.appendChild(btns);
+  openModal(m);
+  $('#modal').classList.add('wide');
+}
+function buildShipCard(s) {
+  const owned = state.ships.owned.includes(s.id);
+  const equipped = state.ships.equipped === s.id;
+  const canBuy = !owned && state.points >= s.cost;
+  const card = el('div', { class: 'hangar-card' + (equipped ? ' equipped' : owned ? ' owned' : ' locked') });
+  const shotsBadge = el('div', { class: 'hangar-shots' }, `× ${s.barrels.length}`);
+  card.appendChild(shotsBadge);
+  const imgWrap = el('div', { class: 'hangar-img-wrap' });
+  const img = document.createElement('img');
+  img.src = s.src; img.alt = s.name; img.className = 'hangar-img'; img.draggable = false;
+  if (!owned) img.style.filter = 'grayscale(0.6) brightness(0.7)';
+  imgWrap.appendChild(img);
+  card.appendChild(imgWrap);
+  card.appendChild(el('h3', { class: 'hangar-name' }, s.name));
+  card.appendChild(el('p', { class: 'hangar-blurb' }, s.blurb));
+  if (equipped) {
+    card.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ EQUIPPED'));
+  } else if (owned) {
+    card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
+      state.ships.equipped = s.id; saveState(); closeModal(); openHangar();
+      toast(`${s.name} equipped — ready to fly!`, '🛸');
+    } }, 'Equip'));
+  } else if (canBuy) {
+    card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
+      if (!confirm(`Unlock ${s.name} for ${s.cost.toLocaleString()} XP?`)) return;
+      state.points -= s.cost;
+      state.ships.owned.push(s.id);
+      state.ships.equipped = s.id;
+      getShipSprite(s.id); // preload
+      saveState(); closeModal(); openHangar();
+      toast(`${s.name} unlocked & equipped!`, '🛸');
+    } }, `Unlock — ${s.cost.toLocaleString()} XP`));
+  } else {
+    const need = s.cost - state.points;
+    card.appendChild(el('div', { class: 'hangar-cta cta-locked' },
+      el('div', { style: { fontSize: '20px' } }, '🔒'),
+      el('div', {}, `${s.cost.toLocaleString()} XP`),
+      el('div', { class: 'hangar-need' }, `${need.toLocaleString()} more to go`)
+    ));
+  }
+  return card;
+}
+
 /* --------------------- ARCADE (re-skinned forge invaders) --------------------- */
 let arcade = null;
 const ARC_W = 720, ARC_H = 540;
@@ -4212,6 +4427,7 @@ function arcKeyUp(e) {
 function startArcade(opts = {}) {
   const reward = opts.reward !== false;
   const fromLevel = opts.level || 1;
+  const shipDef = getEquippedShip();
   arcade = {
     active: true, paused: false, over: false, won: false, timeUp: false, resultShown: false,
     reward, fromLevel, duration: 60000, timeRemaining: 60000,
@@ -4222,7 +4438,8 @@ function startArcade(opts = {}) {
     enemyDir: 1, enemyStepEvery: 700, enemyStepTimer: 0, enemyDropPending: false,
     lastFire: 0, fireCooldown: 240, enemyFireTimer: 0, enemyFireEvery: 700,
     shake: 0, raf: null, lastTs: 0,
-    bgCanvas: null, spriteCache: {}
+    bgCanvas: null,
+    shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
   };
   renderArcade();
   document.addEventListener('keydown', arcKeyDown);
@@ -4243,9 +4460,8 @@ function createWave() {
   const stepX = 64, stepY = 50;
   const startX = (ARC_W - (cols - 1) * stepX) / 2;
   const startY = 70;
-  const rowEmoji = ['👾','🛸','🤖','👽','👹'];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
-    enemies.push({ x: startX + c * stepX, y: startY + r * stepY, w: 40, h: 36, emoji: rowEmoji[r % rowEmoji.length], alive: true, col: c, row: r });
+    enemies.push({ x: startX + c * stepX, y: startY + r * stepY, w: 40, h: 36, sprite: MONSTER_SRC[r % MONSTER_SRC.length], alive: true, col: c, row: r });
   return enemies;
 }
 function renderArcade() {
@@ -4323,11 +4539,18 @@ function updateArcade(dt) {
   if (ARC_KEYS.right) a.player.x += a.player.speed * dt;
   a.player.x = Math.max(a.player.w/2 + 6, Math.min(ARC_W - a.player.w/2 - 6, a.player.x));
   if (ARC_KEYS.fire && performance.now() - a.lastFire > a.fireCooldown) {
-    a.bullets.push({ x: a.player.x, y: a.player.y - 14, w: 4, h: 12, vy: -0.9 });
+    const def = a.shipDef || SHIPS[0];
+    const sw = a.shipW || a.player.w;
+    const sh = a.shipH || a.player.h;
+    for (const bar of def.barrels) {
+      const bx = a.player.x + (bar.fx - 0.5) * sw;
+      const by = a.player.y + (bar.fy - 0.5) * sh;
+      a.bullets.push({ x: bx, y: by, w: 4, h: 12, vx: bar.vx || 0, vy: -0.9 });
+    }
     a.lastFire = performance.now();
   }
-  for (const b of a.bullets) b.y += b.vy * dt;
-  a.bullets = a.bullets.filter(b => b.y > -20);
+  for (const b of a.bullets) { b.y += b.vy * dt; if (b.vx) b.x += b.vx * dt; }
+  a.bullets = a.bullets.filter(b => b.y > -20 && b.x > -10 && b.x < ARC_W + 10);
   a.enemyStepTimer += dt;
   const alive = a.enemies.filter(e => e.alive);
   const killCount = a.enemies.length - alive.length;
@@ -4421,19 +4644,6 @@ function getArcBackground() {
   arcade.bgCanvas = bg;
   return bg;
 }
-function getArcSprite(emoji) {
-  const cache = arcade.spriteCache;
-  if (cache[emoji]) return cache[emoji];
-  const SZ = 64;
-  const off = document.createElement('canvas');
-  off.width = SZ; off.height = SZ;
-  const c = off.getContext('2d');
-  c.font = '34px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif';
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(emoji, SZ/2, SZ/2);
-  cache[emoji] = off;
-  return off;
-}
 function drawArcade() {
   const cnv = $('#arcCanvas'); if (!cnv) return;
   const ctx = cnv.getContext('2d');
@@ -4442,8 +4652,8 @@ function drawArcade() {
   ctx.drawImage(getArcBackground(), 0, 0);
   for (const e of arcade.enemies) {
     if (!e.alive) continue;
-    const sp = getArcSprite(e.emoji);
-    ctx.drawImage(sp, e.x - 32, e.y - 32);
+    const entry = MONSTER_SPRITES[e.sprite] || buildMonsterSprite(e.sprite);
+    ctx.drawImage(entry.canvas, e.x - 32, e.y - 32);
   }
   ctx.fillStyle = '#ffe066';
   for (const b of arcade.bullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
@@ -4451,17 +4661,28 @@ function drawArcade() {
   for (const b of arcade.enemyBullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
   const p = arcade.player;
   const blink = p.invuln > 0 && Math.floor(performance.now() / 80) % 2 === 0;
+  const ship = arcade.shipImg;
+  if (ship && ship.complete && ship.naturalHeight > 0) {
+    // Lazy-compute display dimensions the first time the sprite is ready.
+    if (!arcade.shipH) {
+      const targetH = 84;
+      arcade.shipH = targetH;
+      arcade.shipW = ship.naturalWidth * (targetH / ship.naturalHeight);
+    }
+  }
   if (!blink) {
-    ctx.fillStyle = '#ff8a3d';
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y - p.h/2);
-    ctx.lineTo(p.x - p.w/2, p.y + p.h/2);
-    ctx.lineTo(p.x + p.w/2, p.y + p.h/2);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#1a0a04'; ctx.fillRect(p.x - 4, p.y - 2, 8, 6);
-    ctx.fillStyle = '#ffd166';
-    const fh = 6 + Math.random() * 6;
-    ctx.fillRect(p.x - 6, p.y + p.h/2, 12, fh);
+    if (arcade.shipH) {
+      const sw = arcade.shipW, sh = arcade.shipH;
+      ctx.drawImage(ship, p.x - sw/2, p.y - sh/2, sw, sh);
+    } else {
+      // Fallback triangle while the sprite is still loading.
+      ctx.fillStyle = '#ff8a3d';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - p.h/2);
+      ctx.lineTo(p.x - p.w/2, p.y + p.h/2);
+      ctx.lineTo(p.x + p.w/2, p.y + p.h/2);
+      ctx.closePath(); ctx.fill();
+    }
   }
   for (const pt of arcade.particles) {
     ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
