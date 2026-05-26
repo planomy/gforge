@@ -1,4 +1,4 @@
-# gforce — story card art
+# gforge — story card art
 
 Drop one image per story in this folder. The card automatically loads it.
 

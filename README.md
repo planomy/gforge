@@ -1,4 +1,4 @@
-# gforce
+# gforge
 
 Forge powerful English sentences — a guided writing tool for 8–12 year-old native speakers who need help moving past basic sentences into sharper, more vivid prose.
 
@@ -23,4 +23,4 @@ Just open `index.html` in a browser. All state is saved in `localStorage`.
 
 ## Deployment
 
-Hosted on GitHub Pages at https://planomy.github.io/gforce/
+Hosted on GitHub Pages at https://planomy.github.io/gforge/

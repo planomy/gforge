@@ -6,7 +6,9 @@
 <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="pragma" content="no-cache" />
 <meta http-equiv="expires" content="0" />
-<title>gforce — Forge powerful sentences</title>
+<title>gforge — Forge powerful sentences</title>
+<link rel="icon" type="image/png" href="logo.png" />
+<link rel="apple-touch-icon" href="logo.png" />
 <style>
   :root {
     --bg-0: #0a0710;
@@ -72,11 +74,11 @@
   }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; letter-spacing: 1px; font-size: 18px; }
   .brand .logo {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: conic-gradient(from 220deg, #ff5a3d, #ff8a3d, #ffc24a, #ff5a3d);
-    display: grid; place-items: center; color: #1a0a04; font-weight: 900; font-size: 18px;
-    box-shadow: 0 0 24px rgba(255,138,61,0.55);
+    width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 0 24px rgba(255,138,61,0.45), 0 0 0 1px rgba(255,255,255,0.08);
+    background: #0a0710;
   }
+  .brand .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .topbar .spacer { flex: 1; }
   .chip {
     display: inline-flex; align-items: center; gap: 6px;
@@ -510,7 +512,7 @@
 
 <script>
 /* ============================================================
-   gforce — Forge powerful sentences (v1.0)
+   gforge — Forge powerful sentences (v1.0)
    Single-file guided writing tool for 8–12 yo native English writers.
    ============================================================ */
 const APP_VERSION = 'v1.0';
@@ -3172,7 +3174,8 @@ const STORIES = [
 ];
 
 /* --------------------- STATE / STORAGE --------------------- */
-const STORE_KEY = 'gforce.v1';
+const STORE_KEY = 'gforge.v1';
+const LEGACY_STORE_KEY = 'gforce.v1'; // pre-rename; migrated on load
 
 function defaultState() {
   return {
@@ -3194,7 +3197,17 @@ function pushHistory(entry) {
 }
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    let raw = localStorage.getItem(STORE_KEY);
+    // One-time migration from the old 'gforce.v1' key so existing players
+    // keep their XP, badges, streak and forged paragraphs after the rename.
+    if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_STORE_KEY);
+      if (legacy) {
+        localStorage.setItem(STORE_KEY, legacy);
+        try { localStorage.removeItem(LEGACY_STORE_KEY); } catch (_) {}
+        raw = legacy;
+      }
+    }
     if (!raw) return defaultState();
     return Object.assign(defaultState(), JSON.parse(raw));
   } catch (e) { return defaultState(); }
@@ -3345,8 +3358,8 @@ function render() {
 function topbar() {
   return el('header', { class: 'topbar' },
     el('div', { class: 'brand' },
-      el('div', { class: 'logo' }, 'g'),
-      el('div', {}, 'g', el('span', { style: { color: 'var(--accent)' } }, 'force'))
+      el('div', { class: 'logo' }, el('img', { src: 'logo.png', alt: 'gforge' })),
+      el('div', {}, 'g', el('span', { style: { color: 'var(--accent)' } }, 'forge'))
     ),
     el('div', { class: 'spacer' }),
     el('div', { class: 'row-wrap' },
@@ -3363,7 +3376,7 @@ function renderName(app) {
   const wrap = el('div', { class: 'center-screen' });
   const card = el('div', { class: 'panel name-card' });
   card.appendChild(el('div', { style: { fontSize: '52px' } }, '🔨'));
-  card.appendChild(el('h2', {}, 'Welcome to gforce'));
+  card.appendChild(el('h2', {}, 'Welcome to gforge'));
   card.appendChild(el('p', {}, 'Forge powerful English sentences. Pick the right words. Build a paragraph. Earn the arcade.'));
   const input = el('input', { type: 'text', placeholder: 'Type your name…', maxlength: 24 });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(input.value); });
@@ -3659,7 +3672,7 @@ function renderForge() {
       f.typed[i] = t;
       const pct = computeTypeMatchPct(t, correct);
       matchFill.style.width = pct + '%';
-      if (t === correct) {
+      if (normalizeTypingText(t) === normalizeTypingText(correct)) {
         helper.textContent = 'Perfect match — press Lock In.';
         helper.style.color = 'var(--good)';
       } else if (pct >= 70) {
@@ -3706,13 +3719,31 @@ function renderForge() {
   app.appendChild(actions);
 }
 
+// Normalize visually-identical characters so the comparison doesn't reject
+// students whose keyboard produces straight quotes while the source uses
+// smart quotes (or non-breaking spaces, en/em dashes, ellipsis, etc).
+function normalizeTypingText(s) {
+  if (!s) return '';
+  return s
+    .normalize('NFC')
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'") // single quotes & primes -> '
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // double quotes & primes -> "
+    .replace(/[\u2013\u2014\u2212]/g, '-')                    // en/em/minus dashes -> -
+    .replace(/\u2026/g, '...')                                // ellipsis -> ...
+    .replace(/\u00A0/g, ' ')                                  // non-breaking space -> space
+    .replace(/[ \t]+/g, ' ')                                  // collapse runs of spaces/tabs
+    .trim();
+}
+
 function computeTypeMatchPct(a, b) {
   if (!a) return 0;
-  if (a === b) return 100;
-  const m = Math.min(a.length, b.length);
+  const na = normalizeTypingText(a);
+  const nb = normalizeTypingText(b);
+  if (na === nb) return 100;
+  const m = Math.min(na.length, nb.length);
   let same = 0;
-  for (let i = 0; i < m; i++) if (a[i] === b[i]) same++;
-  return Math.round((same / Math.max(b.length, 1)) * 100);
+  for (let i = 0; i < m; i++) if (na[i] === nb[i]) same++;
+  return Math.round((same / Math.max(nb.length, 1)) * 100);
 }
 
 function checkSentence() {
@@ -3747,10 +3778,10 @@ function lockTyping() {
   const f = forge;
   const i = f.index;
   const correct = correctSentenceText(f.story.sentences[i]);
-  const typed = (f.typed[i] || '').trim();
-  if (typed !== correct) {
+  const typed = f.typed[i] || '';
+  if (normalizeTypingText(typed) !== normalizeTypingText(correct)) {
     // strict but helpful: tell them where it differs
-    const pct = computeTypeMatchPct(f.typed[i] || '', correct);
+    const pct = computeTypeMatchPct(typed, correct);
     if (pct < 100) {
       toast('Not exact yet — match the reference letter for letter.', '✏️');
       return;
@@ -3885,7 +3916,7 @@ function renderGallery() {
 
 function buildAllText() {
   const lines = [];
-  lines.push(`gforce — My Forged Paragraphs`);
+  lines.push(`gforge — My Forged Paragraphs`);
   lines.push(`Player: ${state.name}`);
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push('');
@@ -3924,7 +3955,7 @@ function downloadAllParagraphs() {
   const a = document.createElement('a');
   a.href = url;
   const safe = (state.name || 'player').replace(/[^a-z0-9_\-]+/gi, '_');
-  a.download = `gforce-paragraphs-${safe}.txt`;
+  a.download = `gforge-paragraphs-${safe}.txt`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Downloaded.', '⬇');
@@ -4027,6 +4058,7 @@ function openTrophyModal() {
     onclick: () => {
       if (confirm('Sign out and clear all progress on this device?')) {
         localStorage.removeItem(STORE_KEY);
+        try { localStorage.removeItem(LEGACY_STORE_KEY); } catch (_) {}
         state = defaultState();
         closeModal(); render();
       }
