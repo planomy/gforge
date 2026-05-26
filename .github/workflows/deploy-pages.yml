@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+# Bypasses GitHub's default "Deploy from a branch" workflow which is broken
+# right now (jekyll-build-pages CDN download failures). We don't actually
+# need Jekyll for a static HTML site — just upload the repo as an artifact
+# and deploy it.
+#
+# REQUIRES: Settings → Pages → Source must be set to "GitHub Actions"
+# (NOT "Deploy from a branch") for this workflow to deploy.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
