@@ -3568,8 +3568,11 @@ function stat(k, v) {
 const ART_EXT_ORDER = ['png', 'jpg', 'webp'];
 function buildStoryArt(s, topicEmoji, done, cardRef) {
   const art = el('div', { class: 'art' });
-  // Fallback emoji sits behind the image so it shows through if image fails or is transparent
+  // Fallback emoji is HIDDEN by default; it only appears if every image
+  // attempt fails. During load the card shows its topic-coloured gradient
+  // background instead of a flash of giant emoji.
   const fallback = el('div', { class: 'art-fallback' }, topicEmoji);
+  fallback.style.display = 'none';
   art.appendChild(fallback);
 
   const img = document.createElement('img');
@@ -3577,22 +3580,27 @@ function buildStoryArt(s, topicEmoji, done, cardRef) {
   img.loading = 'lazy';
   img.decoding = 'async';
   img.draggable = false;
+  img.style.opacity = '0';
+  img.style.transition = 'opacity .35s ease';
   let attempt = 0;
   const tryNext = () => {
     if (attempt >= ART_EXT_ORDER.length) {
-      img.remove(); // give up; fallback emoji + text title remain visible
+      // All extensions exhausted: now show the emoji placeholder.
+      img.remove();
+      fallback.style.display = '';
       return;
     }
     img.src = `art/${s.id}.${ART_EXT_ORDER[attempt++]}`;
   };
   img.addEventListener('error', tryNext);
   img.addEventListener('load', () => {
-    fallback.style.display = 'none';
-    // Match the art container's aspect-ratio to the image's natural ratio so the
-    // image always displays in full (no cropping) regardless of 1:1 / 4:3 / etc.
+    // Match the art container's aspect-ratio to the image's natural ratio so
+    // the image always displays in full (no cropping) regardless of 1:1 / 4:3 / etc.
     if (img.naturalWidth && img.naturalHeight) {
       art.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
     }
+    // Fade in once decoded so the swap from gradient -> art is smooth.
+    requestAnimationFrame(() => { img.style.opacity = '1'; });
     // Title is baked into the image — collapse the text title/context in the body.
     if (cardRef && cardRef.classList) cardRef.classList.add('has-art');
   });
@@ -4206,13 +4214,15 @@ function startArcade(opts = {}) {
   const fromLevel = opts.level || 1;
   arcade = {
     active: true, paused: false, over: false, won: false, timeUp: false, resultShown: false,
-    reward, fromLevel, timeRemaining: 60000,
+    reward, fromLevel, duration: 60000, timeRemaining: 60000,
+    startTs: 0, pausedAccum: 0, pausedSince: 0,
     player: { x: ARC_W / 2, y: ARC_H - 50, w: 44, h: 30, speed: 0.42, invuln: 0 },
     bullets: [], enemyBullets: [], enemies: createWave(), particles: [],
     score: 0, lives: 3, livesLostThisGame: 0,
     enemyDir: 1, enemyStepEvery: 700, enemyStepTimer: 0, enemyDropPending: false,
     lastFire: 0, fireCooldown: 240, enemyFireTimer: 0, enemyFireEvery: 700,
-    shake: 0, raf: null, lastTs: 0
+    shake: 0, raf: null, lastTs: 0,
+    bgCanvas: null, spriteCache: {}
   };
   renderArcade();
   document.addEventListener('keydown', arcKeyDown);
@@ -4287,10 +4297,19 @@ function showArcOverlay(t, b) { const o = $('#arcOverlay'); if (!o) return; $('#
 function hideArcOverlay() { const o = $('#arcOverlay'); if (o) o.classList.remove('show'); }
 function arcadeLoop(ts) {
   if (!arcade || !arcade.active) return;
-  if (!arcade.lastTs) arcade.lastTs = ts;
+  if (!arcade.lastTs) { arcade.lastTs = ts; arcade.startTs = ts; }
   const dt = Math.min(50, ts - arcade.lastTs);
   arcade.lastTs = ts;
-  if (!arcade.paused && !arcade.over) updateArcade(dt);
+  if (arcade.paused) {
+    if (!arcade.pausedSince) arcade.pausedSince = ts;
+  } else {
+    if (arcade.pausedSince) { arcade.pausedAccum += ts - arcade.pausedSince; arcade.pausedSince = 0; }
+    if (!arcade.over) {
+      const elapsed = ts - arcade.startTs - arcade.pausedAccum;
+      arcade.timeRemaining = Math.max(0, arcade.duration - elapsed);
+      updateArcade(dt);
+    }
+  }
   drawArcade();
   arcade.raf = requestAnimationFrame(arcadeLoop);
   if (arcade.over && !arcade.resultShown) {
@@ -4300,7 +4319,6 @@ function arcadeLoop(ts) {
 }
 function updateArcade(dt) {
   const a = arcade;
-  a.timeRemaining = Math.max(0, a.timeRemaining - dt);
   if (ARC_KEYS.left)  a.player.x -= a.player.speed * dt;
   if (ARC_KEYS.right) a.player.x += a.player.speed * dt;
   a.player.x = Math.max(a.player.w/2 + 6, Math.min(ARC_W - a.player.w/2 - 6, a.player.x));
@@ -4368,10 +4386,13 @@ function updateArcade(dt) {
   updateArcHud();
 }
 function spawnParticles(x, y, color) {
+  const arr = arcade.particles;
+  const PARTICLE_CAP = 80;
   for (let i = 0; i < 10; i++) {
+    if (arr.length >= PARTICLE_CAP) break;
     const ang = Math.random() * Math.PI * 2;
     const sp = 0.15 + Math.random() * 0.3;
-    arcade.particles.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 500 + Math.random() * 300, maxLife: 800, color });
+    arr.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 500 + Math.random() * 300, maxLife: 800, color });
   }
 }
 function updateArcHud() {
@@ -4387,19 +4408,43 @@ function previewXp(score) {
   const mult = arcade.fromLevel === 1 ? 1 : arcade.fromLevel === 2 ? 1.25 : 1.5;
   return Math.round(Math.min(100, Math.floor(score / 8)) * mult);
 }
+function getArcBackground() {
+  if (arcade.bgCanvas) return arcade.bgCanvas;
+  const bg = document.createElement('canvas');
+  bg.width = ARC_W; bg.height = ARC_H;
+  const c = bg.getContext('2d');
+  const grad = c.createRadialGradient(ARC_W/2, ARC_H/2, 50, ARC_W/2, ARC_H/2, ARC_W*0.7);
+  grad.addColorStop(0, '#1d0a18'); grad.addColorStop(1, '#060206');
+  c.fillStyle = grad; c.fillRect(0, 0, ARC_W, ARC_H);
+  c.fillStyle = '#ffffff55';
+  for (let i = 0; i < 60; i++) { const x = ((i * 137) % ARC_W); const y = ((i * 271) % ARC_H); c.fillRect(x, y, 2, 2); }
+  arcade.bgCanvas = bg;
+  return bg;
+}
+function getArcSprite(emoji) {
+  const cache = arcade.spriteCache;
+  if (cache[emoji]) return cache[emoji];
+  const SZ = 64;
+  const off = document.createElement('canvas');
+  off.width = SZ; off.height = SZ;
+  const c = off.getContext('2d');
+  c.font = '34px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(emoji, SZ/2, SZ/2);
+  cache[emoji] = off;
+  return off;
+}
 function drawArcade() {
   const cnv = $('#arcCanvas'); if (!cnv) return;
   const ctx = cnv.getContext('2d');
   ctx.save();
   if (arcade.shake > 0) ctx.translate((Math.random() - 0.5) * arcade.shake, (Math.random() - 0.5) * arcade.shake);
-  const grad = ctx.createRadialGradient(ARC_W/2, ARC_H/2, 50, ARC_W/2, ARC_H/2, ARC_W*0.7);
-  grad.addColorStop(0, '#1d0a18'); grad.addColorStop(1, '#060206');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, ARC_W, ARC_H);
-  ctx.fillStyle = '#ffffff55';
-  for (let i = 0; i < 60; i++) { const x = ((i * 137) % ARC_W); const y = ((i * 271) % ARC_H); ctx.fillRect(x, y, 2, 2); }
-  ctx.font = '34px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const e of arcade.enemies) if (e.alive) ctx.fillText(e.emoji, e.x, e.y);
+  ctx.drawImage(getArcBackground(), 0, 0);
+  for (const e of arcade.enemies) {
+    if (!e.alive) continue;
+    const sp = getArcSprite(e.emoji);
+    ctx.drawImage(sp, e.x - 32, e.y - 32);
+  }
   ctx.fillStyle = '#ffe066';
   for (const b of arcade.bullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
   ctx.fillStyle = '#ff5a7a';
