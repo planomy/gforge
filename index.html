@@ -90,6 +90,43 @@
   .chip .pts { color: var(--gold); font-weight: 800; }
   .chip .name { color: var(--accent-2); font-weight: 700; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  /* Illustrated topbar pieces (player chip, XP chip, action icons) */
+  .top-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: none; padding: 0;
+    color: var(--text);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  }
+  .top-chip img { display: block; height: 38px; width: auto; }
+  .top-chip .name {
+    color: var(--accent-2); font-weight: 800; font-size: 13px;
+    max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .top-chip .pts {
+    color: var(--gold); font-weight: 900; font-size: 14px;
+    text-shadow: 0 0 10px rgba(255,209,102,0.45);
+    margin-left: -2px;
+  }
+  .top-chip.xp img { height: 34px; }
+
+  .icon-btn {
+    background: transparent; border: none; padding: 0; cursor: pointer;
+    line-height: 0;
+    transition: transform .15s ease, filter .25s ease;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+  }
+  .icon-btn img { display: block; height: 40px; width: 40px; object-fit: contain; }
+  .icon-btn:hover { transform: translateY(-2px) scale(1.06); filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) brightness(1.1); }
+  .icon-btn:active { transform: translateY(0) scale(1); }
+
+  @media (max-width: 520px) {
+    .top-chip img { height: 30px; }
+    .top-chip.xp img { height: 28px; }
+    .top-chip .name { max-width: 80px; font-size: 12px; }
+    .top-chip .pts { font-size: 12px; }
+    .icon-btn img { height: 32px; width: 32px; }
+  }
+
   /* Buttons */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -3384,11 +3421,23 @@ function topbar() {
     ),
     el('div', { class: 'spacer' }),
     el('div', { class: 'row-wrap' },
-      el('span', { class: 'chip' }, '👤 ', el('span', { class: 'name' }, state.name || 'Player')),
-      el('span', { class: 'chip' }, 'XP ', el('span', { class: 'pts' }, String(state.points))),
-      el('button', { class: 'btn ghost', title: 'My stories', onclick: renderGallery }, '📖'),
-      el('button', { class: 'btn ghost', title: 'Progress',  onclick: renderProgress }, '📊'),
-      el('button', { class: 'btn ghost', title: 'Trophies',  onclick: openTrophyModal }, '🏆')
+      el('span', { class: 'top-chip player' },
+        el('img', { src: 'topbar/player.png', alt: 'Player' }),
+        el('span', { class: 'name' }, state.name || 'Player')
+      ),
+      el('span', { class: 'top-chip xp' },
+        el('img', { src: 'topbar/xp.png', alt: 'XP' }),
+        el('span', { class: 'pts' }, String(state.points))
+      ),
+      el('button', { class: 'icon-btn', title: 'My stories', onclick: renderGallery },
+        el('img', { src: 'topbar/stories.png', alt: 'My stories' })
+      ),
+      el('button', { class: 'icon-btn', title: 'Progress', onclick: renderProgress },
+        el('img', { src: 'topbar/progress.png', alt: 'Progress' })
+      ),
+      el('button', { class: 'icon-btn', title: 'Trophies', onclick: openTrophyModal },
+        el('img', { src: 'topbar/trophy.png', alt: 'Trophies' })
+      )
     )
   );
 }
