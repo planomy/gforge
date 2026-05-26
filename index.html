@@ -1,0 +1,4140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<title>gforce — Forge powerful sentences</title>
+<style>
+  :root {
+    --bg-0: #0a0710;
+    --bg-1: #140d20;
+    --bg-2: #1f1530;
+    --panel: rgba(255,255,255,0.05);
+    --panel-2: rgba(255,255,255,0.09);
+    --border: rgba(255,255,255,0.13);
+    --text: #fff4e8;
+    --muted: #b09cbf;
+    --accent: #ff8a3d;
+    --accent-2: #ffc24a;
+    --accent-3: #ff5a3d;
+    --good: #4ade80;
+    --bad: #ff5a7a;
+    --gold: #ffd166;
+    --info: #6be3ff;
+    --shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(1200px 800px at 10% -10%, #4a1810 0%, transparent 55%),
+      radial-gradient(1000px 700px at 110% 10%, #2d0f3a 0%, transparent 55%),
+      radial-gradient(900px 700px at 50% 120%, #2a1505 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 60%, var(--bg-2));
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+  body::before {
+    /* ember sparks */
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 25px 80px, #ff8a3daa, transparent),
+      radial-gradient(1.5px 1.5px at 220px 240px, #ffc24a88, transparent),
+      radial-gradient(2px 2px at 410px 130px, #ff8a3d99, transparent),
+      radial-gradient(1.5px 1.5px at 620px 290px, #ff5a3d77, transparent),
+      radial-gradient(2px 2px at 820px 170px, #ffaa6688, transparent),
+      radial-gradient(1.5px 1.5px at 140px 410px, #ff8a3d66, transparent),
+      radial-gradient(1.5px 1.5px at 730px 480px, #ffc24a88, transparent),
+      radial-gradient(2px 2px at 1020px 360px, #ff8a3d99, transparent),
+      radial-gradient(1.5px 1.5px at 340px 540px, #ffaa6688, transparent),
+      radial-gradient(1.5px 1.5px at 940px 620px, #ff8a3d77, transparent);
+    background-size: 1100px 700px;
+    background-repeat: repeat;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px 18px 80px; }
+
+  /* Top bar */
+  .topbar {
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    backdrop-filter: blur(8px); box-shadow: var(--shadow);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; letter-spacing: 1px; font-size: 18px; }
+  .brand .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: conic-gradient(from 220deg, #ff5a3d, #ff8a3d, #ffc24a, #ff5a3d);
+    display: grid; place-items: center; color: #1a0a04; font-weight: 900; font-size: 18px;
+    box-shadow: 0 0 24px rgba(255,138,61,0.55);
+  }
+  .topbar .spacer { flex: 1; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .chip .pts { color: var(--gold); font-weight: 800; }
+  .chip .name { color: var(--accent-2); font-weight: 700; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700;
+    transition: transform .08s, background .15s, box-shadow .15s;
+    font-size: 14px; user-select: none;
+  }
+  .btn:hover { background: rgba(255,255,255,0.13); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent-3), var(--accent), var(--accent-2));
+    color: #1a0a04; border-color: transparent; box-shadow: 0 8px 20px rgba(255,138,61,0.35);
+  }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; }
+  .btn.warn { background: linear-gradient(135deg, #ffd166, #ffaa00); color: #2a1d04; }
+  .btn.danger { background: linear-gradient(135deg, #ff5a7a, #ff8a3d); color: #1a0b0b; }
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .btn.lg { padding: 14px 22px; font-size: 16px; border-radius: 14px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+    padding: 20px; box-shadow: var(--shadow); backdrop-filter: blur(8px);
+  }
+
+  /* Hero */
+  .hero { margin-top: 18px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+  .hero h1 {
+    margin: 0 0 8px; font-size: clamp(28px, 4vw, 40px); line-height: 1.05;
+    background: linear-gradient(120deg, #fff, #ffd9b8 60%, #ffaa66);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: 0.2px;
+  }
+  .hero p { color: var(--muted); margin: 0 0 16px; font-size: 15px; line-height: 1.5; }
+
+  .section-title { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin: 18px 0 8px; }
+
+  /* Name screen */
+  .center-screen { min-height: 70vh; display: grid; place-items: center; }
+  .name-card { width: 100%; max-width: 520px; text-align: center; }
+  .name-card h2 { margin: 0 0 6px; font-size: 28px; }
+  .name-card p { color: var(--muted); margin: 0 0 16px; }
+  .name-card input {
+    width: 100%; padding: 14px 16px; font-size: 18px; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
+    outline: none; text-align: center;
+  }
+  .name-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.25); }
+
+  /* Topic tabs */
+  .topic-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+  .topic-tab {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .topic-tab.active {
+    background: linear-gradient(135deg, var(--accent-3), var(--accent));
+    color: #1a0a04; border-color: transparent; box-shadow: 0 4px 14px rgba(255,138,61,0.35);
+  }
+  .topic-tab:hover:not(.active) { background: rgba(255,255,255,0.10); }
+
+  /* Story cards */
+  .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 14px; }
+  .story-card {
+    position: relative; padding: 16px; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 16px; cursor: pointer; text-align: left;
+    transition: transform .12s, border-color .15s, box-shadow .15s, background .15s;
+    overflow: hidden;
+  }
+  .story-card:hover { transform: translateY(-2px); border-color: rgba(255,138,61,0.45); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+  .story-card.done { background: linear-gradient(160deg, rgba(255,138,61,0.18), rgba(255,194,74,0.06)); border-color: rgba(255,194,74,0.5); }
+  .story-card .l {
+    position: absolute; top: 10px; right: 12px; font-size: 11px; font-weight: 900; letter-spacing: 1px;
+    color: var(--muted); background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 999px;
+  }
+  .story-card .l.l1 { color: #4ade80; }
+  .story-card .l.l2 { color: var(--accent-2); }
+  .story-card .l.l3 { color: var(--bad); }
+  .story-card .ctx { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.45; }
+  .story-card h3 { margin: 16px 0 0; font-size: 18px; }
+  .story-card .meta { display: flex; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .story-card.done .meta { color: var(--gold); }
+
+  /* Forge screen */
+  .forge { display: flex; flex-direction: column; gap: 14px; }
+  .forge-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .forge-head .crumb { color: var(--muted); font-size: 13px; }
+  .progress-dots { display: flex; gap: 8px; }
+  .progress-dots .d {
+    width: 26px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.12);
+  }
+  .progress-dots .d.done { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .progress-dots .d.current { background: var(--accent); box-shadow: 0 0 10px rgba(255,138,61,0.6); }
+
+  .build-display {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; font-size: 19px; line-height: 1.7; color: #fff4e8;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .build-display .opener { color: var(--accent-2); font-weight: 700; }
+  .build-display .slot-blank {
+    display: inline-block; min-width: 70px; padding: 0 6px;
+    border-bottom: 2px dashed rgba(255,138,61,0.55);
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+  }
+  .build-display .slot-filled {
+    display: inline-block; padding: 1px 6px; border-radius: 6px;
+    background: rgba(255,138,61,0.16); color: #fff;
+    border-bottom: 2px solid var(--accent);
+  }
+  .build-display .slot-wrong {
+    background: rgba(255,90,122,0.18); border-bottom-color: var(--bad);
+  }
+  .build-display .slot-correct {
+    background: rgba(74,222,128,0.15); border-bottom-color: var(--good);
+  }
+
+  .containers { display: grid; gap: 12px; }
+  .container-card {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .container-card.wrong { border-color: var(--bad); background: linear-gradient(160deg, rgba(255,90,122,0.10), transparent 70%); }
+  .container-card.correct { border-color: rgba(74,222,128,0.6); background: linear-gradient(160deg, rgba(74,222,128,0.08), transparent 70%); }
+  .container-card .role {
+    font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+    font-weight: 800;
+  }
+  .options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt {
+    background: linear-gradient(180deg, #2a1d40, #1d1230);
+    border: 1px solid rgba(255,255,255,0.16); border-radius: 10px;
+    padding: 8px 14px; cursor: pointer; color: #fff; font-weight: 600; font-size: 15px;
+    transition: transform .08s, background .15s, border-color .15s;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .opt:hover { background: linear-gradient(180deg, #36254f, #251638); border-color: rgba(255,138,61,0.4); }
+  .opt:active { transform: translateY(1px); }
+  .opt.selected {
+    background: linear-gradient(180deg, #ff8a3d, #ff5a3d);
+    color: #1a0a04; border-color: var(--accent-2);
+    box-shadow: 0 6px 16px rgba(255,138,61,0.35);
+  }
+  .opt.locked { background: linear-gradient(180deg, #2c8b6f, #186650); color: #fff; border-color: rgba(74,222,128,0.5); cursor: default; }
+
+  .forge-actions {
+    position: sticky; bottom: 14px;
+    display: flex; gap: 10px; justify-content: space-between; align-items: center;
+    background: rgba(10,7,16,0.85); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px;
+  }
+  .forge-actions .info { color: var(--muted); font-size: 13px; }
+
+  /* Typing step */
+  .typing-card {
+    background: linear-gradient(160deg, rgba(74,222,128,0.10), rgba(255,138,61,0.05));
+    border: 1px solid rgba(74,222,128,0.45); border-radius: 14px; padding: 16px;
+  }
+  .typing-card h3 { margin: 0 0 8px; color: var(--good); font-size: 16px; }
+  .typing-card .ref {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin: 8px 0; font-family: Georgia, serif; font-size: 17px; line-height: 1.5; color: #fff4e8;
+  }
+  .typing-card textarea {
+    width: 100%; padding: 12px 14px; font-size: 16px; color: var(--text); background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border); border-radius: 10px; outline: none; font-family: Georgia, serif; line-height: 1.5;
+    min-height: 70px; resize: vertical;
+  }
+  .typing-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.2); }
+  .typing-card .matchbar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; margin-top: 8px; overflow: hidden; }
+  .typing-card .matchbar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .25s; width: 0%; }
+  .typing-card .helper { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+  /* Toast / modal / confetti (shared from EALD pattern) */
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+    background: rgba(20,13,32,0.95); border: 1px solid var(--border); padding: 12px 16px;
+    border-radius: 14px; color: var(--text); display: flex; gap: 10px; align-items: center;
+    box-shadow: var(--shadow); z-index: 50; opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, -6px); pointer-events: auto; }
+  .toast .em { font-size: 22px; }
+
+  .modal-back {
+    position: fixed; inset: 0; background: rgba(2,2,8,0.78); display: none;
+    align-items: center; justify-content: center; z-index: 100; padding: 18px;
+    backdrop-filter: blur(6px);
+  }
+  .modal-back.show { display: flex; }
+  .modal {
+    width: 100%; max-width: 580px; background: linear-gradient(160deg, #2a1530, #140d20);
+    border: 1px solid var(--border); border-radius: 20px; padding: 24px; text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: pop .25s ease;
+    max-height: 92vh; overflow-y: auto;
+  }
+  @keyframes pop { from { transform: scale(.9); opacity: 0;} to { transform: scale(1); opacity: 1;} }
+  .modal h2 { margin: 0 0 6px; font-size: 28px; }
+  .modal p { color: var(--muted); margin: 0 0 14px; }
+
+  .paragraph-reveal {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--accent-2); border-radius: 14px;
+    padding: 18px 20px; margin: 12px 0; font-family: Georgia, serif; font-size: 17px; line-height: 1.7;
+    color: #fff4e8; text-align: left; box-shadow: inset 0 0 30px rgba(255,138,61,0.10);
+  }
+
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .stat {
+    flex: 1 1 130px; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; text-align: left;
+  }
+  .stat .k { font-size: 12px; color: var(--muted); }
+  .stat .v { font-weight: 800; font-size: 18px; }
+
+  .row-wrap { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 99; }
+  .confetti i {
+    position: absolute; top: -10px; width: 8px; height: 14px; border-radius: 2px;
+    animation: fall linear forwards;
+  }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0.9; } }
+
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  .shake { animation: shake .25s ease 1; }
+
+  /* Gallery */
+  .gallery-list { display: grid; gap: 12px; }
+  .saved-story {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+  }
+  .saved-story h3 { margin: 0 0 6px; font-size: 18px; }
+  .saved-story .body {
+    font-family: Georgia, serif; font-size: 16px; line-height: 1.7; color: #fff4e8;
+    background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-top: 10px;
+  }
+
+  /* Progress overview */
+  .progress-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+  .ph-stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+  .ph-stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .ph-stat .v { font-size: 26px; font-weight: 900; margin-top: 4px; line-height: 1; }
+  .ph-stat .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .ph-stat.accent .v { color: var(--accent); }
+  .ph-stat.gold .v { color: var(--gold); }
+
+  .topic-matrix { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-top: 12px; }
+  .topic-matrix h3 { margin: 0 0 10px; font-size: 16px; }
+  .matrix-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+  .matrix-row .lbl { width: 30px; color: var(--muted); font-size: 12px; font-weight: 800; }
+  .matrix-cell {
+    flex: 0 0 auto; min-width: 100px; padding: 6px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border); font-size: 12px; color: var(--muted);
+  }
+  .matrix-cell.done { background: linear-gradient(135deg, rgba(255,138,61,0.25), rgba(255,194,74,0.10)); border-color: rgba(255,138,61,0.5); color: #fff; }
+  .matrix-cell.perfect { background: linear-gradient(135deg, rgba(255,209,102,0.35), rgba(255,138,61,0.20)); border-color: rgba(255,209,102,0.6); color: #fff; box-shadow: 0 0 12px rgba(255,209,102,0.25); }
+
+  /* Arcade */
+  .arcade-frame { background: linear-gradient(180deg, #1a0a1c 0%, #2c0e1a 100%); border: 1px solid var(--border); border-radius: 16px; padding: 14px; box-shadow: var(--shadow); }
+  .arcade-hud {
+    display: flex; gap: 12px; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; font-weight: 800;
+    background: rgba(0,0,0,0.3); padding: 8px 14px; border-radius: 12px; border: 1px solid var(--border);
+  }
+  .arcade-hud .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-right: 6px; }
+  .arcade-hud .score { color: var(--gold); font-size: 18px; }
+  .arcade-hud .lives { color: var(--bad); letter-spacing: 4px; font-size: 20px; }
+  .arcade-hud .timer { color: var(--accent-2); font-size: 18px; font-variant-numeric: tabular-nums; }
+  .arcade-hud .timer.low { color: var(--bad); animation: lowPulse 0.7s ease-in-out infinite; }
+  @keyframes lowPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+  .arcade-canvas-wrap {
+    position: relative; width: 100%; max-width: 720px; margin: 0 auto;
+    aspect-ratio: 4 / 3;
+    background: radial-gradient(ellipse at center, #1d0a18 0%, #060206 70%);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .arcade-canvas-wrap canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .arcade-overlay {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgba(2,2,12,0.65); backdrop-filter: blur(2px);
+    color: #fff; font-weight: 900; text-align: center; padding: 18px;
+    pointer-events: none; opacity: 0; transition: opacity .2s;
+  }
+  .arcade-overlay.show { opacity: 1; pointer-events: auto; }
+  .arcade-overlay h2 { margin: 0 0 6px; font-size: 30px; letter-spacing: 1px; }
+  .arcade-overlay p { margin: 0; color: var(--muted); font-weight: 700; font-size: 14px; }
+  .arcade-controls { display: flex; gap: 14px; justify-content: center; margin-top: 14px; }
+  .arc-btn {
+    width: 72px; height: 64px; border-radius: 14px;
+    background: linear-gradient(180deg, #3a1d40, #1d1230);
+    border: 1px solid rgba(255,255,255,0.18); color: #fff;
+    font-size: 26px; cursor: pointer; user-select: none; display: grid; place-items: center;
+    transition: transform .08s, background .15s; touch-action: manipulation;
+  }
+  .arc-btn:active, .arc-btn.held { transform: scale(0.94); background: linear-gradient(180deg, #46285a, #2a163e); }
+  .arc-btn.fire { background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); width: 96px; font-size: 28px; color: #1a0a04; }
+  .arc-btn.fire:active, .arc-btn.fire.held { filter: brightness(1.12); }
+  .arcade-help { color: var(--muted); font-size: 12px; text-align: center; margin-top: 8px; }
+  .arcade-help kbd { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 11px; }
+
+  .footer-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
+
+  /* small screens */
+  @media (max-width: 520px) {
+    .topbar { padding: 8px 10px; }
+    .brand { font-size: 16px; }
+    .panel { padding: 16px; }
+    .build-display { font-size: 17px; }
+    .opt { font-size: 14px; padding: 7px 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"><span class="em">⚡</span><span id="toastText">Nice!</span></div>
+<div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+/* ============================================================
+   gforce — Forge powerful sentences (v1.0)
+   Single-file guided writing tool for 8–12 yo native English writers.
+   ============================================================ */
+const APP_VERSION = 'v1.0';
+
+/* --------------------- STORY CONTENT --------------------- */
+/* Data shape:
+   { id, topic, level (1-3), title, context,
+     sentences: [
+       { opener: "Fixed phrase,", slots: [
+           { role: 'role label', options: [
+             { text: 'CORRECT', correct: true },
+             { text: 'distractor', why: 'one-line teaching tip' }, ...
+           ] }, ...
+       ] }, ...
+     ]
+   }
+   When assembled: opener + ' ' + slot1.text + ' ' + slot2.text + ' ' + ... + '.'
+   The LAST slot of each sentence includes the trailing punctuation.
+*/
+
+const TOPICS = [
+  { id: 'sport',     name: 'Sport',     emoji: '⚽' },
+  { id: 'adventure', name: 'Adventure', emoji: '🗺️' },
+  { id: 'mystery',   name: 'Mystery',   emoji: '🔍' },
+  { id: 'scifi',     name: 'Sci-Fi',    emoji: '🚀' }
+];
+
+const STORIES = [
+  /* ============ SPORT ============ */
+  {
+    id: 'final-shot', topic: 'sport', level: 1,
+    title: 'The Final Shot',
+    context: 'Final seconds of the basketball championship — one shot to win.',
+    sentences: [
+      { opener: 'As the final buzzer drew closer,', slots: [
+        { role: 'Who is this about?', options: [
+          { text: 'Marcus', correct: true },
+          { text: 'he',     why: 'Pronoun — name him to ground the scene.' },
+          { text: 'the boy',why: 'Too vague — give him a name.' }
+        ]},
+        { role: 'Action verb', options: [
+          { text: 'clutched', correct: true },
+          { text: 'held',     why: 'Bland — pick a verb that shows tension.' },
+          { text: 'had',      why: 'Filter verb — what was he DOING with it?' }
+        ]},
+        { role: 'Sensory detail', options: [
+          { text: 'the ball with trembling fingers.', correct: true },
+          { text: 'the ball tightly.',                 why: "'Tightly' tells — show how it felt." },
+          { text: 'the ball.',                          why: 'No detail — add a sensory image.' }
+        ]}
+      ]},
+      { opener: 'With sweat dripping from his brow,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Marcus', why: 'You already named him — pronoun keeps it flowing.' },
+          { text: 'the player', why: 'Vague after you have already named him.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'scanned', correct: true },
+          { text: 'looked at', why: "'Looked at' is a filter — show the searching." },
+          { text: 'watched',   why: 'Filter verb — distances the reader.' }
+        ]},
+        { role: 'Specific detail', options: [
+          { text: 'the defenders for an opening.', correct: true },
+          { text: 'the team quickly.',             why: "Wrong target + tell-adverb 'quickly'." },
+          { text: 'the others.',                    why: 'Too vague — name what he saw.' }
+        ]}
+      ]},
+      { opener: 'Without warning,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Marcus', why: 'Repeating his name slows it down here.' },
+          { text: 'the boy', why: 'Vague + repetitive.' }
+        ]},
+        { role: 'Power verb', options: [
+          { text: 'darted', correct: true },
+          { text: 'ran',    why: 'Basic verb — pick something sharper.' },
+          { text: 'went',   why: 'Lazy verb — what did he actually do?' }
+        ]},
+        { role: 'Decisive action', options: [
+          { text: 'left and launched a desperate shot.', correct: true },
+          { text: 'left and threw the ball.',            why: 'Bland — match the drama of the moment.' },
+          { text: 'sideways quickly.',                    why: "Vague direction + tell-adverb 'quickly'." }
+        ]}
+      ]},
+      { opener: 'Spinning through the air,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the ball', correct: true },
+          { text: 'it',       why: 'Pronoun — be specific here to focus attention.' },
+          { text: 'the thing', why: 'Vague — name what is flying.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'kissed', correct: true },
+          { text: 'hit',    why: 'Basic — try something more poetic.' },
+          { text: 'touched', why: 'Bland — pick a verb with feeling.' }
+        ]},
+        { role: 'Closing image', options: [
+          { text: 'the rim before swishing through the net.', correct: true },
+          { text: 'the basket.',                               why: 'No drama — extend the moment.' },
+          { text: 'it loudly.',                                why: "Pronoun + tell-adverb 'loudly'." }
+        ]}
+      ]},
+      { opener: 'When the ball dropped through the hoop,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the crowd', correct: true },
+          { text: 'everyone', why: 'Vague — name the source of the noise.' },
+          { text: 'people',   why: 'Generic — be specific.' }
+        ]},
+        { role: 'Explosive verb', options: [
+          { text: 'erupted', correct: true },
+          { text: 'cheered', why: 'Basic — pick a verb that explodes off the page.' },
+          { text: 'yelled',  why: 'Bland — match the scale of the moment.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: 'into a roar that shook the gymnasium.', correct: true },
+          { text: 'really loudly.',                         why: 'Two intensifiers, no image.' },
+          { text: 'because they were happy.',               why: 'Tells the emotion — show it instead.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'wipeout', topic: 'sport', level: 1,
+    title: 'The Wipeout',
+    context: 'A young surfer paddles out into a huge swell.',
+    sentences: [
+      { opener: 'Paddling hard against the swell,', slots: [
+        { role: 'Who', options: [
+          { text: 'Kai', correct: true },
+          { text: 'he',  why: 'Pronoun — name him so we care.' },
+          { text: 'a boy', why: 'Generic — give him identity.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'charged', correct: true },
+          { text: 'went',    why: 'Lazy verb — replace with something powerful.' },
+          { text: 'paddled', why: 'Already used in opener — repetition.' }
+        ]},
+        { role: 'Sensory detail', options: [
+          { text: 'toward the rolling wall of water.', correct: true },
+          { text: 'into the sea.',                      why: 'Flat — paint the picture.' },
+          { text: 'out fast.',                          why: "Tell-adverb 'fast'." }
+        ]}
+      ]},
+      { opener: 'Rising up the steep face,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the board', correct: true },
+          { text: 'it', why: 'Pronoun where we need clarity.' },
+          { text: 'his thing', why: 'Vague — be specific.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'shuddered', correct: true },
+          { text: 'shook',     why: 'Basic — choose a verb with texture.' },
+          { text: 'moved',     why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'beneath his shaking knees.', correct: true },
+          { text: 'a lot.',                      why: 'Vague — add a sensory image.' },
+          { text: 'fast.',                       why: "Tell-adverb." }
+        ]}
+      ]},
+      { opener: 'For one frozen second,', slots: [
+        { role: 'Who', options: [
+          { text: 'Kai', correct: true },
+          { text: 'he', why: 'Repeating his name re-grounds the moment.' },
+          { text: 'a boy', why: 'Vague after he was named.' }
+        ]},
+        { role: 'Powerful verb', options: [
+          { text: 'hovered', correct: true },
+          { text: 'stood',   why: 'Bland — show the suspension.' },
+          { text: 'stayed',  why: 'Flat verb.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'at the lip of the giant wave.', correct: true },
+          { text: 'on his board.',                  why: 'Obvious — give us awe.' },
+          { text: 'still.',                          why: 'Tell-word.' }
+        ]}
+      ]},
+      { opener: 'Then, with a crashing roar,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the wave', correct: true },
+          { text: 'it', why: 'Pronoun — name the force.' },
+          { text: 'water', why: 'Generic.' }
+        ]},
+        { role: 'Powerhouse verb', options: [
+          { text: 'collapsed', correct: true },
+          { text: 'fell',      why: 'Basic.' },
+          { text: 'came down', why: 'Wordy + bland.' }
+        ]},
+        { role: 'Impact detail', options: [
+          { text: 'onto him in a thunder of foam.', correct: true },
+          { text: 'on his head.',                    why: 'No drama.' },
+          { text: 'really loudly.',                  why: 'Telling — show the chaos.' }
+        ]}
+      ]},
+      { opener: 'When he finally surfaced,', slots: [
+        { role: 'Who', options: [
+          { text: 'Kai', correct: true },
+          { text: 'he', why: 'Name re-anchors after the chaos.' },
+          { text: 'the boy', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'gasped', correct: true },
+          { text: 'breathed', why: 'Bland.' },
+          { text: 'said',     why: 'Wrong verb — he is not speaking.' }
+        ]},
+        { role: 'Closing image', options: [
+          { text: 'salty laughter, already paddling back out.', correct: true },
+          { text: 'because he was happy.', why: 'Telling — show the joy.' },
+          { text: 'a lot.', why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'tackle', topic: 'sport', level: 2,
+    title: 'The Tackle',
+    context: "The defender has one last chance to save the match.",
+    sentences: [
+      { opener: 'As the striker bore down on goal,', slots: [
+        { role: 'Who', options: [
+          { text: 'Jordan', correct: true },
+          { text: 'the defender', why: 'Less personal — name him.' },
+          { text: 'he',           why: 'Pronoun — needs grounding.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'launched', correct: true },
+          { text: 'ran',      why: 'Basic.' },
+          { text: 'started',  why: 'Vague — what did he actually do?' }
+        ]},
+        { role: 'Direction', options: [
+          { text: 'into a full-stretch chase', correct: true },
+          { text: 'over to him quickly',       why: "Vague + tell-adverb 'quickly'." },
+          { text: 'toward the action',         why: 'Generic — be specific.' }
+        ]},
+        { role: 'Sensory detail', options: [
+          { text: ', his boots ripping up the turf.', correct: true },
+          { text: ' really fast.',                      why: 'Telling, no image.' },
+          { text: '.',                                   why: 'No detail at all.' }
+        ]}
+      ]},
+      { opener: 'Closing the gap with every stride,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Jordan', why: 'Repetition slows the pace.' },
+          { text: 'the boy', why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'felt', correct: true },
+          { text: 'noticed', why: 'Filter — show it directly.' },
+          { text: 'thought about', why: 'Filter phrase.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'his lungs burning', correct: true },
+          { text: 'tired',             why: 'Telling — show the body.' },
+          { text: 'pain',              why: 'Vague.' }
+        ]},
+        { role: 'Closing detail', options: [
+          { text: ' and the goal looming behind the striker.', correct: true },
+          { text: ' a lot.',                                     why: 'Vague.' },
+          { text: ' really hard.',                               why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'At the last possible moment,', slots: [
+        { role: 'Who', options: [
+          { text: 'Jordan', correct: true },
+          { text: 'he', why: 'Re-naming heightens the moment.' },
+          { text: 'a boy', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'lunged', correct: true },
+          { text: 'jumped', why: 'Basic.' },
+          { text: 'went',   why: 'Lazy verb.' }
+        ]},
+        { role: 'Body detail', options: [
+          { text: 'sideways, leg stretched like a snapped wire', correct: true },
+          { text: 'fast',                                          why: 'Tell-adverb, no image.' },
+          { text: 'a long way',                                    why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and clipped the ball away from danger.', correct: true },
+          { text: '.',                                          why: 'Anticlimactic — finish the action.' },
+          { text: ' really well.',                              why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'Skidding across the grass,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Jordan', why: 'Pronoun keeps it flowing.' },
+          { text: 'the player', why: 'Distancing.' }
+        ]},
+        { role: 'Power verb', options: [
+          { text: 'crashed', correct: true },
+          { text: 'fell',    why: 'Basic.' },
+          { text: 'landed',  why: 'Bland.' }
+        ]},
+        { role: 'Impact detail', options: [
+          { text: 'into the post with a sickening thud', correct: true },
+          { text: 'on the ground',                        why: 'Too obvious.' },
+          { text: 'somewhere',                            why: 'Vague.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: ', the breath punched from his chest.', correct: true },
+          { text: ' really hard.',                         why: 'Telling.' },
+          { text: ' and got hurt.',                         why: 'Tells, never shows.' }
+        ]}
+      ]},
+      { opener: 'When the referee blew full-time,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the stadium', correct: true },
+          { text: 'everyone',    why: 'Vague.' },
+          { text: 'people',      why: 'Generic.' }
+        ]},
+        { role: 'Explosive verb', options: [
+          { text: 'shook', correct: true },
+          { text: 'cheered', why: 'Basic — match the scale.' },
+          { text: 'made noise', why: 'Wordy + bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'with the chant of his name', correct: true },
+          { text: 'really loudly',               why: 'Telling.' },
+          { text: 'a lot',                       why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and Jordan, mud-streaked, raised one shaking fist.', correct: true },
+          { text: ', and he was happy.',                                    why: 'Telling — show the joy.' },
+          { text: '.',                                                       why: 'Misses the emotional payoff.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'sprint', topic: 'sport', level: 2,
+    title: 'The Sprint',
+    context: 'A late comeback in the 100-metre final.',
+    sentences: [
+      { opener: 'Crouched in the starting blocks,', slots: [
+        { role: 'Who', options: [
+          { text: 'Tia', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'the runner', why: 'Distancing.' }
+        ]},
+        { role: 'Body detail verb', options: [
+          { text: 'pressed', correct: true },
+          { text: 'put',     why: 'Lazy verb.' },
+          { text: 'placed',  why: 'Bland.' }
+        ]},
+        { role: 'Specific detail', options: [
+          { text: 'her fingertips into the rubber track', correct: true },
+          { text: 'her hands down',                        why: 'Generic.' },
+          { text: 'them there',                            why: 'Pronoun soup.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: 'and waited for the gun.', correct: true },
+          { text: 'really tightly.',          why: 'Tell-adverb.' },
+          { text: 'for the race.',             why: 'Obvious.' }
+        ]}
+      ]},
+      { opener: 'At the crack of the starter,', slots: [
+        { role: 'Subject', options: [
+          { text: 'she', correct: true },
+          { text: 'Tia', why: 'Re-naming pushes the pace.' },
+          { text: 'a girl', why: 'Generic + repetitive.' }
+        ]},
+        { role: 'Explosive verb', options: [
+          { text: 'exploded', correct: true },
+          { text: 'ran',      why: 'Basic — choose something violent.' },
+          { text: 'went',     why: 'Lazy verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'from the blocks like a snapped trap', correct: true },
+          { text: 'forward fast',                         why: 'Tell-adverb.' },
+          { text: 'out',                                   why: 'Vague.' }
+        ]},
+        { role: 'Image closer', options: [
+          { text: ', her ponytail whipping behind her.', correct: true },
+          { text: ' really quickly.',                      why: 'Telling.' },
+          { text: '.',                                      why: 'Misses the image.' }
+        ]}
+      ]},
+      { opener: 'Halfway down the track,', slots: [
+        { role: 'Who', options: [
+          { text: 'Tia', correct: true },
+          { text: 'she', why: 'Re-grounding her with name works here.' },
+          { text: 'the girl', why: 'Vague.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'caught', correct: true },
+          { text: 'saw',    why: "'Saw' is a filter — show the catching." },
+          { text: 'looked at', why: 'Filter phrase.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'a flash of red in her peripheral vision', correct: true },
+          { text: 'someone next to her',                      why: 'Vague.' },
+          { text: 'a person',                                  why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' — the leader, drawing alongside.', correct: true },
+          { text: ' and ran faster.',                    why: 'Telling, not showing.' },
+          { text: '.',                                    why: 'Anticlimax.' }
+        ]}
+      ]},
+      { opener: 'Driving her arms like pistons,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Tia', why: 'Pronoun keeps the rhythm of action.' },
+          { text: 'the athlete', why: 'Clinical.' }
+        ]},
+        { role: 'Powerful verb', options: [
+          { text: 'tore', correct: true },
+          { text: 'ran',  why: 'Basic.' },
+          { text: 'moved', why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'past the leader in three savage strides', correct: true },
+          { text: 'really fast',                              why: 'Tell-adverb.' },
+          { text: 'a bit ahead',                              why: 'Vague.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: ', the finish line burning toward her.', correct: true },
+          { text: ' quickly.',                                why: 'Tell-adverb.' },
+          { text: '.',                                         why: 'No payoff.' }
+        ]}
+      ]},
+      { opener: 'When her chest broke the tape,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the stand', correct: true },
+          { text: 'everyone',  why: 'Vague.' },
+          { text: 'people',    why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'roared', correct: true },
+          { text: 'cheered', why: 'Basic.' },
+          { text: 'shouted', why: 'Bland.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'into a single deafening wave', correct: true },
+          { text: 'really loudly',                why: 'Telling.' },
+          { text: 'a lot',                        why: 'Vague.' }
+        ]},
+        { role: 'Emotional closer', options: [
+          { text: ', and Tia dropped to her knees, laughing through her tears.', correct: true },
+          { text: ', and she was happy.', why: 'Tells the emotion.' },
+          { text: '.', why: 'Misses the moment.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'last-wicket', topic: 'sport', level: 3,
+    title: 'The Last Wicket',
+    context: 'A cricket final — one ball, one wicket, to win.',
+    sentences: [
+      { opener: 'Polishing the cherry-red ball against his thigh,', slots: [
+        { role: 'Who', options: [
+          { text: 'Sam', correct: true },
+          { text: 'he', why: 'Pronoun — name him for the opener.' },
+          { text: 'the bowler', why: 'Clinical and distancing.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'studied', correct: true },
+          { text: 'looked at', why: "'Looked at' — pure filter." },
+          { text: 'watched',   why: 'Filter verb.' }
+        ]},
+        { role: 'Specific target', options: [
+          { text: 'the cracked patch of pitch outside off stump', correct: true },
+          { text: 'the pitch',                                     why: 'Generic.' },
+          { text: 'down there',                                     why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: ', planning exactly where it had to land.', correct: true },
+          { text: ' carefully.',                                why: 'Tell-adverb.' },
+          { text: ' really hard.',                              why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'As he turned at the top of his mark,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the crowd', correct: true },
+          { text: 'everyone',  why: 'Vague.' },
+          { text: 'people',    why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'fell', correct: true },
+          { text: 'got quiet', why: 'Wordy + bland.' },
+          { text: 'stopped talking', why: 'Telling.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'into a held breath', correct: true },
+          { text: 'silent really fast', why: 'Tell-adverb chain.' },
+          { text: 'quiet',              why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: ' — twenty thousand pairs of eyes locked on the strip.', correct: true },
+          { text: ' and waited.',                                          why: 'Bland.' },
+          { text: '.',                                                      why: 'Misses the picture.' }
+        ]}
+      ]},
+      { opener: 'Pounding in over the cracked turf,', slots: [
+        { role: 'Who', options: [
+          { text: 'Sam', correct: true },
+          { text: 'he', why: 'Re-naming at this beat lifts the moment.' },
+          { text: 'the bowler', why: 'Distancing.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'whipped', correct: true },
+          { text: 'threw',   why: 'Basic.' },
+          { text: 'bowled',  why: 'Functional and flat.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'his arm over in a blur of white sleeve', correct: true },
+          { text: 'really fast',                              why: 'Tell-adverb.' },
+          { text: 'quickly',                                   why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'and released the ball with a sharp grunt.', correct: true },
+          { text: 'and let go.',                                why: 'Flat.' },
+          { text: '.',                                           why: 'No payoff.' }
+        ]}
+      ]},
+      { opener: 'Skidding off the seam,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the ball', correct: true },
+          { text: 'it',       why: 'Pronoun where clarity is needed.' },
+          { text: 'the thing', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'jagged', correct: true },
+          { text: 'moved',  why: 'Bland.' },
+          { text: 'went',   why: 'Lazy.' }
+        ]},
+        { role: 'Direction', options: [
+          { text: 'back at the batter at vicious speed', correct: true },
+          { text: 'really fast',                          why: 'Tell-adverb.' },
+          { text: 'at him',                                why: 'Vague.' }
+        ]},
+        { role: 'Climax detail', options: [
+          { text: ', clipping the off-bail into the night air.', correct: true },
+          { text: ' and hit the stumps.',                          why: 'Flat.' },
+          { text: ' a lot.',                                        why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'For one impossible second,', slots: [
+        { role: 'Subject', options: [
+          { text: 'silence', correct: true },
+          { text: 'it',      why: 'Pronoun without antecedent.' },
+          { text: 'everything', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'hung', correct: true },
+          { text: 'stayed', why: 'Flat.' },
+          { text: 'was', why: 'Filter — "to be" verb dulls the moment.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'over the stadium', correct: true },
+          { text: 'all around',       why: 'Vague.' },
+          { text: 'there',            why: 'Empty word.' }
+        ]},
+        { role: 'Emotional closer', options: [
+          { text: ' — then Sam vanished beneath a wave of his shouting teammates.', correct: true },
+          { text: ' and he was happy.',                                                why: 'Tells the emotion.' },
+          { text: ' before everyone cheered.',                                          why: 'Telling, no image.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'overtime-goal', topic: 'sport', level: 3,
+    title: 'The Overtime Goal',
+    context: 'Sudden-death overtime in the cup final.',
+    sentences: [
+      { opener: 'Trapping the ball on the half-turn,', slots: [
+        { role: 'Who', options: [
+          { text: 'Diego', correct: true },
+          { text: 'he', why: 'Pronoun — name him to anchor the scene.' },
+          { text: 'the striker', why: 'Distancing.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'felt', correct: true },
+          { text: 'noticed', why: 'Filter verb.' },
+          { text: 'realised', why: 'Filter — show the realisation.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the defender breathing on his shoulder', correct: true },
+          { text: 'someone behind him',                       why: 'Vague.' },
+          { text: 'a person',                                  why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', a single heartbeat to decide.', correct: true },
+          { text: ' really close.',                    why: 'Tell-adverb.' },
+          { text: '.',                                  why: 'No tension.' }
+        ]}
+      ]},
+      { opener: 'With one deft flick of his heel,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Diego', why: 'Repetition slows the rhythm here.' },
+          { text: 'the boy', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'rolled', correct: true },
+          { text: 'passed', why: 'Functional.' },
+          { text: 'kicked', why: 'Basic.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the ball between the defender\u2019s legs', correct: true },
+          { text: 'it past him',                                 why: 'Pronoun + vague.' },
+          { text: 'it somewhere',                                 why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and burst onto the loose pass.', correct: true },
+          { text: ' really fast.',                    why: 'Tell-adverb.' },
+          { text: '.',                                 why: 'Anticlimactic.' }
+        ]}
+      ]},
+      { opener: 'Sprinting through the open channel,', slots: [
+        { role: 'Who', options: [
+          { text: 'Diego', correct: true },
+          { text: 'he', why: 'Name re-grounds at the key beat.' },
+          { text: 'the striker', why: 'Clinical.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'tasted', correct: true },
+          { text: 'felt',   why: 'Bland — pick a sharper sense.' },
+          { text: 'had',    why: 'Filter verb.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'the iron tang of effort on his tongue', correct: true },
+          { text: 'tiredness',                              why: 'Vague.' },
+          { text: 'pain',                                   why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', the goalkeeper already racing off his line.', correct: true },
+          { text: ' really hard.',                                   why: 'Telling.' },
+          { text: '.',                                                why: 'No payoff.' }
+        ]}
+      ]},
+      { opener: 'At the edge of the area,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Diego', why: 'Repetition.' },
+          { text: 'a player', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'lifted', correct: true },
+          { text: 'kicked', why: 'Basic.' },
+          { text: 'shot',   why: 'Bland here — show the craft.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'the ball into a slow, perfect arc', correct: true },
+          { text: 'it up there',                        why: 'Pronoun + vague.' },
+          { text: 'it high quickly',                    why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' over the keeper\u2019s outstretched fingertips.', correct: true },
+          { text: '.',                                                 why: 'Misses the picture.' },
+          { text: ' really high.',                                      why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'When the ball kissed the inside of the net,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the stadium', correct: true },
+          { text: 'everyone',    why: 'Vague.' },
+          { text: 'fans',        why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'detonated', correct: true },
+          { text: 'cheered',   why: 'Basic.' },
+          { text: 'made noise', why: 'Wordy + bland.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'in a riot of scarves and song', correct: true },
+          { text: 'really loudly',                  why: 'Telling.' },
+          { text: 'somewhere',                      why: 'Vague.' }
+        ]},
+        { role: 'Emotional closer', options: [
+          { text: ', and Diego, shirt over his face, sank to his knees.', correct: true },
+          { text: ', and he was happy.',                                    why: 'Tells the emotion.' },
+          { text: '.',                                                       why: 'Misses the moment.' }
+        ]}
+      ]}
+    ]
+  },
+
+  /* ============ ADVENTURE ============ */
+  {
+    id: 'hidden-chamber', topic: 'adventure', level: 1,
+    title: 'The Hidden Chamber',
+    context: 'An explorer finds a sealed chamber deep in a desert cave.',
+    sentences: [
+      { opener: 'After unfolding the fragile parchment,', slots: [
+        { role: 'Who', options: [
+          { text: 'the explorer', correct: true },
+          { text: 'she',           why: 'Pronoun — needs grounding.' },
+          { text: 'a person',      why: 'Generic.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'traced', correct: true },
+          { text: 'looked at', why: 'Filter phrase.' },
+          { text: 'saw',        why: 'Filter verb.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'a faded ink path through the canyon.', correct: true },
+          { text: 'something on it.',                       why: 'Vague.' },
+          { text: 'the map quickly.',                       why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Edging deeper into the cave,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'the explorer', why: 'Repetition slows things.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'lifted', correct: true },
+          { text: 'put up',  why: 'Wordy + flat.' },
+          { text: 'held',    why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the torch toward the painted walls.', correct: true },
+          { text: 'her hand really high.',                why: 'Tell-adverb.' },
+          { text: 'something up.',                         why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'Carved into the stone,', slots: [
+        { role: 'Subject', options: [
+          { text: 'strange symbols', correct: true },
+          { text: 'stuff',           why: 'Lazy.' },
+          { text: 'things',          why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'shimmered', correct: true },
+          { text: 'were',      why: 'Filter verb of being.' },
+          { text: 'looked nice', why: 'Telling.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: 'in the trembling torchlight.', correct: true },
+          { text: 'a lot.',                        why: 'Vague.' },
+          { text: 'really brightly.',              why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Heart thudding against her ribs,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'the explorer', why: 'Repetition.' },
+          { text: 'a person', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'pressed', correct: true },
+          { text: 'pushed',  why: 'Bland.' },
+          { text: 'touched', why: 'Flat.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her palm against the warm carving.', correct: true },
+          { text: 'her hand on the wall.',               why: 'Generic.' },
+          { text: 'it quickly.',                          why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'With a deep, grinding rumble,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the wall', correct: true },
+          { text: 'it',       why: 'Pronoun where we need the subject.' },
+          { text: 'a thing',  why: 'Vague.' }
+        ]},
+        { role: 'Powerful verb', options: [
+          { text: 'split', correct: true },
+          { text: 'opened', why: 'Basic.' },
+          { text: 'moved',  why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'apart to reveal a chamber heavy with gold.', correct: true },
+          { text: 'because there was something inside.',         why: 'Telling.' },
+          { text: 'really wide.',                                  why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'jungle-crossing', topic: 'adventure', level: 1,
+    title: 'The Jungle Crossing',
+    context: 'A rope bridge over a misty jungle ravine.',
+    sentences: [
+      { opener: 'Stepping onto the swaying planks,', slots: [
+        { role: 'Who', options: [
+          { text: 'Mira', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'gripped', correct: true },
+          { text: 'held',    why: 'Basic.' },
+          { text: 'had',     why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the fraying ropes with white knuckles.', correct: true },
+          { text: 'them tightly.',                            why: 'Tell-adverb.' },
+          { text: 'the bridge.',                              why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'Far below,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a foaming river', correct: true },
+          { text: 'water',           why: 'Generic.' },
+          { text: 'something',       why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'roared', correct: true },
+          { text: 'was',    why: 'Filter verb.' },
+          { text: 'made noise', why: 'Wordy.' }
+        ]},
+        { role: 'Sensory closer', options: [
+          { text: 'through the green-black gorge.', correct: true },
+          { text: 'really loudly.',                  why: 'Telling.' },
+          { text: 'a lot.',                           why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'Without looking down,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Mira', why: 'Repetition.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'slid', correct: true },
+          { text: 'moved', why: 'Vague.' },
+          { text: 'went',  why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'one cautious foot in front of the other.', correct: true },
+          { text: 'forward slowly.',                            why: 'Tell-adverb.' },
+          { text: 'across.',                                     why: 'Bland.' }
+        ]}
+      ]},
+      { opener: 'Halfway across,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a plank', correct: true },
+          { text: 'it',      why: 'Pronoun where we need clarity.' },
+          { text: 'something', why: 'Vague.' }
+        ]},
+        { role: 'Sound verb', options: [
+          { text: 'cracked', correct: true },
+          { text: 'broke',   why: 'Bland.' },
+          { text: 'snapped',  why: 'Close, but cracked carries warning.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'beneath her left boot.', correct: true },
+          { text: 'really loudly.',          why: 'Telling.' },
+          { text: 'somewhere.',              why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'Heart hammering,', slots: [
+        { role: 'Who', options: [
+          { text: 'Mira', correct: true },
+          { text: 'she', why: 'Pronoun — naming her grounds the climax.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'lunged', correct: true },
+          { text: 'jumped', why: 'Basic.' },
+          { text: 'went',   why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'for solid ground and rolled into the ferns, laughing in shaky relief.', correct: true },
+          { text: 'across and was happy.', why: 'Tells.' },
+          { text: 'really fast.',           why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'mountain-pass', topic: 'adventure', level: 2,
+    title: 'The Mountain Pass',
+    context: 'Caught in a blizzard on a narrow cliff trail.',
+    sentences: [
+      { opener: 'As the storm closed around the peak,', slots: [
+        { role: 'Who', options: [
+          { text: 'Theo', correct: true },
+          { text: 'he', why: 'Pronoun — name him at the start.' },
+          { text: 'a hiker', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'tasted', correct: true },
+          { text: 'felt',   why: 'Bland — pick a sharper sense.' },
+          { text: 'noticed', why: 'Filter verb.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'iron-cold snow on his cracked lips', correct: true },
+          { text: 'the weather',                         why: 'Vague.' },
+          { text: 'something cold',                       why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and pressed deeper into his hood.', correct: true },
+          { text: ' a lot.',                              why: 'Vague.' },
+          { text: ' really hard.',                        why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'Below the narrow ledge,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a white nothing', correct: true },
+          { text: 'the drop',         why: 'Functional — push for atmosphere.' },
+          { text: 'air',              why: 'Bland.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'churned', correct: true },
+          { text: 'moved',   why: 'Vague.' },
+          { text: 'was',     why: 'Filter verb of being.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'where the valley should have been', correct: true },
+          { text: 'really far down',                    why: 'Tell-adverb.' },
+          { text: 'somewhere below',                     why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', swallowing every landmark.', correct: true },
+          { text: ' a lot.',                       why: 'Vague.' },
+          { text: '.',                              why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Pinned against the wall of stone,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Theo', why: 'Pronoun keeps the rhythm.' },
+          { text: 'the boy', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'inched', correct: true },
+          { text: 'walked', why: 'Basic.' },
+          { text: 'went',   why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'sideways along the icy lip', correct: true },
+          { text: 'slowly forward',              why: 'Tell-adverb.' },
+          { text: 'along the side',              why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', breath roaring in his ears.', correct: true },
+          { text: ' really carefully.',             why: 'Tell-adverb.' },
+          { text: '.',                               why: 'No image.' }
+        ]}
+      ]},
+      { opener: 'Without warning,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a slab of ice', correct: true },
+          { text: 'something',     why: 'Vague.' },
+          { text: 'it',            why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'cracked', correct: true },
+          { text: 'broke',   why: 'Basic.' },
+          { text: 'moved',   why: 'Vague.' }
+        ]},
+        { role: 'Sensory detail', options: [
+          { text: 'free above him with a gunshot snap', correct: true },
+          { text: 'really loudly',                       why: 'Telling.' },
+          { text: 'somewhere',                           why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and tumbled past his shoulder.', correct: true },
+          { text: '.',                                why: 'Misses payoff.' },
+          { text: ' really fast.',                    why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'When the pass finally widened,', slots: [
+        { role: 'Who', options: [
+          { text: 'Theo', correct: true },
+          { text: 'he', why: 'Re-name him at the resolution.' },
+          { text: 'a hiker', why: 'Distancing.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'sagged', correct: true },
+          { text: 'sat down', why: 'Wordy + flat.' },
+          { text: 'fell',     why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'against the rock and let out a single ragged laugh', correct: true },
+          { text: 'because he was happy',                                why: 'Tells the emotion.' },
+          { text: 'and was glad',                                         why: 'Telling.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', the storm still howling at his back.', correct: true },
+          { text: '.',                                       why: 'Misses the lingering atmosphere.' },
+          { text: ' a lot.',                                  why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'sunken-wreck', topic: 'adventure', level: 2,
+    title: 'The Sunken Wreck',
+    context: 'A young diver explores the wreck of a 17th-century galleon.',
+    sentences: [
+      { opener: 'Sinking through the cold green water,', slots: [
+        { role: 'Who', options: [
+          { text: 'Eli', correct: true },
+          { text: 'he', why: 'Pronoun — name him to start.' },
+          { text: 'a diver', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'watched', correct: true },
+          { text: 'looked at', why: 'Filter phrase.' },
+          { text: 'saw',        why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the bones of the galleon rise from the gloom', correct: true },
+          { text: 'something below him',                          why: 'Vague.' },
+          { text: 'the ship really clearly',                      why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', her ribs draped in pale weed.', correct: true },
+          { text: ' a lot.',                          why: 'Vague.' },
+          { text: '.',                                 why: 'Misses the image.' }
+        ]}
+      ]},
+      { opener: 'Slipping through the broken hull,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Eli', why: 'Repetition.' },
+          { text: 'the diver', why: 'Clinical.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'brushed', correct: true },
+          { text: 'touched', why: 'Bland.' },
+          { text: 'felt',    why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'past a curtain of silver-bellied fish', correct: true },
+          { text: 'past some fish',                        why: 'Generic.' },
+          { text: 'past stuff',                             why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', their eyes catching his torchlight.', correct: true },
+          { text: ' really fast.',                          why: 'Tell-adverb.' },
+          { text: '.',                                       why: 'Flat.' }
+        ]}
+      ]},
+      { opener: 'Deep inside the captain\u2019s cabin,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a battered chest', correct: true },
+          { text: 'something',         why: 'Vague.' },
+          { text: 'a thing',           why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'leaned', correct: true },
+          { text: 'was',    why: 'Filter verb of being.' },
+          { text: 'sat',    why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'against the splintered timbers', correct: true },
+          { text: 'somewhere in the room',           why: 'Vague.' },
+          { text: 'in the back',                      why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', its lock half-eaten by the sea.', correct: true },
+          { text: '.',                                  why: 'Misses the image.' },
+          { text: ' really old.',                       why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'With trembling gloves,', slots: [
+        { role: 'Who', options: [
+          { text: 'Eli', correct: true },
+          { text: 'he', why: 'Pronoun keeps it flowing, but his name lifts the moment.' },
+          { text: 'a diver', why: 'Clinical.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'prised', correct: true },
+          { text: 'opened', why: 'Basic.' },
+          { text: 'got',    why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the rusted lid up an inch', correct: true },
+          { text: 'it slowly',                  why: 'Tell-adverb.' },
+          { text: 'the chest',                  why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' — and froze, breath stopping in his throat.', correct: true },
+          { text: ' and was scared.',                              why: 'Tells the emotion.' },
+          { text: ' really carefully.',                            why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Pouring from the chest in a slow river,', slots: [
+        { role: 'Subject', options: [
+          { text: 'coins', correct: true },
+          { text: 'stuff', why: 'Lazy.' },
+          { text: 'things', why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'caught', correct: true },
+          { text: 'shone',  why: 'Close, but caught implies action with the light.' },
+          { text: 'were',   why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the torchlight in soft yellow flashes', correct: true },
+          { text: 'the light a lot',                        why: 'Vague.' },
+          { text: 'really brightly',                         why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and Eli laughed silver bubbles into the dark.', correct: true },
+          { text: ', and he was happy.', why: 'Tells.' },
+          { text: '.',                    why: 'Misses the joy.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'lost-city', topic: 'adventure', level: 3,
+    title: 'The Lost City',
+    context: 'After weeks in the jungle, an archaeologist breaks through the canopy.',
+    sentences: [
+      { opener: 'Hacking the last vines from her path,', slots: [
+        { role: 'Who', options: [
+          { text: 'Dr. Hale', correct: true },
+          { text: 'she',       why: 'Pronoun — name her first.' },
+          { text: 'a woman',   why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'stumbled', correct: true },
+          { text: 'walked',   why: 'Basic.' },
+          { text: 'went',     why: 'Lazy.' }
+        ]},
+        { role: 'Specific image', options: [
+          { text: 'into a clearing flooded with gold light', correct: true },
+          { text: 'into a place',                              why: 'Vague.' },
+          { text: 'somewhere bright',                          why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and her machete fell from her hand.', correct: true },
+          { text: ' really suddenly.',                       why: 'Tell-adverb.' },
+          { text: '.',                                        why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Towering across the valley,', slots: [
+        { role: 'Subject', options: [
+          { text: 'stone pyramids', correct: true },
+          { text: 'buildings',       why: 'Generic.' },
+          { text: 'things',          why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'pierced', correct: true },
+          { text: 'were',    why: 'Filter verb.' },
+          { text: 'stood',   why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the canopy in a jagged crown', correct: true },
+          { text: 'really high up',                why: 'Tell-adverb.' },
+          { text: 'over the trees',                why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', their stairways choked with creepers.', correct: true },
+          { text: '.',                                        why: 'Misses image.' },
+          { text: ' a lot.',                                   why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'For the first time in a thousand years,', slots: [
+        { role: 'Subject', options: [
+          { text: 'human boots', correct: true },
+          { text: 'shoes',        why: 'Bland.' },
+          { text: 'someone',      why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'crunched', correct: true },
+          { text: 'walked',   why: 'Basic.' },
+          { text: 'were',     why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'across the lichen-furred steps', correct: true },
+          { text: 'on the stairs',                   why: 'Generic.' },
+          { text: 'somewhere up',                    why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', echoing into the quiet stones.', correct: true },
+          { text: ' really loudly.',                    why: 'Telling.' },
+          { text: '.',                                   why: 'Misses sound.' }
+        ]}
+      ]},
+      { opener: 'Bowing under the lintel of the temple,', slots: [
+        { role: 'Who', options: [
+          { text: 'Dr. Hale', correct: true },
+          { text: 'she', why: 'Pronoun — naming heightens the moment.' },
+          { text: 'a woman', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'lifted', correct: true },
+          { text: 'put up', why: 'Wordy + bland.' },
+          { text: 'had',    why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her torch toward a wall of carved jaguars', correct: true },
+          { text: 'her light up',                                why: 'Vague.' },
+          { text: 'her arm high',                                 why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', their obsidian eyes glittering back.', correct: true },
+          { text: ' really brightly.',                       why: 'Tell-adverb.' },
+          { text: '.',                                        why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'When at last she dared to speak,', slots: [
+        { role: 'Subject', options: [
+          { text: 'her voice', correct: true },
+          { text: 'she',       why: 'Repetition with the opener.' },
+          { text: 'sound',     why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'cracked', correct: true },
+          { text: 'came out', why: 'Wordy + flat.' },
+          { text: 'was',     why: 'Filter verb of being.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'into a single dry whisper', correct: true },
+          { text: 'really quietly',             why: 'Tell-adverb.' },
+          { text: 'softly',                     why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' — and the lost city answered with the rustle of a thousand wings.', correct: true },
+          { text: '.',                                                                    why: 'Misses payoff.' },
+          { text: ' because she was scared.',                                              why: 'Telling.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'storm-at-sea', topic: 'adventure', level: 3,
+    title: 'The Storm at Sea',
+    context: 'A teenage sailor steers a small yacht through a brewing storm.',
+    sentences: [
+      { opener: 'As the first wave broke over the bow,', slots: [
+        { role: 'Who', options: [
+          { text: 'Lina', correct: true },
+          { text: 'she',  why: 'Pronoun — name her first.' },
+          { text: 'a sailor', why: 'Generic.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'planted', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'placed',  why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her boots wide on the heaving deck', correct: true },
+          { text: 'her feet down',                       why: 'Vague.' },
+          { text: 'herself there',                       why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and locked both hands onto the wheel.', correct: true },
+          { text: ' really tightly.',                        why: 'Tell-adverb.' },
+          { text: '.',                                        why: 'Misses payoff.' }
+        ]}
+      ]},
+      { opener: 'Above the masts,', slots: [
+        { role: 'Subject', options: [
+          { text: 'lightning', correct: true },
+          { text: 'something', why: 'Vague.' },
+          { text: 'it',        why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'split', correct: true },
+          { text: 'was',   why: 'Filter verb.' },
+          { text: 'came',  why: 'Lazy.' }
+        ]},
+        { role: 'Image', options: [
+          { text: 'the bruised sky in two', correct: true },
+          { text: 'really brightly',         why: 'Tell-adverb.' },
+          { text: 'a lot',                   why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', searing white across the rain.', correct: true },
+          { text: '.',                                  why: 'Misses sensory image.' },
+          { text: ' really fast.',                       why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Just as the yacht crested the next swell,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the mainsail', correct: true },
+          { text: 'something',    why: 'Vague.' },
+          { text: 'a thing',      why: 'Lazy.' }
+        ]},
+        { role: 'Powerful verb', options: [
+          { text: 'snapped', correct: true },
+          { text: 'broke',   why: 'Bland.' },
+          { text: 'tore',    why: 'Close, but snapped carries the sound.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'taut and shrieked in the wind', correct: true },
+          { text: 'really loudly',                  why: 'Telling.' },
+          { text: 'a lot',                          why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', a rope whipping past her face.', correct: true },
+          { text: '.',                                  why: 'Misses image.' },
+          { text: ' really hard.',                       why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'Refusing to look away,', slots: [
+        { role: 'Who', options: [
+          { text: 'Lina', correct: true },
+          { text: 'she', why: 'Pronoun — naming her drives the climax.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'wrenched', correct: true },
+          { text: 'turned',   why: 'Basic.' },
+          { text: 'moved',    why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the wheel into the teeth of the wave', correct: true },
+          { text: 'the wheel a lot',                       why: 'Vague.' },
+          { text: 'really hard',                            why: 'Telling.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', spray salting her bared teeth.', correct: true },
+          { text: '.',                                  why: 'Misses image.' },
+          { text: ' really fast.',                       why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'When dawn finally cracked the horizon,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a thin gold line', correct: true },
+          { text: 'light',             why: 'Bland.' },
+          { text: 'the sun',           why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'crept', correct: true },
+          { text: 'came',  why: 'Lazy.' },
+          { text: 'was',   why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'over the broken sea', correct: true },
+          { text: 'really slowly',         why: 'Tell-adverb.' },
+          { text: 'somewhere far',         why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and Lina, soaked to the bone, allowed herself a single, shaking smile.', correct: true },
+          { text: ', and she was happy.',                                                       why: 'Tells the emotion.' },
+          { text: '.',                                                                            why: 'Misses payoff.' }
+        ]}
+      ]}
+    ]
+  },
+
+  /* ============ MYSTERY ============ */
+  {
+    id: 'empty-house', topic: 'mystery', level: 1,
+    title: 'The Empty House',
+    context: 'A strange noise from the abandoned house on the corner.',
+    sentences: [
+      { opener: 'Late one Tuesday evening,', slots: [
+        { role: 'Who', options: [
+          { text: 'Noah', correct: true },
+          { text: 'he', why: 'Pronoun — name him first.' },
+          { text: 'a boy', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'heard', correct: true },
+          { text: 'noticed', why: 'Filter verb.' },
+          { text: 'thought he heard', why: 'Filter phrase.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'a slow, scraping noise from across the street.', correct: true },
+          { text: 'something weird.',                                why: 'Vague.' },
+          { text: 'a sound really loudly.',                          why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Tiptoeing across the road,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Noah', why: 'Repetition.' },
+          { text: 'a kid', why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'pressed', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'held',    why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'his nose against the dusty window.', correct: true },
+          { text: 'his face on the glass.',              why: 'Bland.' },
+          { text: 'his head close.',                      why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'Inside the dark front room,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a single candle', correct: true },
+          { text: 'something',        why: 'Vague.' },
+          { text: 'a thing',          why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'flickered', correct: true },
+          { text: 'was',       why: 'Filter verb.' },
+          { text: 'glowed',    why: 'Close, but flickered creates suspense.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'on top of a tipped-over piano.', correct: true },
+          { text: 'in the room.',                    why: 'Generic.' },
+          { text: 'really brightly.',                why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Without thinking,', slots: [
+        { role: 'Who', options: [
+          { text: 'Noah', correct: true },
+          { text: 'he', why: 'Re-naming heightens the moment.' },
+          { text: 'a boy', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'pushed', correct: true },
+          { text: 'tried',  why: 'Bland.' },
+          { text: 'went to', why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'the front door, and it groaned open.', correct: true },
+          { text: 'the door really hard.',                 why: 'Tell-adverb.' },
+          { text: 'it.',                                    why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'From the top of the stairs,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a voice', correct: true },
+          { text: 'something', why: 'Vague.' },
+          { text: 'noise',     why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'whispered', correct: true },
+          { text: 'said',      why: 'Filter verb.' },
+          { text: 'made noise', why: 'Wordy + bland.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'his name, slow and patient.', correct: true },
+          { text: 'really quietly.',              why: 'Tell-adverb.' },
+          { text: 'something to him.',             why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'missing-bike', topic: 'mystery', level: 1,
+    title: 'The Missing Bike',
+    context: 'A new bike vanishes from the backyard overnight.',
+    sentences: [
+      { opener: 'On Saturday morning,', slots: [
+        { role: 'Who', options: [
+          { text: 'Ava', correct: true },
+          { text: 'she', why: 'Pronoun — name her.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'opened', correct: true },
+          { text: 'looked at', why: 'Filter phrase.' },
+          { text: 'saw',        why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'the back gate and froze.', correct: true },
+          { text: 'the door.',                 why: 'Bland.' },
+          { text: 'it quickly.',                why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'In the middle of the lawn,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a perfect tyre track', correct: true },
+          { text: 'something',             why: 'Vague.' },
+          { text: 'a thing',               why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'curled', correct: true },
+          { text: 'was',    why: 'Filter verb.' },
+          { text: 'showed', why: 'Bland.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'through the dew toward the fence.', correct: true },
+          { text: 'on the ground.',                      why: 'Generic.' },
+          { text: 'really clearly.',                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Crouching by the muddy gap,', slots: [
+        { role: 'Who', options: [
+          { text: 'Ava', correct: true },
+          { text: 'she', why: 'Repetition.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'spotted', correct: true },
+          { text: 'saw',     why: 'Filter verb.' },
+          { text: 'looked at', why: 'Filter phrase.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'a single blue thread caught on the wire.', correct: true },
+          { text: 'something on the fence.',                    why: 'Vague.' },
+          { text: 'a thing.',                                    why: 'Lazy.' }
+        ]}
+      ]},
+      { opener: 'Three doors down,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a familiar bike', correct: true },
+          { text: 'something',        why: 'Vague.' },
+          { text: 'it',               why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'leaned', correct: true },
+          { text: 'was',    why: 'Filter verb.' },
+          { text: 'sat',    why: 'Bland.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'against a garage with chipped purple paint.', correct: true },
+          { text: 'somewhere.',                                    why: 'Vague.' },
+          { text: 'really nicely.',                                 why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'With a slow smile,', slots: [
+        { role: 'Who', options: [
+          { text: 'Ava', correct: true },
+          { text: 'she', why: 'Pronoun — naming her closes the loop.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'pulled', correct: true },
+          { text: 'got',    why: 'Lazy.' },
+          { text: 'took out', why: 'Wordy + flat.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'out her phone and rang the police.', correct: true },
+          { text: 'something out and was happy.',        why: 'Tells.' },
+          { text: 'it out.',                              why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'locked-room', topic: 'mystery', level: 2,
+    title: 'The Locked Room',
+    context: 'A teacher\u2019s classroom is locked from the inside — but nobody is there.',
+    sentences: [
+      { opener: 'When the bell rang for first period,', slots: [
+        { role: 'Who', options: [
+          { text: 'Mr. Hardy', correct: true },
+          { text: 'he', why: 'Pronoun — name him for grounding.' },
+          { text: 'the teacher', why: 'Distancing.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'rattled', correct: true },
+          { text: 'tried',   why: 'Bland.' },
+          { text: 'used',    why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the brass handle of room 14', correct: true },
+          { text: 'the door',                     why: 'Generic.' },
+          { text: 'something there',              why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', but it refused to budge.', correct: true },
+          { text: ' really hard.',                why: 'Tell-adverb.' },
+          { text: '.',                             why: 'Misses payoff.' }
+        ]}
+      ]},
+      { opener: 'Pressing his ear to the wood,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Mr. Hardy', why: 'Repetition.' },
+          { text: 'a teacher', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'caught', correct: true },
+          { text: 'heard',  why: 'Functional — caught implies attention.' },
+          { text: 'noticed', why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the soft scratch of chalk on slate', correct: true },
+          { text: 'something inside',                    why: 'Vague.' },
+          { text: 'a noise',                              why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', steady and patient as a clock.', correct: true },
+          { text: ' really quietly.',                   why: 'Tell-adverb.' },
+          { text: '.',                                   why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'With the master key trembling in his fingers,', slots: [
+        { role: 'Who', options: [
+          { text: 'Mr. Hardy', correct: true },
+          { text: 'he', why: 'Pronoun — his name lifts the moment.' },
+          { text: 'a man', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'eased', correct: true },
+          { text: 'opened', why: 'Basic.' },
+          { text: 'used',   why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the door wide enough to peer through', correct: true },
+          { text: 'the door slowly',                       why: 'Tell-adverb.' },
+          { text: 'it open',                                why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' — and the scratching stopped.', correct: true },
+          { text: '.',                                why: 'Misses payoff.' },
+          { text: ' really suddenly.',                 why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'On the dusty board at the back of the room,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a single chalked word', correct: true },
+          { text: 'something',              why: 'Vague.' },
+          { text: 'writing',                why: 'Bland.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'gleamed', correct: true },
+          { text: 'was',     why: 'Filter verb.' },
+          { text: 'showed',  why: 'Bland.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'in fresh white dust: HELLO.', correct: true },
+          { text: ' really clearly.',             why: 'Tell-adverb.' },
+          { text: '.',                             why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Behind him,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the door', correct: true },
+          { text: 'it',       why: 'Pronoun without clear antecedent.' },
+          { text: 'something', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'clicked', correct: true },
+          { text: 'closed',  why: 'Bland.' },
+          { text: 'shut',    why: 'Close, but clicked is precise.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'gently shut on its own', correct: true },
+          { text: 'really fast',             why: 'Tell-adverb.' },
+          { text: 'somewhere',               why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and the chalk began to scratch again.', correct: true },
+          { text: '.',                                          why: 'Misses payoff.' },
+          { text: ' really loudly.',                             why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'shadow-window', topic: 'mystery', level: 2,
+    title: 'The Shadow at the Window',
+    context: 'A shape keeps appearing at the upstairs window of the house next door.',
+    sentences: [
+      { opener: 'Every night that week,', slots: [
+        { role: 'Who', options: [
+          { text: 'Iris', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'caught', correct: true },
+          { text: 'saw',    why: 'Filter verb.' },
+          { text: 'looked at', why: 'Filter phrase.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'a tall shape standing at her neighbour\u2019s window', correct: true },
+          { text: 'something next door',                                   why: 'Vague.' },
+          { text: 'a thing',                                                why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', perfectly still behind the lace.', correct: true },
+          { text: ' really quietly.',                     why: 'Tell-adverb.' },
+          { text: '.',                                     why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'On the seventh evening,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Iris', why: 'Repetition slows things.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'lifted', correct: true },
+          { text: 'got',    why: 'Lazy.' },
+          { text: 'picked up', why: 'Wordy + flat.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her phone and snapped a photograph through the gap', correct: true },
+          { text: 'her phone and took a picture',                        why: 'Bland.' },
+          { text: 'it',                                                    why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' in the curtains.', correct: true },
+          { text: ' really fast.',      why: 'Tell-adverb.' },
+          { text: '.',                   why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'When she zoomed in on the screen,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the shape', correct: true },
+          { text: 'it',         why: 'Pronoun — be specific.' },
+          { text: 'something',  why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'wore', correct: true },
+          { text: 'had',  why: 'Filter verb.' },
+          { text: 'was',  why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her grandmother\u2019s missing coat', correct: true },
+          { text: 'some clothes',                          why: 'Generic.' },
+          { text: 'a thing',                                why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', the collar still creased the way Gran liked it.', correct: true },
+          { text: '.',                                                    why: 'Misses image.' },
+          { text: ' really clearly.',                                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Heart hammering against her ribs,', slots: [
+        { role: 'Who', options: [
+          { text: 'Iris', correct: true },
+          { text: 'she', why: 'Pronoun — naming her drives the climax.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'crept', correct: true },
+          { text: 'walked', why: 'Basic.' },
+          { text: 'went',  why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'down the dark stairs in her bare feet', correct: true },
+          { text: 'really quietly downstairs',               why: 'Tell-adverb.' },
+          { text: 'down',                                     why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', the photograph still glowing in her fist.', correct: true },
+          { text: '.',                                              why: 'Misses image.' },
+          { text: ' really carefully.',                              why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'When she finally opened the front door,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the coat', correct: true },
+          { text: 'it',        why: 'Pronoun without antecedent.' },
+          { text: 'something', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'lay', correct: true },
+          { text: 'was', why: 'Filter verb.' },
+          { text: 'sat', why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'folded neatly on the doormat', correct: true },
+          { text: 'on the ground',                why: 'Generic.' },
+          { text: 'there',                         why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', still warm to the touch.', correct: true },
+          { text: '.',                            why: 'Misses image.' },
+          { text: ' really nicely.',               why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'cipher', topic: 'mystery', level: 3,
+    title: 'The Cipher',
+    context: 'A young codebreaker decodes a message slipped under the library door.',
+    sentences: [
+      { opener: 'Slipping the folded paper into the lamplight,', slots: [
+        { role: 'Who', options: [
+          { text: 'Jude', correct: true },
+          { text: 'he', why: 'Pronoun — name him first.' },
+          { text: 'a boy', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'studied', correct: true },
+          { text: 'looked at', why: 'Filter phrase.' },
+          { text: 'saw',        why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the strange rows of inked symbols', correct: true },
+          { text: 'the writing',                        why: 'Bland.' },
+          { text: 'the stuff on it',                    why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', heart picking up its pace.', correct: true },
+          { text: ' really carefully.',             why: 'Tell-adverb.' },
+          { text: '.',                               why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Hunched over his battered notebook,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Jude', why: 'Repetition.' },
+          { text: 'a kid', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'scratched', correct: true },
+          { text: 'wrote',     why: 'Basic.' },
+          { text: 'put',       why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'frantic columns of letters and numbers', correct: true },
+          { text: 'stuff down',                             why: 'Lazy.' },
+          { text: 'things in his book',                     why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', testing one substitution after another.', correct: true },
+          { text: ' really fast.',                              why: 'Tell-adverb.' },
+          { text: '.',                                           why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Just past midnight,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a single word', correct: true },
+          { text: 'something',      why: 'Vague.' },
+          { text: 'it',             why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'surfaced', correct: true },
+          { text: 'appeared', why: 'Bland.' },
+          { text: 'came',     why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'from the mess of symbols', correct: true },
+          { text: 'on his page',               why: 'Vague.' },
+          { text: 'somewhere',                 why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ': MEET ME WHERE THE CLOCKS LIE.', correct: true },
+          { text: ', really clearly.',                why: 'Tell-adverb.' },
+          { text: '.',                                 why: 'Misses payoff.' }
+        ]}
+      ]},
+      { opener: 'Without taking his eyes off the paper,', slots: [
+        { role: 'Who', options: [
+          { text: 'Jude', correct: true },
+          { text: 'he', why: 'Naming heightens the discovery.' },
+          { text: 'a boy', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'reached', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'used',    why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'for the city map under his bed', correct: true },
+          { text: 'for a map',                       why: 'Generic.' },
+          { text: 'for it',                          why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', breath fogging the dust on its corners.', correct: true },
+          { text: ' really carefully.',                          why: 'Tell-adverb.' },
+          { text: '.',                                            why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'In the cracked centre of the old town,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a clocktower', correct: true },
+          { text: 'something',    why: 'Vague.' },
+          { text: 'a thing',      why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'leaned', correct: true },
+          { text: 'was',    why: 'Filter verb.' },
+          { text: 'stood',  why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'over a graveyard of fallen hands and gears', correct: true },
+          { text: 'over a place',                                why: 'Vague.' },
+          { text: 'really high',                                  why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and a tall figure was already waiting in its shadow.', correct: true },
+          { text: '.',                                                       why: 'Misses payoff.' },
+          { text: ' really quietly.',                                         why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'vanishing', topic: 'mystery', level: 3,
+    title: 'The Vanishing',
+    context: 'A best friend disappears from a school assembly without anyone noticing.',
+    sentences: [
+      { opener: 'During the principal\u2019s long announcement,', slots: [
+        { role: 'Who', options: [
+          { text: 'Hana', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'felt', correct: true },
+          { text: 'noticed', why: 'Filter verb.' },
+          { text: 'thought about', why: 'Filter phrase.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the empty seat beside her grow cold', correct: true },
+          { text: 'something was off',                    why: 'Telling.' },
+          { text: 'her friend was gone',                  why: 'Tells.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', as if Mia had never been there at all.', correct: true },
+          { text: '.',                                          why: 'Misses image.' },
+          { text: ' really suddenly.',                           why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Scanning the rows around her,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Hana', why: 'Repetition.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'caught', correct: true },
+          { text: 'saw',    why: 'Filter verb.' },
+          { text: 'looked at', why: 'Filter phrase.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the gaze of every classmate sliding past her', correct: true },
+          { text: 'no one looking at her',                          why: 'Bland.' },
+          { text: 'something weird',                                 why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', as though Mia\u2019s name had been wiped from their tongues.', correct: true },
+          { text: '.',                                                                why: 'Misses image.' },
+          { text: ' really creepily.',                                                 why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'After the bell,', slots: [
+        { role: 'Who', options: [
+          { text: 'Hana', correct: true },
+          { text: 'she', why: 'Naming re-anchors the scene.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'tore', correct: true },
+          { text: 'ran',  why: 'Basic.' },
+          { text: 'went', why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'through the locker bay to Mia\u2019s locker', correct: true },
+          { text: 'really fast to the lockers',                   why: 'Tell-adverb.' },
+          { text: 'somewhere quickly',                             why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', breath ripping in her chest.', correct: true },
+          { text: '.',                                why: 'Misses image.' },
+          { text: ' really fast.',                     why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Hanging from the metal door,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a clean white padlock', correct: true },
+          { text: 'something',              why: 'Vague.' },
+          { text: 'a thing',                why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'shone', correct: true },
+          { text: 'was',   why: 'Filter verb.' },
+          { text: 'showed', why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'where Mia\u2019s sticker-covered lock had been that morning', correct: true },
+          { text: 'on the locker',                                                  why: 'Generic.' },
+          { text: 'really new',                                                     why: 'Telling.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', not a trace of glue or paper left.', correct: true },
+          { text: '.',                                     why: 'Misses image.' },
+          { text: ' really cleanly.',                       why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'When she finally whispered her friend\u2019s name,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the corridor', correct: true },
+          { text: 'everywhere',   why: 'Vague.' },
+          { text: 'it',            why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'swallowed', correct: true },
+          { text: 'took',      why: 'Lazy.' },
+          { text: 'made it disappear', why: 'Wordy + telling.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the sound the way water swallows a stone', correct: true },
+          { text: 'her voice quickly',                          why: 'Tell-adverb.' },
+          { text: 'the noise really fast',                       why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' — and somewhere, behind a closed locker, something whispered back.', correct: true },
+          { text: '.',                                                                     why: 'Misses payoff.' },
+          { text: ' really creepily.',                                                      why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  /* ============ SCI-FI ============ */
+  {
+    id: 'signal', topic: 'scifi', level: 1,
+    title: 'The Signal',
+    context: 'A kid picks up a strange radio transmission in their garage.',
+    sentences: [
+      { opener: 'Late one stormy night,', slots: [
+        { role: 'Who', options: [
+          { text: 'Sasha', correct: true },
+          { text: 'she',   why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'twisted', correct: true },
+          { text: 'used',    why: 'Vague.' },
+          { text: 'turned',  why: 'Basic.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the old radio dial through a wash of static.', correct: true },
+          { text: 'it.',                                            why: 'Vague.' },
+          { text: 'the radio quickly.',                              why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Through the hiss and crackle,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a voice', correct: true },
+          { text: 'something', why: 'Vague.' },
+          { text: 'noise',     why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'whispered', correct: true },
+          { text: 'said',      why: 'Filter verb.' },
+          { text: 'was',       why: 'Filter verb of being.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'numbers in a slow, careful pattern.', correct: true },
+          { text: 'something to her.',                    why: 'Vague.' },
+          { text: 'really quietly.',                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Grabbing a pencil,', slots: [
+        { role: 'Who', options: [
+          { text: 'Sasha', correct: true },
+          { text: 'she', why: 'Repetition.' },
+          { text: 'a girl', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'scratched', correct: true },
+          { text: 'wrote',     why: 'Basic.' },
+          { text: 'put',       why: 'Lazy.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'every number across her arm.', correct: true },
+          { text: 'stuff down.',                    why: 'Lazy.' },
+          { text: 'them somewhere.',                why: 'Vague.' }
+        ]}
+      ]},
+      { opener: 'When the voice finally stopped,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Sasha', why: 'Repetition.' },
+          { text: 'a person', why: 'Vague.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'noticed', correct: true },
+          { text: 'realized', why: 'Filter verb.' },
+          { text: 'thought',  why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'the digits spelled her own home address.', correct: true },
+          { text: 'something weird.',                          why: 'Vague.' },
+          { text: 'something really bad.',                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Outside the window,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a single light', correct: true },
+          { text: 'something',       why: 'Vague.' },
+          { text: 'a thing',         why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'flicked', correct: true },
+          { text: 'came on', why: 'Wordy + flat.' },
+          { text: 'was',     why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'on at the end of her driveway.', correct: true },
+          { text: 'outside really brightly.',        why: 'Tell-adverb.' },
+          { text: 'on somewhere.',                    why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'robot', topic: 'scifi', level: 1,
+    title: 'The Robot',
+    context: 'A boy discovers a still-working robot in his grandfather\u2019s garage.',
+    sentences: [
+      { opener: 'Beneath an old grey sheet,', slots: [
+        { role: 'Who', options: [
+          { text: 'Leo', correct: true },
+          { text: 'he', why: 'Pronoun — name him first.' },
+          { text: 'a kid', why: 'Generic.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'uncovered', correct: true },
+          { text: 'found',     why: 'Basic.' },
+          { text: 'saw',       why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'a metal figure the size of a large dog.', correct: true },
+          { text: 'a robot.',                                  why: 'Generic.' },
+          { text: 'something cool.',                            why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'When he brushed the dust from its chest,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a small green light', correct: true },
+          { text: 'something',            why: 'Vague.' },
+          { text: 'a thing',              why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'blinked', correct: true },
+          { text: 'came on', why: 'Wordy + flat.' },
+          { text: 'was',     why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'awake under the grime.', correct: true },
+          { text: 'really brightly.',        why: 'Tell-adverb.' },
+          { text: 'on.',                      why: 'Bland.' }
+        ]}
+      ]},
+      { opener: 'With a faint hum,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the robot', correct: true },
+          { text: 'it',        why: 'Pronoun — be specific.' },
+          { text: 'a thing',   why: 'Lazy.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'tilted', correct: true },
+          { text: 'moved',  why: 'Vague.' },
+          { text: 'did',    why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'its dented head and watched him.', correct: true },
+          { text: 'somewhere.',                        why: 'Vague.' },
+          { text: 'really slowly.',                     why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Without quite meaning to,', slots: [
+        { role: 'Who', options: [
+          { text: 'Leo', correct: true },
+          { text: 'he', why: 'Naming him grounds the moment.' },
+          { text: 'a boy', why: 'Vague.' }
+        ]},
+        { role: 'Filter-free verb', options: [
+          { text: 'whispered', correct: true },
+          { text: 'said',      why: 'Filter verb.' },
+          { text: 'talked',    why: 'Basic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'his own name into the quiet garage.', correct: true },
+          { text: 'something to it.',                     why: 'Vague.' },
+          { text: 'really quietly.',                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'After a long, careful pause,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the robot', correct: true },
+          { text: 'it',        why: 'Pronoun where we need clarity.' },
+          { text: 'something', why: 'Vague.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'answered', correct: true },
+          { text: 'said',     why: 'Filter verb.' },
+          { text: 'did',      why: 'Filter verb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: 'in his grandfather\u2019s voice.', correct: true },
+          { text: 'really clearly.',                    why: 'Tell-adverb.' },
+          { text: 'something back.',                    why: 'Vague.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'wormhole', topic: 'scifi', level: 2,
+    title: 'The Wormhole',
+    context: 'A pilot\u2019s test flight goes badly wrong.',
+    sentences: [
+      { opener: 'As the engines screamed past safe speed,', slots: [
+        { role: 'Who', options: [
+          { text: 'Cadet Rin', correct: true },
+          { text: 'she',        why: 'Pronoun — name her first.' },
+          { text: 'a pilot',    why: 'Generic.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'clamped', correct: true },
+          { text: 'held',    why: 'Basic.' },
+          { text: 'put',     why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'both gloved hands around the throttle', correct: true },
+          { text: 'her hands on it',                        why: 'Vague.' },
+          { text: 'something tightly',                       why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', knuckles white inside the visor light.', correct: true },
+          { text: ' really hard.',                             why: 'Tell-adverb.' },
+          { text: '.',                                          why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Outside the cockpit glass,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the stars', correct: true },
+          { text: 'everything', why: 'Vague.' },
+          { text: 'it',         why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'smeared', correct: true },
+          { text: 'moved',   why: 'Vague.' },
+          { text: 'went',    why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'into long, screaming lines of white', correct: true },
+          { text: 'really fast past her',                   why: 'Tell-adverb.' },
+          { text: 'somewhere',                              why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and the cockpit began to shudder.', correct: true },
+          { text: '.',                                     why: 'Misses payoff.' },
+          { text: ' really hard.',                          why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Without thinking,', slots: [
+        { role: 'Who', options: [
+          { text: 'Rin', correct: true },
+          { text: 'she', why: 'Re-naming heightens the moment.' },
+          { text: 'a pilot', why: 'Generic.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'slammed', correct: true },
+          { text: 'pushed',  why: 'Basic.' },
+          { text: 'used',    why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the throttle wide open', correct: true },
+          { text: 'it',                      why: 'Vague.' },
+          { text: 'the thing fast',           why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and lunged the ship into the bright knot of light.', correct: true },
+          { text: ' really fast.',                                         why: 'Tell-adverb.' },
+          { text: '.',                                                      why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'For one weightless heartbeat,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the universe', correct: true },
+          { text: 'everything',    why: 'Vague.' },
+          { text: 'it',            why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'folded', correct: true },
+          { text: 'moved',  why: 'Vague.' },
+          { text: 'changed', why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'in half around her ship', correct: true },
+          { text: 'really fast',              why: 'Tell-adverb.' },
+          { text: 'somewhere',                why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and every console screamed at once.', correct: true },
+          { text: '.',                                       why: 'Misses payoff.' },
+          { text: ' really loudly.',                          why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'When the noise finally stopped,', slots: [
+        { role: 'Who', options: [
+          { text: 'Rin', correct: true },
+          { text: 'she', why: 'Naming her closes the loop.' },
+          { text: 'a pilot', why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'stared', correct: true },
+          { text: 'looked at', why: 'Filter phrase.' },
+          { text: 'saw',        why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'at a sky filled with two pale moons', correct: true },
+          { text: 'at something new',                      why: 'Vague.' },
+          { text: 'somewhere',                              why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and a planet she had never been taught to name.', correct: true },
+          { text: '.',                                                   why: 'Misses payoff.' },
+          { text: ' really far away.',                                    why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'lab-escape', topic: 'scifi', level: 2,
+    title: 'The Lab Escape',
+    context: 'A kid breaks out of a secret testing facility.',
+    sentences: [
+      { opener: 'As the corridor lights flickered red,', slots: [
+        { role: 'Who', options: [
+          { text: 'Vera', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'tore', correct: true },
+          { text: 'ran',  why: 'Basic.' },
+          { text: 'went', why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the patient ID from her thin paper wrist', correct: true },
+          { text: 'something off her arm',                     why: 'Vague.' },
+          { text: 'her tag really fast',                        why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', breath quick and silent.', correct: true },
+          { text: '.',                            why: 'Misses image.' },
+          { text: ' really fast.',                 why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Above her,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a voice', correct: true },
+          { text: 'something', why: 'Vague.' },
+          { text: 'it',        why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'crackled', correct: true },
+          { text: 'said',     why: 'Filter verb.' },
+          { text: 'made noise', why: 'Wordy + bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her name through every speaker', correct: true },
+          { text: 'something everywhere',            why: 'Vague.' },
+          { text: 'really loudly',                    why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', smooth as oil.', correct: true },
+          { text: '.',                  why: 'Misses image.' },
+          { text: ' really clearly.',    why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Sliding around the next corner,', slots: [
+        { role: 'Who', options: [
+          { text: 'she', correct: true },
+          { text: 'Vera', why: 'Repetition.' },
+          { text: 'a kid', why: 'Vague.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'pressed', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'held',    why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'her stolen keycard against the reader', correct: true },
+          { text: 'something on the wall',                  why: 'Vague.' },
+          { text: 'it there',                                why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', willing the green light to blink.', correct: true },
+          { text: ' really hard.',                         why: 'Tell-adverb.' },
+          { text: '.',                                      why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'When the door slid open,', slots: [
+        { role: 'Subject', options: [
+          { text: 'cold night air', correct: true },
+          { text: 'something',      why: 'Vague.' },
+          { text: 'air',            why: 'Bland.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'punched', correct: true },
+          { text: 'came',    why: 'Lazy.' },
+          { text: 'was',     why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'into her lungs', correct: true },
+          { text: 'on her face',     why: 'Bland.' },
+          { text: 'a lot',           why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', tasting of pine and freedom.', correct: true },
+          { text: '.',                                why: 'Misses image.' },
+          { text: ' really nicely.',                   why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Behind her,', slots: [
+        { role: 'Subject', options: [
+          { text: 'sirens', correct: true },
+          { text: 'something', why: 'Vague.' },
+          { text: 'a thing',   why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'rose', correct: true },
+          { text: 'were',  why: 'Filter verb.' },
+          { text: 'started', why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'in a slow, climbing scream', correct: true },
+          { text: 'really loudly',               why: 'Telling.' },
+          { text: 'somewhere',                    why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', but Vera was already running for the trees.', correct: true },
+          { text: ', but she was happy.',                            why: 'Tells the emotion.' },
+          { text: '.',                                                why: 'Misses payoff.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'first-contact', topic: 'scifi', level: 3,
+    title: 'The First Contact',
+    context: 'A young xeno-linguist meets an alien at the edge of a forest crater.',
+    sentences: [
+      { opener: 'At the lip of the smoking crater,', slots: [
+        { role: 'Who', options: [
+          { text: 'Yuna', correct: true },
+          { text: 'she', why: 'Pronoun — name her first.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'stilled', correct: true },
+          { text: 'stopped', why: 'Basic.' },
+          { text: 'was',     why: 'Filter verb.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'every muscle in her body', correct: true },
+          { text: 'herself a lot',             why: 'Vague.' },
+          { text: 'her body really tight',     why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', her recorder shaking in one hand.', correct: true },
+          { text: '.',                                    why: 'Misses image.' },
+          { text: ' really still.',                        why: 'Telling.' }
+        ]}
+      ]},
+      { opener: 'Across the ashen ground,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a tall, slender figure', correct: true },
+          { text: 'someone',                why: 'Generic.' },
+          { text: 'a thing',                why: 'Lazy.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'unfolded', correct: true },
+          { text: 'stood up', why: 'Wordy + flat.' },
+          { text: 'got up',   why: 'Lazy.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'from the wreckage in slow, careful sections', correct: true },
+          { text: 'from somewhere',                                why: 'Vague.' },
+          { text: 'really slowly',                                  why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', limbs the colour of moonlit pewter.', correct: true },
+          { text: '.',                                      why: 'Misses image.' },
+          { text: ' really weirdly.',                        why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Refusing to break eye contact,', slots: [
+        { role: 'Who', options: [
+          { text: 'Yuna', correct: true },
+          { text: 'she', why: 'Naming her steadies the moment.' },
+          { text: 'a girl', why: 'Generic.' }
+        ]},
+        { role: 'Strong verb', options: [
+          { text: 'lowered', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'set',     why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'one open palm flat against the ash', correct: true },
+          { text: 'her hand down',                       why: 'Vague.' },
+          { text: 'it there',                             why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', the same gesture she had used with frightened animals as a child.', correct: true },
+          { text: '.',                                                                     why: 'Misses image.' },
+          { text: ' really slowly.',                                                        why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'After what felt like an entire winter,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the figure', correct: true },
+          { text: 'it',         why: 'Pronoun — be specific.' },
+          { text: 'someone',    why: 'Generic.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'pressed', correct: true },
+          { text: 'put',     why: 'Lazy.' },
+          { text: 'placed',  why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'a long, six-fingered hand against hers', correct: true },
+          { text: 'a hand on her hand',                      why: 'Bland.' },
+          { text: 'something on her',                         why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', cool as river stone.', correct: true },
+          { text: ' really gently.',         why: 'Tell-adverb.' },
+          { text: '.',                        why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'When the visitor finally spoke,', slots: [
+        { role: 'Subject', options: [
+          { text: 'a single word', correct: true },
+          { text: 'something',      why: 'Vague.' },
+          { text: 'noise',          why: 'Generic.' }
+        ]},
+        { role: 'Sensory verb', options: [
+          { text: 'unfurled', correct: true },
+          { text: 'came out', why: 'Wordy + flat.' },
+          { text: 'was said', why: 'Filter passive.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'in her own language, in her grandmother\u2019s voice', correct: true },
+          { text: 'somehow she understood it',                              why: 'Telling.' },
+          { text: 'really clearly',                                          why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ': "We have been waiting a long time."', correct: true },
+          { text: '.',                                       why: 'Misses payoff.' },
+          { text: ' really weirdly.',                         why: 'Tell-adverb.' }
+        ]}
+      ]}
+    ]
+  },
+
+  {
+    id: 'reactor', topic: 'scifi', level: 3,
+    title: 'The Reactor Meltdown',
+    context: 'A young engineer races to save the orbital station from going critical.',
+    sentences: [
+      { opener: 'As red warning lights drowned the deck,', slots: [
+        { role: 'Who', options: [
+          { text: 'Engineer Tao', correct: true },
+          { text: 'he',            why: 'Pronoun — name him for grounding.' },
+          { text: 'an engineer',   why: 'Distancing.' }
+        ]},
+        { role: 'Body verb', options: [
+          { text: 'wrenched', correct: true },
+          { text: 'opened',   why: 'Bland.' },
+          { text: 'pulled',   why: 'Basic.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the access panel from the reactor wall', correct: true },
+          { text: 'something off the wall',                  why: 'Vague.' },
+          { text: 'a thing fast',                             why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', sparks biting his cheek.', correct: true },
+          { text: ' really hard.',                why: 'Tell-adverb.' },
+          { text: '.',                             why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'Above the failing core,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the station\u2019s voice', correct: true },
+          { text: 'something',                  why: 'Vague.' },
+          { text: 'it',                         why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'counted', correct: true },
+          { text: 'said',    why: 'Filter verb.' },
+          { text: 'spoke',   why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'down with the calm of a metronome', correct: true },
+          { text: 'really slowly',                       why: 'Tell-adverb.' },
+          { text: 'numbers',                             why: 'Generic.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ': sixty, fifty-nine, fifty-eight.', correct: true },
+          { text: '.',                                    why: 'Misses image.' },
+          { text: ' really clearly.',                      why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'Forcing his fingers steady,', slots: [
+        { role: 'Who', options: [
+          { text: 'Tao', correct: true },
+          { text: 'he', why: 'Pronoun — naming heightens the climax.' },
+          { text: 'a man', why: 'Vague.' }
+        ]},
+        { role: 'Decisive verb', options: [
+          { text: 'threaded', correct: true },
+          { text: 'put',      why: 'Lazy.' },
+          { text: 'used',     why: 'Vague.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'the bypass cable through the burning circuit', correct: true },
+          { text: 'a wire somewhere',                                why: 'Vague.' },
+          { text: 'it in really fast',                                why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', sweat stinging his eyes.', correct: true },
+          { text: ' really carefully.',           why: 'Tell-adverb.' },
+          { text: '.',                             why: 'Misses image.' }
+        ]}
+      ]},
+      { opener: 'With three seconds left on the clock,', slots: [
+        { role: 'Who', options: [
+          { text: 'he', correct: true },
+          { text: 'Tao', why: 'Repetition slows the rhythm.' },
+          { text: 'the engineer', why: 'Distancing.' }
+        ]},
+        { role: 'Powerful verb', options: [
+          { text: 'slammed', correct: true },
+          { text: 'pushed',  why: 'Basic.' },
+          { text: 'pressed', why: 'Bland.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'his fist into the red emergency stud', correct: true },
+          { text: 'a button somewhere',                    why: 'Vague.' },
+          { text: 'it really hard',                         why: 'Tell-adverb.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ' and held his breath.', correct: true },
+          { text: '.',                      why: 'Misses payoff.' },
+          { text: ' really tightly.',        why: 'Tell-adverb.' }
+        ]}
+      ]},
+      { opener: 'For a moment that lasted forever,', slots: [
+        { role: 'Subject', options: [
+          { text: 'the alarms', correct: true },
+          { text: 'everything', why: 'Vague.' },
+          { text: 'it',         why: 'Pronoun without antecedent.' }
+        ]},
+        { role: 'Vivid verb', options: [
+          { text: 'died', correct: true },
+          { text: 'stopped', why: 'Bland.' },
+          { text: 'went off', why: 'Wordy + flat.' }
+        ]},
+        { role: 'Detail', options: [
+          { text: 'into a single, ringing silence', correct: true },
+          { text: 'really quietly',                  why: 'Tell-adverb.' },
+          { text: 'a lot',                           why: 'Vague.' }
+        ]},
+        { role: 'Closer', options: [
+          { text: ', and Tao, dripping and laughing, slid down the cool metal wall.', correct: true },
+          { text: ', and he was happy.',                                                why: 'Tells the emotion.' },
+          { text: '.',                                                                   why: 'Misses payoff.' }
+        ]}
+      ]}
+    ]
+  }
+];
+
+/* --------------------- STATE / STORAGE --------------------- */
+const STORE_KEY = 'gforce.v1';
+
+function defaultState() {
+  return {
+    name: '',
+    points: 0,
+    selectedTopic: 'sport',
+    completed: {},          // key: storyId -> { perfect, attempts, score }
+    paragraphs: [],         // [{ storyId, title, topic, text, ts, perfect, xp }]
+    badges: [],
+    streak: 0,
+    lastSession: null,
+    history: []
+  };
+}
+function pushHistory(entry) {
+  if (!Array.isArray(state.history)) state.history = [];
+  state.history.unshift(Object.assign({ ts: Date.now() }, entry));
+  if (state.history.length > 50) state.history.length = 50;
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultState();
+    return Object.assign(defaultState(), JSON.parse(raw));
+  } catch (e) { return defaultState(); }
+}
+function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = loadState();
+if (!Array.isArray(state.history)) state.history = [];
+if (!Array.isArray(state.paragraphs)) state.paragraphs = [];
+
+/* --------------------- BADGES --------------------- */
+const BADGES = {
+  apprentice: { name: 'Forge Apprentice', icon: '🔨', desc: 'Forge your first paragraph.' },
+  smith:      { name: 'Sentence Smith',   icon: '⚒️', desc: 'Forge 5 paragraphs.' },
+  master:     { name: 'Master Smith',     icon: '🏆', desc: 'Forge all 24 paragraphs.' },
+  perfect:    { name: 'Flawless Forge',   icon: '✨', desc: 'Build a sentence with no wrong picks.' },
+  paragon:    { name: 'Paragon',          icon: '💎', desc: 'Forge a paragraph with zero wrong picks.' },
+  l3:         { name: 'Three-Level Forge', icon: '🥇', desc: 'Complete a Level 3 story.' },
+  streak5:    { name: 'On Fire',          icon: '🔥', desc: 'Pass 5 stories in a row.' },
+  arcade:     { name: 'Arcade Ace',       icon: '🕹️', desc: 'Score 200+ in the reward game.' },
+  defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear all aliens in the reward game.' }
+};
+function awardBadge(id) {
+  if (!state.badges.includes(id)) {
+    state.badges.push(id);
+    saveState();
+    toast(`${BADGES[id].icon} New badge: ${BADGES[id].name}!`);
+    return true;
+  }
+  return false;
+}
+function checkBadges() {
+  const total = state.paragraphs.length;
+  if (total >= 1)  awardBadge('apprentice');
+  if (total >= 5)  awardBadge('smith');
+  if (total >= 24) awardBadge('master');
+  if (state.streak >= 5) awardBadge('streak5');
+}
+
+/* --------------------- HELPERS --------------------- */
+function $(sel, root = document) { return root.querySelector(sel); }
+function $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'style') Object.assign(e.style, v);
+    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'html') e.innerHTML = v;
+    else if (v !== undefined && v !== null) e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) {
+    const hh = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+    return `Today ${hh}:${mm}`;
+  }
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/* --------------------- TOAST / MODAL / CONFETTI --------------------- */
+let toastTimer;
+function toast(text, emoji = '⚡') {
+  const t = $('#toast'); $('#toastText').textContent = text;
+  t.querySelector('.em').textContent = emoji;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function openModal(content) {
+  const back = $('#modalBack'); const modal = $('#modal');
+  modal.innerHTML = '';
+  if (typeof content === 'string') modal.innerHTML = content; else modal.appendChild(content);
+  back.classList.add('show');
+  back.onclick = (e) => { if (e.target === back) closeModal(); };
+}
+function closeModal() { $('#modalBack').classList.remove('show'); }
+function confetti(durationMs = 2200, count = 80) {
+  const wrap = $('#confetti');
+  const colors = ['#ff8a3d', '#ffc24a', '#ff5a3d', '#ffd166', '#ffaa66', '#ff77b7', '#4ade80'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('i');
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (1.6 + Math.random() * 1.5) + 's';
+    piece.style.animationDelay = (Math.random() * 0.3) + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    wrap.appendChild(piece);
+    setTimeout(() => piece.remove(), durationMs + 500);
+  }
+}
+
+/* --------------------- SENTENCE ASSEMBLY --------------------- */
+function assembleSentence(sentence, picks) {
+  // picks: array of option indexes (one per slot). If pick missing, returns null.
+  const parts = [sentence.opener];
+  for (let i = 0; i < sentence.slots.length; i++) {
+    const idx = picks[i];
+    if (idx == null) return null;
+    parts.push(sentence.slots[i].options[idx].text);
+  }
+  // Smart join: trim leading whitespace on each part, no space before close-punctuation.
+  return parts.reduce((acc, part, i) => {
+    if (i === 0) return part;
+    const trimmed = part.replace(/^\s+/, '');
+    if (/^[,.;:!?]/.test(trimmed)) return acc + trimmed;
+    return acc + ' ' + trimmed;
+  }, '');
+}
+function correctSentenceText(sentence) {
+  const picks = sentence.slots.map(slot => slot.options.findIndex(o => o.correct));
+  return assembleSentence(sentence, picks);
+}
+function assembleParagraph(story, allPicks) {
+  return story.sentences.map((s, i) => assembleSentence(s, allPicks[i])).join(' ');
+}
+function correctParagraph(story) {
+  return story.sentences.map(s => correctSentenceText(s)).join(' ');
+}
+
+/* --------------------- VIEWS --------------------- */
+function render() {
+  const app = $('#app');
+  app.innerHTML = '';
+  if (!state.name) return renderName(app);
+  renderHome(app);
+}
+function topbar() {
+  return el('header', { class: 'topbar' },
+    el('div', { class: 'brand' },
+      el('div', { class: 'logo' }, 'g'),
+      el('div', {}, 'g', el('span', { style: { color: 'var(--accent)' } }, 'force'))
+    ),
+    el('div', { class: 'spacer' }),
+    el('div', { class: 'row-wrap' },
+      el('span', { class: 'chip' }, '👤 ', el('span', { class: 'name' }, state.name || 'Player')),
+      el('span', { class: 'chip' }, 'XP ', el('span', { class: 'pts' }, String(state.points))),
+      el('button', { class: 'btn ghost', title: 'My stories', onclick: renderGallery }, '📖'),
+      el('button', { class: 'btn ghost', title: 'Progress',  onclick: renderProgress }, '📊'),
+      el('button', { class: 'btn ghost', title: 'Trophies',  onclick: openTrophyModal }, '🏆')
+    )
+  );
+}
+function renderName(app) {
+  app.appendChild(topbar());
+  const wrap = el('div', { class: 'center-screen' });
+  const card = el('div', { class: 'panel name-card' });
+  card.appendChild(el('div', { style: { fontSize: '52px' } }, '🔨'));
+  card.appendChild(el('h2', {}, 'Welcome to gforce'));
+  card.appendChild(el('p', {}, 'Forge powerful English sentences. Pick the right words. Build a paragraph. Earn the arcade.'));
+  const input = el('input', { type: 'text', placeholder: 'Type your name…', maxlength: 24 });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(input.value); });
+  card.appendChild(input);
+  card.appendChild(el('div', { style: { height: '12px' } }));
+  card.appendChild(el('button', { class: 'btn primary lg', onclick: () => start(input.value) }, 'Begin →'));
+  wrap.appendChild(card);
+  app.appendChild(wrap);
+  setTimeout(() => input.focus(), 100);
+}
+function start(name) {
+  const n = (name || '').trim();
+  if (!n) { toast('Type your name first ✏️'); return; }
+  state.name = n; saveState(); render();
+}
+function renderHome(app) {
+  app.appendChild(topbar());
+  const hero = el('section', { class: 'hero' });
+  const left = el('div', { class: 'panel' });
+  left.appendChild(el('h1', {}, `Welcome back, ${state.name}.`));
+  left.appendChild(el('p', {}, 'Choose a topic and a story. Pick the best word in every container, then type the sentence out. Forge a full paragraph to unlock a 60-second reward game.'));
+  // Topic tabs
+  const tabs = el('div', { class: 'topic-tabs' });
+  for (const t of TOPICS) {
+    const cnt = STORIES.filter(s => s.topic === t.id && state.completed[s.id]).length;
+    const tab = el('button', {
+      class: 'topic-tab' + (state.selectedTopic === t.id ? ' active' : ''),
+      onclick: () => { state.selectedTopic = t.id; saveState(); render(); }
+    }, t.emoji + ' ' + t.name, el('span', { style: { opacity: 0.7, marginLeft: '6px', fontSize: '12px' } }, `${cnt}/6`));
+    tabs.appendChild(tab);
+  }
+  left.appendChild(tabs);
+  hero.appendChild(left);
+
+  // Stats card
+  const right = el('div', { class: 'panel' });
+  right.appendChild(el('div', { class: 'section-title' }, 'Your forge'));
+  const stats = el('div', { class: 'stat-row' });
+  stats.appendChild(stat('XP', state.points));
+  stats.appendChild(stat('Stories', `${state.paragraphs.length} / 24`));
+  stats.appendChild(stat('Badges', `${state.badges.length} / ${Object.keys(BADGES).length}`));
+  stats.appendChild(stat('Streak', state.streak + ' 🔥'));
+  right.appendChild(stats);
+  hero.appendChild(right);
+  app.appendChild(hero);
+
+  // Stories grid for current topic
+  const stories = STORIES.filter(s => s.topic === state.selectedTopic);
+  app.appendChild(el('div', { class: 'section-title' }, '✍️ Stories — ' + TOPICS.find(t => t.id === state.selectedTopic).name));
+  const grid = el('div', { class: 'stories-grid' });
+  for (const s of stories) {
+    const done = !!state.completed[s.id];
+    const completion = state.completed[s.id];
+    const card = el('button', {
+      class: 'story-card' + (done ? ' done' : ''),
+      onclick: () => startForge(s.id)
+    },
+      el('div', { class: 'l l' + s.level }, 'L' + s.level),
+      el('h3', {}, s.title),
+      el('div', { class: 'ctx' }, s.context),
+      el('div', { class: 'meta' },
+        done ? '✓ Forged' : 'Tap to forge',
+        completion && completion.perfect ? ' · ★ Paragon' : ''
+      )
+    );
+    grid.appendChild(card);
+  }
+  app.appendChild(grid);
+
+  app.appendChild(el('div', { class: 'footer-note' },
+    'Tip: every wrong pick teaches a different lesson — vague nouns, basic verbs, filter words, tell-not-show adverbs. ',
+    el('span', { style: { opacity: 0.6 } }, APP_VERSION)));
+}
+function stat(k, v) {
+  return el('div', { class: 'stat' },
+    el('div', { class: 'k' }, k),
+    el('div', { class: 'v' }, String(v))
+  );
+}
+
+/* --------------------- FORGE ENGINE --------------------- */
+let forge = null;
+
+function startForge(storyId) {
+  const story = STORIES.find(s => s.id === storyId);
+  if (!story) return;
+  // Shuffle option order within each slot per session (but track correct index by content)
+  const sentencesState = story.sentences.map(sent => ({
+    opener: sent.opener,
+    slots: sent.slots.map(slot => {
+      const correctText = slot.options.find(o => o.correct).text;
+      const shuffled = shuffle(slot.options);
+      return {
+        role: slot.role,
+        options: shuffled,
+        correctIndex: shuffled.findIndex(o => o.text === correctText)
+      };
+    })
+  }));
+  forge = {
+    story,
+    sentencesState,
+    index: 0,
+    picks: sentencesState.map(s => s.slots.map(() => null)),
+    sentenceChecked: sentencesState.map(() => false),
+    sentenceCorrect: sentencesState.map(() => false),
+    sentenceWrongChecks: sentencesState.map(() => 0),
+    typed: sentencesState.map(() => ''),
+    typedComplete: sentencesState.map(() => false),
+    sentencePerfect: sentencesState.map(() => null), // true on first-check pass
+    started: Date.now()
+  };
+  renderForge();
+}
+
+function renderForge() {
+  const app = $('#app');
+  app.innerHTML = '';
+  app.appendChild(topbar());
+  const f = forge;
+  const s = f.story;
+  const i = f.index;
+  const sentState = f.sentencesState[i];
+
+  const head = el('div', { class: 'panel forge' });
+  head.appendChild(el('div', { class: 'forge-head' },
+    el('button', { class: 'btn ghost', onclick: () => {
+      if (confirm('Leave this forge? Your work on this story will be lost.')) { forge = null; render(); }
+    } }, '← Stories'),
+    el('div', { class: 'crumb' }, `L${s.level} · ${s.title}`),
+    (() => {
+      const d = el('div', { class: 'progress-dots' });
+      f.sentencesState.forEach((_, idx) => {
+        const cls = 'd' + (idx === i ? ' current' : (f.typedComplete[idx] ? ' done' : ''));
+        d.appendChild(el('span', { class: cls }));
+      });
+      return d;
+    })()
+  ));
+
+  head.appendChild(el('h2', { style: { margin: '8px 0 4px' } }, s.title));
+  head.appendChild(el('div', { style: { color: 'var(--muted)', fontSize: '13px' } }, `Sentence ${i + 1} of ${f.sentencesState.length} · ${s.context}`));
+
+  // Build display: shows opener + slots (blank or filled)
+  const buildEl = el('div', { class: 'build-display', style: { marginTop: '12px' } });
+  buildEl.appendChild(el('span', { class: 'opener' }, sentState.opener));
+  sentState.slots.forEach((slot, sIdx) => {
+    const pick = f.picks[i][sIdx];
+    const wasChecked = f.sentenceChecked[i];
+    const isCorrectPick = pick != null && pick === slot.correctIndex;
+    let cls = pick == null ? 'slot-blank' : 'slot-filled';
+    if (wasChecked && pick != null) cls += isCorrectPick ? ' slot-correct' : ' slot-wrong';
+    const rawText = pick == null ? '____' : slot.options[pick].text;
+    const text = rawText.replace(/^\s+/, '');
+    if (/^[,.;:!?]/.test(text)) {
+      buildEl.appendChild(el('span', { class: cls }, text));
+    } else {
+      buildEl.appendChild(document.createTextNode(' '));
+      buildEl.appendChild(el('span', { class: cls }, text));
+    }
+  });
+  head.appendChild(buildEl);
+
+  // If sentence not yet correct, show containers; if correct, show typing step
+  if (!f.sentenceCorrect[i]) {
+    const containers = el('div', { class: 'containers' });
+    sentState.slots.forEach((slot, sIdx) => {
+      const pick = f.picks[i][sIdx];
+      const checked = f.sentenceChecked[i];
+      const isCorrectPick = pick != null && pick === slot.correctIndex;
+      let cardCls = 'container-card';
+      if (checked && pick != null) cardCls += isCorrectPick ? ' correct' : ' wrong';
+      const card = el('div', { class: cardCls });
+      card.appendChild(el('div', { class: 'role' }, slot.role));
+      const opts = el('div', { class: 'options' });
+      slot.options.forEach((opt, oIdx) => {
+        const isPicked = pick === oIdx;
+        const locked = checked && isPicked && isCorrectPick;
+        const cls = 'opt' + (isPicked ? ' selected' : '') + (locked ? ' locked' : '');
+        opts.appendChild(el('button', {
+          class: cls,
+          onclick: () => {
+            if (locked) return;
+            f.picks[i][sIdx] = oIdx;
+            // If user changes a previously-wrong slot, clear the global "checked" wrong-state for THIS slot via re-render
+            renderForge();
+          }
+        }, opt.text));
+      });
+      card.appendChild(opts);
+      containers.appendChild(card);
+    });
+    head.appendChild(containers);
+  } else {
+    // Typing step
+    const correct = correctSentenceText(s.sentences[i]);
+    const card = el('div', { class: 'typing-card', style: { marginTop: '12px' } });
+    card.appendChild(el('h3', {}, '✓ Sentence built! Now type it exactly to lock it in.'));
+    card.appendChild(el('div', { class: 'ref' }, correct));
+    const ta = el('textarea', { placeholder: 'Type the sentence exactly…', spellcheck: 'false' });
+    ta.value = f.typed[i] || '';
+    const matchBar = el('div', { class: 'matchbar' });
+    const matchFill = el('div'); matchBar.appendChild(matchFill);
+    const helper = el('div', { class: 'helper' }, '');
+    const updateMatch = () => {
+      const t = ta.value;
+      f.typed[i] = t;
+      const pct = computeTypeMatchPct(t, correct);
+      matchFill.style.width = pct + '%';
+      if (t === correct) {
+        helper.textContent = 'Perfect match — press Lock In.';
+        helper.style.color = 'var(--good)';
+      } else if (pct >= 70) {
+        helper.textContent = 'Close — fix small differences (case, punctuation, spelling).';
+        helper.style.color = 'var(--accent-2)';
+      } else {
+        helper.textContent = 'Copy the sample above word-for-word.';
+        helper.style.color = 'var(--muted)';
+      }
+    };
+    ta.addEventListener('input', updateMatch);
+    card.appendChild(ta);
+    card.appendChild(matchBar);
+    card.appendChild(helper);
+    head.appendChild(card);
+    setTimeout(() => { ta.focus(); updateMatch(); }, 30);
+  }
+
+  app.appendChild(head);
+
+  // Actions
+  const actions = el('div', { class: 'forge-actions' });
+  if (!f.sentenceCorrect[i]) {
+    const allPicked = f.picks[i].every(p => p != null);
+    const wrongCount = f.sentenceChecked[i] ? f.picks[i].filter((p, idx) => p !== sentState.slots[idx].correctIndex).length : 0;
+    const infoText = !allPicked
+      ? `Pick one option from every container, then press Check.`
+      : f.sentenceChecked[i]
+      ? `${wrongCount} container${wrongCount === 1 ? '' : 's'} to fix — red borders show which.`
+      : 'Press Check to forge the sentence.';
+    actions.appendChild(el('div', { class: 'info' }, infoText));
+    actions.appendChild(el('button', {
+      class: 'btn primary lg',
+      onclick: checkSentence
+    }, 'Check ✓'));
+  } else {
+    const correct = correctSentenceText(s.sentences[i]);
+    actions.appendChild(el('div', { class: 'info' }, 'Type the sentence above to lock it in.'));
+    actions.appendChild(el('button', {
+      class: 'btn primary lg',
+      onclick: lockTyping
+    }, 'Lock In →'));
+  }
+  app.appendChild(actions);
+}
+
+function computeTypeMatchPct(a, b) {
+  if (!a) return 0;
+  if (a === b) return 100;
+  const m = Math.min(a.length, b.length);
+  let same = 0;
+  for (let i = 0; i < m; i++) if (a[i] === b[i]) same++;
+  return Math.round((same / Math.max(b.length, 1)) * 100);
+}
+
+function checkSentence() {
+  const f = forge;
+  const i = f.index;
+  const sentState = f.sentencesState[i];
+  if (!f.picks[i].every(p => p != null)) {
+    toast('Pick from every container first ✏️');
+    return;
+  }
+  f.sentenceChecked[i] = true;
+  const allRight = f.picks[i].every((p, idx) => p === sentState.slots[idx].correctIndex);
+  if (allRight) {
+    if (f.sentencePerfect[i] === null) f.sentencePerfect[i] = (f.sentenceWrongChecks[i] === 0);
+    f.sentenceCorrect[i] = true;
+    if (f.sentencePerfect[i]) awardBadge('perfect');
+    toast('Sentence built! Now type it.', '⚒️');
+  } else {
+    f.sentenceWrongChecks[i]++;
+    // shake the wrong containers
+    setTimeout(() => {
+      $$('.container-card.wrong').forEach(node => {
+        node.classList.add('shake');
+        setTimeout(() => node.classList.remove('shake'), 260);
+      });
+    }, 50);
+  }
+  renderForge();
+}
+
+function lockTyping() {
+  const f = forge;
+  const i = f.index;
+  const correct = correctSentenceText(f.story.sentences[i]);
+  const typed = (f.typed[i] || '').trim();
+  if (typed !== correct) {
+    // strict but helpful: tell them where it differs
+    const pct = computeTypeMatchPct(f.typed[i] || '', correct);
+    if (pct < 100) {
+      toast('Not exact yet — match the reference letter for letter.', '✏️');
+      return;
+    }
+  }
+  f.typedComplete[i] = true;
+  if (i + 1 < f.sentencesState.length) {
+    f.index = i + 1;
+    renderForge();
+  } else {
+    finishStory();
+  }
+}
+
+function finishStory() {
+  const f = forge;
+  const story = f.story;
+  const lvl = story.level;
+  const allPerfect = f.sentencePerfect.every(p => p === true);
+  const totalWrongChecks = f.sentenceWrongChecks.reduce((a, b) => a + b, 0);
+  const sentencesPerfect = f.sentencePerfect.filter(p => p === true).length;
+  const sentencesTotal = f.sentencesState.length;
+
+  const mult = lvl === 1 ? 1 : lvl === 2 ? 1.5 : 2;
+  let earned = 0;
+  // Per sentence: 50 each
+  earned += sentencesTotal * 50;
+  // +50 perfect-build per sentence
+  earned += sentencesPerfect * 50;
+  // +30 typed (always 30 if typed completed)
+  earned += sentencesTotal * 30;
+  // Paragraph bonus
+  earned += 200;
+  if (allPerfect) earned += 150;
+  earned = Math.round(earned * mult);
+
+  const firstTime = !state.completed[story.id];
+  state.points += earned;
+  state.completed[story.id] = { perfect: allPerfect, attempts: 1, score: earned };
+  state.streak = (state.lastSession === todayStr() || !state.lastSession) ? state.streak + 1 : 1;
+  state.lastSession = todayStr();
+
+  // Save the forged paragraph
+  const paragraphText = correctParagraph(story);
+  state.paragraphs.unshift({
+    storyId: story.id, title: story.title, topic: story.topic,
+    level: lvl, text: paragraphText, ts: Date.now(), perfect: allPerfect, xp: earned
+  });
+  if (state.paragraphs.length > 200) state.paragraphs.length = 200;
+
+  if (lvl === 3) awardBadge('l3');
+  if (allPerfect) awardBadge('paragon');
+  pushHistory({ storyId: story.id, title: story.title, topic: story.topic, level: lvl, perfect: allPerfect, xp: earned });
+  saveState();
+  checkBadges();
+
+  // Modal: paragraph reveal
+  confetti();
+  const m = el('div');
+  m.appendChild(el('div', { style: { fontSize: '52px' } }, allPerfect ? '💎' : '🔨'));
+  m.appendChild(el('h2', {}, allPerfect ? 'Paragon Paragraph!' : 'Paragraph Forged!'));
+  m.appendChild(el('p', {}, allPerfect
+    ? `${state.name}, every sentence built clean. This one is a keeper.`
+    : `${state.name}, you forged the full paragraph for "${story.title}".`));
+  m.appendChild(el('div', { class: 'paragraph-reveal' }, paragraphText));
+  const row = el('div', { class: 'stat-row' });
+  row.appendChild(stat('XP earned', '+' + earned));
+  row.appendChild(stat('Perfect builds', `${sentencesPerfect}/${sentencesTotal}`));
+  row.appendChild(stat('Streak', state.streak + ' 🔥'));
+  m.appendChild(row);
+
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
+  btns.appendChild(el('button', { class: 'btn warn lg', onclick: () => { closeModal(); forge = null; startArcade({ reward: true, level: lvl }); } }, '🕹️ Play Reward Game'));
+  // Find next unforged story in same topic
+  const idx = STORIES.findIndex(s => s.id === story.id);
+  let nextStory = null;
+  for (let i = 1; i <= STORIES.length; i++) {
+    const cand = STORIES[(idx + i) % STORIES.length];
+    if (cand.topic === story.topic && !state.completed[cand.id]) { nextStory = cand; break; }
+  }
+  if (nextStory) {
+    btns.appendChild(el('button', { class: 'btn primary', onclick: () => { closeModal(); startForge(nextStory.id); } }, `Next: ${nextStory.title} →`));
+  } else {
+    btns.appendChild(el('button', { class: 'btn primary', onclick: () => { closeModal(); forge = null; render(); } }, 'Back to Stories'));
+  }
+  btns.appendChild(el('button', { class: 'btn ghost', onclick: () => { closeModal(); forge = null; render(); } }, 'Home'));
+  m.appendChild(btns);
+  openModal(m);
+}
+
+/* --------------------- MY STORIES GALLERY --------------------- */
+function renderGallery() {
+  const app = $('#app');
+  app.innerHTML = '';
+  app.appendChild(topbar());
+  const head = el('div', { class: 'panel' });
+  head.appendChild(el('div', { class: 'forge-head' },
+    el('button', { class: 'btn ghost', onclick: () => render() }, '← Home'),
+    el('div', { class: 'crumb' }, '📖 My Stories Gallery')
+  ));
+  head.appendChild(el('h1', { style: { margin: '6px 0 4px', fontSize: '28px' } }, 'Your forged paragraphs'));
+  head.appendChild(el('p', { style: { color: 'var(--muted)', margin: 0 } },
+    `${state.paragraphs.length} paragraph${state.paragraphs.length === 1 ? '' : 's'} forged so far. Tap Export to copy or download them all.`));
+  const btns = el('div', { class: 'row-wrap', style: { marginTop: '12px' } });
+  btns.appendChild(el('button', { class: 'btn primary', onclick: copyAllParagraphs }, '📋 Copy all'));
+  btns.appendChild(el('button', { class: 'btn', onclick: downloadAllParagraphs }, '⬇ Download .txt'));
+  btns.appendChild(el('button', { class: 'btn', onclick: () => window.print() }, '🖨 Print'));
+  head.appendChild(btns);
+  app.appendChild(head);
+
+  if (!state.paragraphs.length) {
+    const empty = el('div', { class: 'panel', style: { marginTop: '14px', textAlign: 'center' } });
+    empty.appendChild(el('div', { style: { fontSize: '52px' } }, '✍️'));
+    empty.appendChild(el('p', { style: { color: 'var(--muted)' } }, 'No forged paragraphs yet — go build your first one!'));
+    app.appendChild(empty);
+    return;
+  }
+
+  const list = el('div', { class: 'gallery-list', style: { marginTop: '14px' } });
+  state.paragraphs.forEach(p => {
+    const topic = TOPICS.find(t => t.id === p.topic);
+    const card = el('div', { class: 'saved-story' });
+    card.appendChild(el('div', { style: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' } },
+      el('h3', { style: { margin: 0 } }, (topic ? topic.emoji + ' ' : '') + p.title),
+      el('span', { style: { color: 'var(--muted)', fontSize: '12px' } }, `L${p.level} · ${formatDate(p.ts)} · +${p.xp} XP${p.perfect ? ' · 💎' : ''}`)
+    ));
+    card.appendChild(el('div', { class: 'body' }, p.text));
+    list.appendChild(card);
+  });
+  app.appendChild(list);
+}
+
+function buildAllText() {
+  const lines = [];
+  lines.push(`gforce — My Forged Paragraphs`);
+  lines.push(`Player: ${state.name}`);
+  lines.push(`Generated: ${new Date().toLocaleString()}`);
+  lines.push('');
+  state.paragraphs.forEach(p => {
+    const topic = TOPICS.find(t => t.id === p.topic);
+    lines.push(`=== ${p.title}  (${topic ? topic.name : p.topic} · L${p.level})  ${p.perfect ? '★ Paragon' : ''}`);
+    lines.push(formatDate(p.ts) + '  · +' + p.xp + ' XP');
+    lines.push('');
+    lines.push(p.text);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function copyAllParagraphs() {
+  if (!state.paragraphs.length) { toast('Nothing to copy yet', 'ℹ️'); return; }
+  const text = buildAllText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => toast('All paragraphs copied!', '📋'), () => fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); toast('Copied!', '📋'); }
+  catch (e) { toast('Copy not supported — use Download', 'ℹ️'); }
+  document.body.removeChild(ta);
+}
+function downloadAllParagraphs() {
+  if (!state.paragraphs.length) { toast('Nothing to download yet', 'ℹ️'); return; }
+  const text = buildAllText();
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safe = (state.name || 'player').replace(/[^a-z0-9_\-]+/gi, '_');
+  a.download = `gforce-paragraphs-${safe}.txt`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Downloaded.', '⬇');
+}
+
+/* --------------------- PROGRESS OVERVIEW --------------------- */
+function renderProgress() {
+  const app = $('#app');
+  app.innerHTML = '';
+  app.appendChild(topbar());
+  const head = el('div', { class: 'panel' });
+  head.appendChild(el('div', { class: 'forge-head' },
+    el('button', { class: 'btn ghost', onclick: () => render() }, '← Home'),
+    el('div', { class: 'crumb' }, '📊 Progress')
+  ));
+  head.appendChild(el('h1', { style: { margin: '6px 0 4px', fontSize: '28px' } }, `${state.name}'s Forge`));
+
+  const totalDone = state.paragraphs.length;
+  const totalPerfect = Object.values(state.completed).filter(c => c.perfect).length;
+  const hero = el('div', { class: 'progress-hero' });
+  hero.appendChild(el('div', { class: 'ph-stat gold' },
+    el('div', { class: 'k' }, 'XP'), el('div', { class: 'v' }, String(state.points)),
+    el('div', { class: 'sub' }, `Streak ${state.streak} 🔥`)));
+  hero.appendChild(el('div', { class: 'ph-stat accent' },
+    el('div', { class: 'k' }, 'Stories forged'), el('div', { class: 'v' }, `${totalDone} / 24`),
+    el('div', { class: 'sub' }, `${totalPerfect} paragon 💎`)));
+  hero.appendChild(el('div', { class: 'ph-stat' },
+    el('div', { class: 'k' }, 'Badges'), el('div', { class: 'v' }, `${state.badges.length} / ${Object.keys(BADGES).length}`),
+    el('div', { class: 'sub' }, 'Open 🏆 to inspect')));
+  hero.appendChild(el('div', { class: 'ph-stat' },
+    el('div', { class: 'k' }, 'Last session'), el('div', { class: 'v', style: { fontSize: '18px' } }, state.lastSession || '—'),
+    el('div', { class: 'sub' }, `${(state.history || []).length} recent activities`)));
+  head.appendChild(hero);
+  app.appendChild(head);
+
+  // Per-topic matrices
+  for (const topic of TOPICS) {
+    const tStories = STORIES.filter(s => s.topic === topic.id);
+    const tBox = el('div', { class: 'topic-matrix' });
+    const done = tStories.filter(s => state.completed[s.id]).length;
+    tBox.appendChild(el('h3', {}, `${topic.emoji} ${topic.name}  —  ${done} / 6 forged`));
+    for (const lvl of [1, 2, 3]) {
+      const row = el('div', { class: 'matrix-row' });
+      row.appendChild(el('div', { class: 'lbl' }, 'L' + lvl));
+      tStories.filter(s => s.level === lvl).forEach(s => {
+        const comp = state.completed[s.id];
+        const cls = 'matrix-cell' + (comp ? (comp.perfect ? ' perfect' : ' done') : '');
+        const cell = el('div', { class: cls, title: comp ? `Forged · +${comp.score || 0} XP${comp.perfect ? ' · paragon' : ''}` : 'Not forged' },
+          (comp ? (comp.perfect ? '💎 ' : '✓ ') : '· ') + s.title);
+        row.appendChild(cell);
+      });
+      tBox.appendChild(row);
+    }
+    app.appendChild(tBox);
+  }
+
+  // Recent activity
+  const recent = el('div', { class: 'panel', style: { marginTop: '16px' } });
+  recent.appendChild(el('div', { class: 'section-title', style: { margin: '0 0 6px' } }, 'Recent activity'));
+  const hist = (state.history || []).slice(0, 15);
+  if (!hist.length) {
+    recent.appendChild(el('div', { style: { color: 'var(--muted)', fontSize: '13px' } }, 'No activity yet.'));
+  } else {
+    hist.forEach(h => {
+      const topic = TOPICS.find(t => t.id === h.topic);
+      recent.appendChild(el('div', { style: { display: 'flex', gap: '10px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '13px' } },
+        el('span', { style: { fontSize: '18px' } }, topic ? topic.emoji : '•'),
+        el('div', { style: { flex: 1 } }, h.title || h.storyId, ' · L', String(h.level), h.perfect ? ' 💎' : ''),
+        el('span', { style: { color: 'var(--muted)' } }, formatDate(h.ts)),
+        el('span', { style: { color: 'var(--gold)', fontWeight: 800 } }, '+' + (h.xp || 0))
+      ));
+    });
+  }
+  app.appendChild(recent);
+}
+
+/* --------------------- TROPHY MODAL --------------------- */
+function openTrophyModal() {
+  const m = el('div');
+  m.appendChild(el('div', { style: { fontSize: '40px' } }, '🏆'));
+  m.appendChild(el('h2', {}, `${state.name}'s Trophy Cabinet`));
+  m.appendChild(el('p', {}, `${state.points} XP · ${state.paragraphs.length} forged · streak ${state.streak} 🔥`));
+  const list = el('div', { style: { textAlign: 'left' } });
+  for (const id of Object.keys(BADGES)) {
+    const has = state.badges.includes(id);
+    const b = BADGES[id];
+    list.appendChild(el('div', { style: { display: 'flex', gap: '10px', alignItems: 'center', padding: '6px 0', opacity: has ? 1 : 0.55 } },
+      el('div', { style: { fontSize: '20px', width: '26px' } }, has ? '✅' : '🔒'),
+      el('div', {},
+        el('div', { style: { fontWeight: 700 } }, b.icon + ' ' + b.name),
+        el('div', { style: { color: 'var(--muted)', fontSize: '12px' } }, b.desc)
+      )
+    ));
+  }
+  m.appendChild(list);
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
+  btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
+  btns.appendChild(el('button', {
+    class: 'btn danger',
+    onclick: () => {
+      if (confirm('Sign out and clear all progress on this device?')) {
+        localStorage.removeItem(STORE_KEY);
+        state = defaultState();
+        closeModal(); render();
+      }
+    }
+  }, 'Sign out & reset'));
+  m.appendChild(btns);
+  openModal(m);
+}
+
+/* --------------------- ARCADE (re-skinned forge invaders) --------------------- */
+let arcade = null;
+const ARC_W = 720, ARC_H = 540;
+const ARC_KEYS = { left: false, right: false, fire: false };
+const ARC_KEYMAP = {
+  arrowleft: 'left', a: 'left',
+  arrowright: 'right', d: 'right',
+  ' ': 'fire', spacebar: 'fire', space: 'fire'
+};
+function arcKeyDown(e) {
+  if (!arcade || !arcade.active) return;
+  const k = (e.key || '').toLowerCase();
+  if (k === 'p') { arcade.paused = !arcade.paused; return; }
+  const m = ARC_KEYMAP[k];
+  if (m) { ARC_KEYS[m] = true; e.preventDefault(); }
+}
+function arcKeyUp(e) {
+  if (!arcade) return;
+  const k = (e.key || '').toLowerCase();
+  const m = ARC_KEYMAP[k];
+  if (m) { ARC_KEYS[m] = false; e.preventDefault(); }
+}
+function startArcade(opts = {}) {
+  const reward = opts.reward !== false;
+  const fromLevel = opts.level || 1;
+  arcade = {
+    active: true, paused: false, over: false, won: false, timeUp: false, resultShown: false,
+    reward, fromLevel, timeRemaining: 60000,
+    player: { x: ARC_W / 2, y: ARC_H - 50, w: 44, h: 30, speed: 0.42, invuln: 0 },
+    bullets: [], enemyBullets: [], enemies: createWave(), particles: [],
+    score: 0, lives: 3, livesLostThisGame: 0,
+    enemyDir: 1, enemyStepEvery: 700, enemyStepTimer: 0, enemyDropPending: false,
+    lastFire: 0, fireCooldown: 240, enemyFireTimer: 0, enemyFireEvery: 700,
+    shake: 0, raf: null, lastTs: 0
+  };
+  renderArcade();
+  document.addEventListener('keydown', arcKeyDown);
+  document.addEventListener('keyup', arcKeyUp);
+  arcade.raf = requestAnimationFrame(arcadeLoop);
+}
+function endArcade() {
+  if (!arcade) return;
+  arcade.active = false;
+  if (arcade.raf) cancelAnimationFrame(arcade.raf);
+  document.removeEventListener('keydown', arcKeyDown);
+  document.removeEventListener('keyup', arcKeyUp);
+  ARC_KEYS.left = ARC_KEYS.right = ARC_KEYS.fire = false;
+  arcade = null;
+}
+function createWave() {
+  const enemies = []; const cols = 8, rows = 5;
+  const stepX = 64, stepY = 50;
+  const startX = (ARC_W - (cols - 1) * stepX) / 2;
+  const startY = 70;
+  const rowEmoji = ['👾','🛸','🤖','👽','👹'];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+    enemies.push({ x: startX + c * stepX, y: startY + r * stepY, w: 40, h: 36, emoji: rowEmoji[r % rowEmoji.length], alive: true, col: c, row: r });
+  return enemies;
+}
+function renderArcade() {
+  const app = $('#app');
+  app.innerHTML = '';
+  app.appendChild(topbar());
+  const head = el('div', { class: 'panel' });
+  head.appendChild(el('div', { class: 'forge-head' },
+    el('button', { class: 'btn ghost', onclick: () => { endArcade(); render(); } }, '← Quit'),
+    el('div', { class: 'crumb' }, '🕹️ Forge Invaders — clear the wave!')
+  ));
+  const frame = el('div', { class: 'arcade-frame' });
+  const hud = el('div', { class: 'arcade-hud' });
+  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Score'), el('span', { class: 'score', id: 'arcScore' }, '0')));
+  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Time'), el('span', { id: 'arcTime', class: 'timer' }, '60s')));
+  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'XP'), el('span', { id: 'arcXp', style: { color: 'var(--accent)' } }, '+0')));
+  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Lives'), el('span', { class: 'lives', id: 'arcLives' }, '❤❤❤')));
+  frame.appendChild(hud);
+  const wrap = el('div', { class: 'arcade-canvas-wrap' });
+  wrap.appendChild(el('canvas', { id: 'arcCanvas', width: String(ARC_W), height: String(ARC_H) }));
+  const overlay = el('div', { class: 'arcade-overlay', id: 'arcOverlay' });
+  overlay.appendChild(el('h2', { id: 'arcOverlayTitle' }, 'Get Ready!'));
+  overlay.appendChild(el('p', { id: 'arcOverlayBody' }, '60 seconds — score as much as you can!'));
+  wrap.appendChild(overlay);
+  frame.appendChild(wrap);
+  const controls = el('div', { class: 'arcade-controls' });
+  const btnL = el('button', { class: 'arc-btn' }, '◀');
+  const btnF = el('button', { class: 'arc-btn fire' }, '🔫');
+  const btnR = el('button', { class: 'arc-btn' }, '▶');
+  const bindHold = (btn, key) => {
+    const dn = (ev) => { ev.preventDefault(); ARC_KEYS[key] = true; btn.classList.add('held'); };
+    const up = (ev) => { ev.preventDefault(); ARC_KEYS[key] = false; btn.classList.remove('held'); };
+    btn.addEventListener('mousedown', dn); btn.addEventListener('mouseup', up); btn.addEventListener('mouseleave', up);
+    btn.addEventListener('touchstart', dn, { passive: false });
+    btn.addEventListener('touchend', up, { passive: false });
+    btn.addEventListener('touchcancel', up, { passive: false });
+  };
+  bindHold(btnL, 'left'); bindHold(btnR, 'right'); bindHold(btnF, 'fire');
+  controls.appendChild(btnL); controls.appendChild(btnF); controls.appendChild(btnR);
+  frame.appendChild(controls);
+  frame.appendChild(el('div', { class: 'arcade-help' },
+    '60 seconds. Desktop: ', el('kbd', {}, '◀'), ' ', el('kbd', {}, '▶'), ' move, ', el('kbd', {}, 'Space'), ' fire, ', el('kbd', {}, 'P'), ' pause.'));
+  head.appendChild(frame);
+  app.appendChild(head);
+  showArcOverlay('Get Ready!', '60 seconds — score as much as you can!');
+  setTimeout(() => hideArcOverlay(), 1000);
+}
+function showArcOverlay(t, b) { const o = $('#arcOverlay'); if (!o) return; $('#arcOverlayTitle').textContent = t; $('#arcOverlayBody').textContent = b || ''; o.classList.add('show'); }
+function hideArcOverlay() { const o = $('#arcOverlay'); if (o) o.classList.remove('show'); }
+function arcadeLoop(ts) {
+  if (!arcade || !arcade.active) return;
+  if (!arcade.lastTs) arcade.lastTs = ts;
+  const dt = Math.min(50, ts - arcade.lastTs);
+  arcade.lastTs = ts;
+  if (!arcade.paused && !arcade.over) updateArcade(dt);
+  drawArcade();
+  arcade.raf = requestAnimationFrame(arcadeLoop);
+  if (arcade.over && !arcade.resultShown) {
+    arcade.resultShown = true;
+    setTimeout(() => showArcadeResult(), 600);
+  }
+}
+function updateArcade(dt) {
+  const a = arcade;
+  a.timeRemaining = Math.max(0, a.timeRemaining - dt);
+  if (ARC_KEYS.left)  a.player.x -= a.player.speed * dt;
+  if (ARC_KEYS.right) a.player.x += a.player.speed * dt;
+  a.player.x = Math.max(a.player.w/2 + 6, Math.min(ARC_W - a.player.w/2 - 6, a.player.x));
+  if (ARC_KEYS.fire && performance.now() - a.lastFire > a.fireCooldown) {
+    a.bullets.push({ x: a.player.x, y: a.player.y - 14, w: 4, h: 12, vy: -0.9 });
+    a.lastFire = performance.now();
+  }
+  for (const b of a.bullets) b.y += b.vy * dt;
+  a.bullets = a.bullets.filter(b => b.y > -20);
+  a.enemyStepTimer += dt;
+  const alive = a.enemies.filter(e => e.alive);
+  const killCount = a.enemies.length - alive.length;
+  a.enemyStepEvery = Math.max(120, 700 - killCount * 18);
+  if (a.enemyStepTimer >= a.enemyStepEvery && alive.length > 0) {
+    a.enemyStepTimer = 0;
+    if (a.enemyDropPending) { for (const e of alive) e.y += 22; a.enemyDir *= -1; a.enemyDropPending = false; }
+    else {
+      const dx = 14 * a.enemyDir;
+      for (const e of alive) e.x += dx;
+      let minX = Infinity, maxX = -Infinity;
+      for (const e of alive) { if (e.x - e.w/2 < minX) minX = e.x - e.w/2; if (e.x + e.w/2 > maxX) maxX = e.x + e.w/2; }
+      if (minX < 16 || maxX > ARC_W - 16) a.enemyDropPending = true;
+    }
+  }
+  a.enemyFireTimer += dt;
+  a.enemyFireEvery = Math.max(180, 700 - killCount * 12);
+  if (a.enemyFireTimer >= a.enemyFireEvery && alive.length > 0 && a.enemyBullets.length < 4) {
+    a.enemyFireTimer = 0;
+    const byCol = {};
+    for (const e of alive) if (!byCol[e.col] || e.y > byCol[e.col].y) byCol[e.col] = e;
+    const fronts = Object.values(byCol);
+    const sh = fronts[Math.floor(Math.random() * fronts.length)];
+    if (sh) a.enemyBullets.push({ x: sh.x, y: sh.y + 16, w: 4, h: 10, vy: 0.32 });
+  }
+  for (const b of a.enemyBullets) b.y += b.vy * dt;
+  a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20);
+  for (const b of a.bullets) {
+    for (const e of alive) {
+      if (!e.alive) continue;
+      if (Math.abs(b.x - e.x) < e.w/2 + b.w/2 && Math.abs(b.y - e.y) < e.h/2 + b.h/2) {
+        e.alive = false; b.y = -100; a.score += 10;
+        spawnParticles(e.x, e.y, '#ff8a3d');
+        break;
+      }
+    }
+  }
+  a.bullets = a.bullets.filter(b => b.y > -20);
+  if (a.player.invuln <= 0) {
+    for (const b of a.enemyBullets) {
+      if (Math.abs(b.x - a.player.x) < a.player.w/2 + b.w/2 && Math.abs(b.y - a.player.y) < a.player.h/2 + b.h/2) {
+        a.lives--; a.livesLostThisGame++; a.player.invuln = 1200; a.shake = 18; b.y = ARC_H + 100;
+        spawnParticles(a.player.x, a.player.y, '#ff5a7a');
+        break;
+      }
+    }
+    a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20);
+  } else a.player.invuln -= dt;
+  const reachedBottom = alive.some(e => e.y + e.h/2 >= a.player.y - 10);
+  for (const p of a.particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+  a.particles = a.particles.filter(p => p.life > 0);
+  if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 0.05);
+  if (alive.length === 0) { a.over = true; a.won = true; a.score += 100; if (a.livesLostThisGame === 0) a.score += 50; }
+  else if (a.lives <= 0 || reachedBottom) { a.over = true; a.won = false; }
+  else if (a.timeRemaining <= 0) { a.over = true; a.won = false; a.timeUp = true; }
+  updateArcHud();
+}
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 10; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const sp = 0.15 + Math.random() * 0.3;
+    arcade.particles.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 500 + Math.random() * 300, maxLife: 800, color });
+  }
+}
+function updateArcHud() {
+  const a = arcade;
+  const sc = $('#arcScore'); const lv = $('#arcLives'); const xp = $('#arcXp'); const tm = $('#arcTime');
+  if (sc) sc.textContent = String(a.score);
+  if (lv) lv.textContent = a.lives > 0 ? '❤'.repeat(a.lives) : '✖';
+  if (xp) xp.textContent = '+' + previewXp(a.score);
+  if (tm) { const s = Math.ceil(a.timeRemaining / 1000); tm.textContent = s + 's'; tm.classList.toggle('low', s <= 10); }
+}
+function previewXp(score) {
+  if (!arcade || !arcade.reward) return 0;
+  const mult = arcade.fromLevel === 1 ? 1 : arcade.fromLevel === 2 ? 1.25 : 1.5;
+  return Math.round(Math.min(100, Math.floor(score / 8)) * mult);
+}
+function drawArcade() {
+  const cnv = $('#arcCanvas'); if (!cnv) return;
+  const ctx = cnv.getContext('2d');
+  ctx.save();
+  if (arcade.shake > 0) ctx.translate((Math.random() - 0.5) * arcade.shake, (Math.random() - 0.5) * arcade.shake);
+  const grad = ctx.createRadialGradient(ARC_W/2, ARC_H/2, 50, ARC_W/2, ARC_H/2, ARC_W*0.7);
+  grad.addColorStop(0, '#1d0a18'); grad.addColorStop(1, '#060206');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, ARC_W, ARC_H);
+  ctx.fillStyle = '#ffffff55';
+  for (let i = 0; i < 60; i++) { const x = ((i * 137) % ARC_W); const y = ((i * 271) % ARC_H); ctx.fillRect(x, y, 2, 2); }
+  ctx.font = '34px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const e of arcade.enemies) if (e.alive) ctx.fillText(e.emoji, e.x, e.y);
+  ctx.fillStyle = '#ffe066';
+  for (const b of arcade.bullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+  ctx.fillStyle = '#ff5a7a';
+  for (const b of arcade.enemyBullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+  const p = arcade.player;
+  const blink = p.invuln > 0 && Math.floor(performance.now() / 80) % 2 === 0;
+  if (!blink) {
+    ctx.fillStyle = '#ff8a3d';
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y - p.h/2);
+    ctx.lineTo(p.x - p.w/2, p.y + p.h/2);
+    ctx.lineTo(p.x + p.w/2, p.y + p.h/2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1a0a04'; ctx.fillRect(p.x - 4, p.y - 2, 8, 6);
+    ctx.fillStyle = '#ffd166';
+    const fh = 6 + Math.random() * 6;
+    ctx.fillRect(p.x - 6, p.y + p.h/2, 12, fh);
+  }
+  for (const pt of arcade.particles) {
+    ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+    ctx.fillRect(pt.x - 2, pt.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  if (arcade.paused) showArcOverlay('Paused', 'Press P to resume.');
+  else if (!arcade.over) hideArcOverlay();
+}
+function showArcadeResult() {
+  const a = arcade;
+  const won = a.won, score = a.score, livesLost = a.livesLostThisGame;
+  const xpEarned = a.reward ? previewXp(score) : 0;
+  if (a.reward && xpEarned > 0) state.points += xpEarned;
+  if (score >= 200) awardBadge('arcade');
+  if (won) awardBadge('defender');
+  saveState();
+  const m = el('div');
+  const emoji = won ? '🛸' : a.timeUp ? '⏰' : '👾';
+  const title = won ? 'Wave Cleared!' : a.timeUp ? "Time's Up — Back to the Forge!" : 'Game Over';
+  const sub = won
+    ? `Brilliant flying, ${state.name}! Every alien blasted.`
+    : a.timeUp
+    ? `60 seconds is up, ${state.name}. Score locked in — now back to forging.`
+    : `Tough wave, ${state.name}. The aliens got you this time.`;
+  m.appendChild(el('div', { style: { fontSize: '52px' } }, emoji));
+  m.appendChild(el('h2', {}, title));
+  m.appendChild(el('p', {}, sub));
+  const row = el('div', { class: 'stat-row' });
+  row.appendChild(stat('Score', score));
+  row.appendChild(stat('Lives lost', livesLost));
+  if (a.reward) row.appendChild(stat('Bonus XP', '+' + xpEarned));
+  m.appendChild(row);
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
+  if (!a.reward) {
+    btns.appendChild(el('button', { class: 'btn', onclick: () => { closeModal(); endArcade(); startArcade({ reward: false, level: a.fromLevel }); } }, '↻ Play Again'));
+  }
+  btns.appendChild(el('button', { class: 'btn primary lg', onclick: () => { closeModal(); endArcade(); render(); } }, 'Back to the Forge →'));
+  m.appendChild(btns);
+  openModal(m);
+}
+
+/* --------------------- BOOT --------------------- */
+render();
+</script>
+</body>
+</html>
