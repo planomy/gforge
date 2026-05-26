@@ -6,9 +6,15 @@
 <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="pragma" content="no-cache" />
 <meta http-equiv="expires" content="0" />
-<title>gforge — Forge powerful sentences</title>
+<title>Granny Boom — Slay aliens while you sharpen your writing</title>
+<meta name="description" content="The game that lets you slay aliens while you improve your writing." />
 <link rel="icon" type="image/png" href="logo.png" />
 <link rel="apple-touch-icon" href="logo.png" />
+<!-- Fun display fonts for headings + the splash countdown. Loaded async-ish
+     via preconnect so they don't block initial paint. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Black+Ops+One&family=Patrick+Hand&display=swap" />
 <style>
   :root {
     --bg-0: #0a0710;
@@ -71,15 +77,193 @@
     display: flex; align-items: center; gap: 14px; padding: 10px 14px;
     background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
     backdrop-filter: blur(8px); box-shadow: var(--shadow);
+    /* Granny's portrait pokes out of the bar on both sides — allow it. */
+    overflow: visible;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; letter-spacing: 1px; font-size: 18px; }
-  .brand .wordmark {
-    height: 38px; width: auto; display: block;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(255,138,61,0.35));
-    transition: filter .2s;
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 900; letter-spacing: 1px; font-size: 18px;
+    cursor: pointer;
+    /* Granny is rendered taller than the bar — negative margins on the img
+       keep .brand's layout height the same as the rest of the topbar, but
+       the sprite itself overflows above and below for a "popping out of the
+       bar" badge effect. Allow overflow so she doesn't get clipped. */
+    overflow: visible;
+    min-height: 38px;
   }
-  .brand:hover .wordmark {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 22px rgba(255,138,61,0.6));
+  /* Granny Boom wordmark — sits on the left of the brand cluster.
+     Floats above the bar via negative top/bottom margins. */
+  .brand .brand-wordmark {
+    display: block;
+    position: relative;
+    height: 84px;
+    width: auto;
+    margin: -22px 0 -22px 0;
+    z-index: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));
+    transition: filter .2s ease, transform .2s ease;
+    user-select: none; pointer-events: none;
+  }
+  /* Granny — sits on the RIGHT of the wordmark, overlapping it slightly
+     so she appears to be stepping in front of the logo. The negative
+     left margin produces the overlap; z-index ensures she's on top. */
+  .brand .brand-granny {
+    display: block;
+    position: relative;
+    height: 96px;
+    width: auto;
+    margin: -28px 4px -28px -32px;
+    z-index: 2;
+    filter:
+      drop-shadow(-3px 4px 8px rgba(0,0,0,0.65))
+      drop-shadow(0 0 18px rgba(255,138,61,0.40));
+    transition: filter .2s ease, transform .2s ease;
+    user-select: none; pointer-events: none;
+  }
+  .brand:hover .brand-granny {
+    filter:
+      drop-shadow(0 4px 10px rgba(0,0,0,0.6))
+      drop-shadow(0 0 28px rgba(255,170,90,0.75));
+    transform: translateY(-2px) scale(1.04);
+  }
+  .brand:hover .brand-wordmark {
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(255,170,90,0.45));
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  /* ===== Splash / intro screen =====
+     Welcome heading + framed hero artwork + tagline + fake loading bar with
+     a rotating quip, then a 3-2-1-BOOM countdown before the home screen
+     reveals. Lives above everything (z-index 9999) and fades on exit. */
+  .splash {
+    position: fixed; inset: 0; z-index: 9999;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(80,30,90,0.55) 0%, rgba(20,8,28,0.95) 55%, #050308 100%),
+      #050308;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; box-sizing: border-box;
+    opacity: 1; transition: opacity .55s ease;
+    overflow: auto;
+  }
+  .splash.fade-out { opacity: 0; pointer-events: none; }
+  .splash-stack {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; width: 100%; max-width: 1100px;
+  }
+  /* Welcome heading — addresses the player by name with a gold-orange
+     gradient on the name itself for a touch of celebration. */
+  .splash-welcome {
+    margin: 0; text-align: center; line-height: 1.15;
+    font-size: clamp(22px, 3.8vw, 38px);
+    font-weight: 900; letter-spacing: 0.5px;
+    color: #ffe7b8;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.75), 0 0 22px rgba(255,138,61,0.25);
+  }
+  .splash-welcome .name {
+    background: linear-gradient(180deg, #ffe28a 0%, #ff9a3d 55%, #c54a16 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  }
+  /* Hero artwork frame — 75% of viewport width (capped on huge screens),
+     16:9 aspect, rounded with a warm orange glow ring. */
+  .splash-hero-wrap {
+    width: min(75vw, 960px);
+    aspect-ratio: 16 / 9;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow:
+      0 14px 50px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(255,170,90,0.40),
+      0 0 36px rgba(255,138,61,0.28);
+  }
+  .splash-hero {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+  }
+  .splash-tag {
+    max-width: 640px; text-align: center;
+    color: #ffe7b8; font-weight: 800; letter-spacing: 0.5px;
+    font-size: clamp(14px, 2.0vw, 19px); line-height: 1.35;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+    margin: 0;
+  }
+  .splash-loading {
+    width: min(520px, 80vw);
+    color: #fff8e0;
+  }
+  .splash-msg {
+    font-size: 14px; font-weight: 700; letter-spacing: 0.4px;
+    color: #ffd28a; text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+    margin-bottom: 8px; min-height: 1.2em;
+    opacity: 0; transform: translateY(2px);
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .splash-msg.show { opacity: 1; transform: translateY(0); }
+  .splash-bar {
+    position: relative;
+    width: 100%; height: 14px; border-radius: 999px;
+    background: linear-gradient(180deg, rgba(10,5,2,0.85), rgba(30,12,4,0.85));
+    border: 1px solid rgba(255,170,90,0.45);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.55), inset 0 1px 2px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .splash-fill {
+    width: 0%; height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #b6ff5a 0%, #ffd166 45%, #ff8a3d 85%, #ff5a3d 100%);
+    box-shadow: 0 0 14px rgba(255,160,60,0.7), inset 0 1px 0 rgba(255,255,255,0.4);
+    transition: width .15s linear;
+  }
+  .splash-skip {
+    position: absolute; top: 18px; right: 20px; z-index: 2;
+    background: rgba(0,0,0,0.55); color: #ffd28a;
+    border: 1px solid rgba(255,170,90,0.5);
+    padding: 6px 12px; border-radius: 999px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+  .splash-skip:hover { background: rgba(0,0,0,0.75); color: #fff; }
+  /* Countdown numbers + final BOOM. Each one pops in via the splash-pop
+     animation and is removed by JS when its slot ends. */
+  .splash-count {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    text-align: center; z-index: 3;
+    font-family: "Black Ops One", "Bungee", system-ui, sans-serif;
+    font-weight: 900; font-style: italic;
+    pointer-events: none;
+  }
+  .splash-count .num {
+    display: inline-block;
+    font-size: clamp(120px, 22vw, 240px);
+    line-height: 1;
+    background: linear-gradient(180deg, #ffd76b 0%, #ff8a3d 55%, #b53a10 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 0 30px rgba(255,154,61,0.85)) drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+    animation: splash-pop .6s ease-out;
+  }
+  .splash-count .boom {
+    display: inline-block;
+    font-size: clamp(96px, 18vw, 200px);
+    letter-spacing: 4px;
+    background: linear-gradient(180deg, #fff2a0 0%, #ff5a3d 55%, #6e1208 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 0 40px rgba(255,90,61,0.9)) drop-shadow(0 0 80px rgba(255,154,61,0.6));
+    animation: splash-boom .9s ease-out;
+  }
+  @keyframes splash-pop {
+    0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+    50%  { transform: scale(1.15) rotate(2deg); opacity: 1; }
+    100% { transform: scale(1)    rotate(0);    opacity: 1; }
+  }
+  @keyframes splash-boom {
+    0%   { transform: scale(0.2); opacity: 0; }
+    35%  { transform: scale(1.4); opacity: 1; }
+    65%  { transform: scale(1.0); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
   }
   .topbar .spacer { flex: 1; }
   .chip {
@@ -90,14 +274,44 @@
   .chip .pts { color: var(--gold); font-weight: 800; }
   .chip .name { color: var(--accent-2); font-weight: 700; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Illustrated topbar pieces (player chip, XP chip, action icons) */
+  /* Illustrated topbar pieces (player chip, XP chip, action icons).
+     All foreign-style icons (avatar, XP badge, book, chart, trophy) are
+     piped through a unifying filter chain so the row reads as one set
+     instead of a flea-market jumble:
+       saturate(0)       → strip every icon to grayscale (kills chaos)
+       brightness(...)   → lift shadows so detail survives
+       sepia(0.95)       → tint grayscale uniformly toward warm amber
+       saturate(2.4)     → boost the new amber to gold
+       hue-rotate(-10deg)→ fine-tune toward the Granny Boom orange-gold
+       drop-shadow ×2    → consistent gold glow + soft black grounding
+     The hangar ship icon and the wordmark are excluded so they keep their
+     native colors (blue ship pops as the "equipped" highlight; the
+     wordmark stays brand orange-and-blue). */
+  :root {
+    --icon-tint:
+      saturate(0)
+      brightness(1.08)
+      sepia(0.95)
+      saturate(2.4)
+      hue-rotate(-10deg)
+      drop-shadow(0 0 6px rgba(255, 184, 84, 0.50))
+      drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+    --icon-tint-hover:
+      saturate(0)
+      brightness(1.2)
+      sepia(0.95)
+      saturate(2.6)
+      hue-rotate(-10deg)
+      drop-shadow(0 0 14px rgba(255, 210, 130, 0.75))
+      drop-shadow(0 4px 6px rgba(0,0,0,0.55));
+  }
   .top-chip {
     display: inline-flex; align-items: center; gap: 6px;
     background: transparent; border: none; padding: 0;
     color: var(--text);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   }
-  .top-chip img { display: block; height: 38px; width: auto; }
+  .top-chip img { display: block; height: 38px; width: auto; filter: var(--icon-tint); transition: filter .25s ease, transform .15s ease; }
+  .top-chip:hover img { filter: var(--icon-tint-hover); transform: translateY(-1px); }
   .top-chip .name {
     color: var(--accent-2); font-weight: 800; font-size: 13px;
     max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -112,14 +326,25 @@
   .icon-btn {
     background: transparent; border: none; padding: 0; cursor: pointer;
     line-height: 0;
-    transition: transform .15s ease, filter .25s ease;
-    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+    transition: transform .15s ease;
   }
-  .icon-btn img { display: block; height: 40px; width: 40px; object-fit: contain; }
-  .icon-btn:hover { transform: translateY(-2px) scale(1.06); filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)) brightness(1.1); }
+  .icon-btn img { display: block; height: 40px; width: 40px; object-fit: contain; filter: var(--icon-tint); transition: filter .25s ease; }
+  .icon-btn:hover { transform: translateY(-2px) scale(1.06); }
+  .icon-btn:hover img { filter: var(--icon-tint-hover); }
   .icon-btn:active { transform: translateY(0) scale(1); }
-  /* The hangar topbar button shows the player's currently equipped ship. */
-  .icon-btn.hangar-btn img { height: 44px; width: 44px; filter: drop-shadow(0 0 6px rgba(80,180,255,0.55)); }
+  /* Hangar shows the equipped ship — keep its native blue/orange so it
+     reads as the one "live" item in the row. Slightly bigger to anchor. */
+  .icon-btn.hangar-btn img {
+    height: 44px; width: 44px;
+    filter:
+      drop-shadow(0 0 8px rgba(80,180,255,0.65))
+      drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+  }
+  .icon-btn.hangar-btn:hover img {
+    filter:
+      drop-shadow(0 0 16px rgba(120,200,255,0.85))
+      drop-shadow(0 4px 6px rgba(0,0,0,0.55));
+  }
 
   @media (max-width: 520px) {
     .top-chip img { height: 30px; }
@@ -150,6 +375,20 @@
   .hangar-card.equipped { border-color: #4ad6ff; box-shadow: 0 0 0 2px rgba(74,214,255,0.35) inset, 0 8px 24px rgba(74,214,255,0.18); }
   .hangar-card.owned:not(.equipped):hover { transform: translateY(-3px); border-color: var(--accent-2); }
   .hangar-card.locked { opacity: 0.92; }
+  /* Streak-reward cards (e.g. Granny) — flame-warmed border + glow so they
+     read as "earned, not bought" at a glance. */
+  .hangar-card.streak {
+    border-color: rgba(255,120,40,0.55);
+    background: linear-gradient(180deg, rgba(60,28,18,0.78) 0%, rgba(20,8,4,0.92) 100%);
+  }
+  .hangar-card.streak.equipped {
+    border-color: #ff9a3d;
+    box-shadow: 0 0 0 2px rgba(255,154,61,0.45) inset, 0 8px 24px rgba(255,154,61,0.28);
+  }
+  .hangar-card.streak .hangar-img-wrap {
+    background: radial-gradient(circle at 50% 55%, rgba(255,120,40,0.30), transparent 65%);
+  }
+  .hangar-card.streak .hangar-img { filter: drop-shadow(0 6px 14px rgba(255,140,60,0.55)); }
   .hangar-shots {
     position: absolute; top: 8px; right: 10px;
     background: linear-gradient(135deg, #ff8a3d, #ffd166);
@@ -216,9 +455,28 @@
 
   /* Name screen */
   .center-screen { min-height: 70vh; display: grid; place-items: center; }
-  .name-card { width: 100%; max-width: 520px; text-align: center; }
-  .name-card h2 { margin: 0 0 6px; font-size: 28px; }
-  .name-card p { color: var(--muted); margin: 0 0 16px; }
+  .name-card { width: 100%; max-width: 560px; text-align: center; }
+  /* Welcome heading uses the Bangers comic font for personality. The
+     gradient + bevel-y stack matches the Granny Boom brand. */
+  .name-card h2 {
+    margin: 4px 0 10px;
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400; /* Bangers ships at a single weight */
+    font-size: clamp(30px, 5vw, 44px);
+    letter-spacing: 2px;
+    line-height: 1.05;
+    background: linear-gradient(180deg, #ffe28a 0%, #ff9a3d 55%, #c54a16 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(255,138,61,0.35));
+    transform: rotate(-1.5deg);
+  }
+  .name-card p {
+    color: #d8e2ff;
+    margin: 0 0 18px;
+    font-size: 16px; line-height: 1.45;
+    font-weight: 600;
+  }
   .name-card input {
     width: 100%; padding: 14px 16px; font-size: 18px; color: var(--text);
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
@@ -630,11 +888,143 @@
 
   .footer-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 24px; }
 
+  /* ===== Home-screen fun-font pass =====
+     Bangers (comic display font) makes the homescreen feel like the inside
+     of a comic book. Applied to headings, section labels, stat KPIs, and
+     story-card titles/CTAs — kept off long-form paragraphs and the gameplay
+     screens where legibility wins. */
+  .hero h1 {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 2px;
+    font-size: clamp(32px, 4.6vw, 46px);
+    line-height: 1.05;
+  }
+  /* Intro paragraph — Patrick Hand (handwritten Google Font) keeps the fun
+     vibe while supporting real lowercase. Tighter leading and a calmer
+     colour so headline + labels remain the loudest things on the screen. */
+  .hero p {
+    font-family: "Patrick Hand", "Comic Sans MS", system-ui, sans-serif;
+    color: #9aa5c0;
+    font-size: clamp(14px, 1.8vw, 17px);
+    line-height: 1.2;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+  }
+  .section-title {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    text-transform: none; /* Bangers reads better in its native casing */
+    letter-spacing: 2px;
+    font-size: clamp(18px, 2.2vw, 24px);
+    color: #ffd28a;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.55);
+  }
+  .stat .k {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.4px;
+    font-size: 14px;
+    color: #ffd28a;
+  }
+  .stat .v {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    font-size: 22px;
+    color: #fff8e6;
+  }
+  .story-card h3 {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.4px;
+    font-size: 22px;
+    color: #fff4e8;
+  }
+  .story-card .meta { letter-spacing: 0.6px; }
+  .story-card .play-cta {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.4px;
+    font-size: 14px;
+  }
+  .story-card .paragon-mark {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.4px;
+    font-size: 13px;
+  }
+
+  /* ===== Forge-screen fun-font pass =====
+     Same comic-book treatment on the story screens — for headings, role
+     labels and short instructions. The *sentence being built* and the
+     *word options* keep their serif (Georgia) because that's where
+     legibility wins over personality. */
+  .forge-head .crumb {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.6px;
+    font-size: 16px;
+    color: #ffd28a;
+  }
+  .forge-title-col h2 {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.8px;
+    font-size: clamp(26px, 3.4vw, 36px);
+    line-height: 1.05;
+    background: linear-gradient(180deg, #ffe28a 0%, #ff9a3d 55%, #c54a16 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+  }
+  .forge-title-col > div {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    font-size: 16px !important;
+    color: #d8e2ff !important;
+  }
+  .container-card .role {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 2px;
+    font-size: 15px;
+    text-transform: none;
+    color: #ffd28a;
+  }
+  .typing-card h3 {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.4px;
+    font-size: 19px;
+  }
+  .typing-card .helper {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    font-size: 14px;
+  }
+  .forge-actions .info {
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    font-size: 16px;
+    color: #d8e2ff;
+  }
+
   /* small screens */
   @media (max-width: 520px) {
     .topbar { padding: 8px 10px; }
     .brand { font-size: 16px; }
-    .brand .wordmark { height: 30px; }
+    .brand .brand-wordmark {
+      height: 64px;
+      margin: -16px 0 -16px 0;
+    }
+    .brand .brand-granny {
+      height: 76px;
+      margin: -22px 4px -22px -24px;
+    }
     .panel { padding: 16px; }
     .build-display { font-size: 17px; }
     .opt { font-size: 14px; padding: 7px 11px; }
@@ -642,6 +1032,21 @@
 </style>
 </head>
 <body>
+<div class="splash" id="splash" role="dialog" aria-label="Granny Boom intro">
+  <button class="splash-skip" id="splashSkip" type="button">Skip ›</button>
+  <div class="splash-stack">
+    <h1 class="splash-welcome" id="splashWelcome">Granny Boom welcomes you!</h1>
+    <div class="splash-hero-wrap">
+      <img class="splash-hero" src="splash.jpg" alt="Granny Boom" />
+    </div>
+    <p class="splash-tag">The game that lets you slay aliens while you improve your writing.</p>
+    <div class="splash-loading" id="splashLoading">
+      <div class="splash-msg" id="splashMsg"></div>
+      <div class="splash-bar"><div class="splash-fill" id="splashFill"></div></div>
+    </div>
+  </div>
+  <div class="splash-count" id="splashCount"></div>
+</div>
 <div class="app" id="app"></div>
 <div class="toast" id="toast"><span class="em">⚡</span><span id="toastText">Nice!</span></div>
 <div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
@@ -649,7 +1054,7 @@
 
 <script>
 /* ============================================================
-   gforge — Forge powerful sentences (v1.0)
+   Granny Boom — Slay aliens while you sharpen your writing (v1.0)
    Single-file guided writing tool for 8–12 yo native English writers.
    ============================================================ */
 const APP_VERSION = 'v1.0';
@@ -3315,8 +3720,12 @@ const STORIES = [
 // in the Hangar (and a quick "unlock all" helper) so the arcade can be
 // launched without forging a story. Kids on the public URL never see it.
 const DEV_MODE = (() => { try { return new URLSearchParams(location.search).has('dev'); } catch (_) { return false; } })();
-const STORE_KEY = 'gforge.v1';
-const LEGACY_STORE_KEY = 'gforce.v1'; // pre-rename; migrated on load
+const STORE_KEY = 'grannyboom.v1';
+// Legacy keys we migrate from on first load so existing testers keep their
+// XP, ships, streaks, paragraphs, etc. Walked oldest-first so each rename
+// generation auto-upgrades. Add new entries to the FRONT of the list when
+// renaming again later.
+const LEGACY_STORE_KEYS = ['gforge.v1', 'gforce.v1'];
 
 function defaultState() {
   return {
@@ -3329,7 +3738,8 @@ function defaultState() {
     streak: 0,
     lastSession: null,
     history: [],
-    ships: { owned: ['mk1'], equipped: 'mk1' }
+    ships: { owned: ['mk1'], equipped: 'mk1' },
+    bestArcadeScore: 0
   };
 }
 function pushHistory(entry) {
@@ -3340,14 +3750,21 @@ function pushHistory(entry) {
 function loadState() {
   try {
     let raw = localStorage.getItem(STORE_KEY);
-    // One-time migration from the old 'gforce.v1' key so existing players
-    // keep their XP, badges, streak and forged paragraphs after the rename.
+    // One-time migration from any legacy key so existing players keep their
+    // XP, badges, streak, ships and forged paragraphs across rename cycles.
     if (!raw) {
-      const legacy = localStorage.getItem(LEGACY_STORE_KEY);
-      if (legacy) {
-        localStorage.setItem(STORE_KEY, legacy);
-        try { localStorage.removeItem(LEGACY_STORE_KEY); } catch (_) {}
-        raw = legacy;
+      for (const oldKey of LEGACY_STORE_KEYS) {
+        const legacy = localStorage.getItem(oldKey);
+        if (legacy) {
+          localStorage.setItem(STORE_KEY, legacy);
+          try { localStorage.removeItem(oldKey); } catch (_) {}
+          raw = legacy;
+          break;
+        }
+      }
+      // Sweep any other stale legacy keys so they don't sit around.
+      for (const oldKey of LEGACY_STORE_KEYS) {
+        try { localStorage.removeItem(oldKey); } catch (_) {}
       }
     }
     if (!raw) return defaultState();
@@ -3410,7 +3827,7 @@ const SHIPS = [
     ]
   },
   {
-    id: 'mk4', name: 'Vanguard Mk IV', cost: 25000,
+    id: 'mk4', name: 'Vanguard Mk IV', cost: 22000,
     src: 'ships/ship4.png',
     blurb: '5-bullet spread with wingtip missiles. Top-tier warship.',
     barrels: [
@@ -3420,8 +3837,26 @@ const SHIPS = [
       { fx: 0.080, fy: 0.410, vx: -0.16 },
       { fx: 0.920, fy: 0.410, vx:  0.16 }
     ]
+  },
+  // STREAK REWARD: Granny only unlocks at a 7-day login streak. She doesn't
+  // fire normal bullets — her bazooka lobs cupcake nukes that curve through
+  // the air and explode in a wide AOE blast. The 'special' flag tells the
+  // firing/collision code to use the cupcake codepath instead of barrels.
+  {
+    id: 'granny', name: 'Granny Boom', cost: 0,
+    src: 'ships/granny.png',
+    blurb: 'Streak unlock — nuke cupcakes detonate across multiple invaders. Don\'t cross Grandma.',
+    barrels: [{ fx: 0.78, fy: 0.18 }],
+    displayH: 96,
+    special: 'granny',
+    unlock: { type: 'streak', value: 7 }
   }
 ];
+// Granny's projectile sprite — preloaded so the first cupcake doesn't pop in.
+const CUPCAKE_SRC = 'projectiles/cupcake_nuke.png';
+const CUPCAKE_IMG = new Image();
+CUPCAKE_IMG.decoding = 'async';
+CUPCAKE_IMG.src = CUPCAKE_SRC;
 // Alien rows for Forge Invaders, drawn from these 5 monster PNGs (row r uses
 // MONSTER_SRC[r % 5]). Sprites are pre-rasterised into 64×64 offscreen canvases
 // on boot so the arcade never has to text-render emojis (which was the iPad
@@ -3482,6 +3917,19 @@ function getShipSprite(id) {
 }
 function getEquippedShip() {
   return SHIPS.find(s => s.id === state.ships.equipped) || SHIPS[0];
+}
+// Streak-gated ships unlock automatically the moment the threshold is crossed.
+// Granny (7-day streak) is the only one for now but this is structured so we
+// can drop in more streak rewards later.
+function checkStreakUnlocks() {
+  for (const s of SHIPS) {
+    if (!s.unlock || s.unlock.type !== 'streak') continue;
+    if (state.streak >= s.unlock.value && !state.ships.owned.includes(s.id)) {
+      state.ships.owned.push(s.id);
+      getShipSprite(s.id);
+      toast(`${s.name} unlocked — ${s.unlock.value}-day streak reward! Check the Hangar.`, '🔥');
+    }
+  }
 }
 // Kick off a preload of the equipped ship sprite so it's ready by arcade-time.
 getShipSprite(state.ships.equipped);
@@ -3613,8 +4061,19 @@ function render() {
 }
 function topbar() {
   return el('header', { class: 'topbar' },
-    el('div', { class: 'brand' },
-      el('img', { src: 'wordmark.png', alt: 'gForge', class: 'wordmark' })
+    el('div', { class: 'brand', title: 'Granny Boom' },
+      el('img', {
+        src: 'wordmark.png',
+        alt: 'Granny Boom',
+        class: 'brand-wordmark',
+        draggable: false
+      }),
+      el('img', {
+        src: 'granny_brand.png',
+        alt: 'Granny Boom',
+        class: 'brand-granny',
+        draggable: false
+      })
     ),
     el('div', { class: 'spacer' }),
     el('div', { class: 'row-wrap' },
@@ -3632,11 +4091,11 @@ function topbar() {
       el('button', { class: 'icon-btn', title: 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
       ),
-      el('button', { class: 'icon-btn hangar-btn', title: 'Hangar — upgrade your ship', onclick: openHangar },
-        el('img', { src: getEquippedShip().src, alt: 'Hangar' })
-      ),
       el('button', { class: 'icon-btn', title: 'Trophies', onclick: openTrophyModal },
         el('img', { src: 'topbar/trophy.png', alt: 'Trophies' })
+      ),
+      el('button', { class: 'icon-btn hangar-btn', title: 'Hangar — upgrade your ship', onclick: openHangar },
+        el('img', { src: getEquippedShip().src, alt: 'Hangar' })
       )
     )
   );
@@ -3645,14 +4104,14 @@ function renderName(app) {
   app.appendChild(topbar());
   const wrap = el('div', { class: 'center-screen' });
   const card = el('div', { class: 'panel name-card' });
-  card.appendChild(el('div', { style: { fontSize: '52px' } }, '🔨'));
-  card.appendChild(el('h2', {}, 'Welcome to gforge'));
-  card.appendChild(el('p', {}, 'Forge powerful English sentences. Pick the right words. Build a paragraph. Earn the arcade.'));
+  card.appendChild(el('div', { style: { fontSize: '52px' } }, '💥'));
+  card.appendChild(el('h2', {}, 'Welcome to Granny Boom\u2019s Backyard'));
+  card.appendChild(el('p', {}, 'Build beef with aliens while you sharpen your writing. Create awesome paragraphs and eradicate the varments!'));
   const input = el('input', { type: 'text', placeholder: 'Type your name…', maxlength: 24 });
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(input.value); });
   card.appendChild(input);
   card.appendChild(el('div', { style: { height: '12px' } }));
-  card.appendChild(el('button', { class: 'btn primary lg', onclick: () => start(input.value) }, 'Begin →'));
+  card.appendChild(el('button', { class: 'btn primary lg', onclick: () => start(input.value) }, 'Start Slaying \u2192'));
   wrap.appendChild(card);
   app.appendChild(wrap);
   setTimeout(() => input.focus(), 100);
@@ -3667,7 +4126,7 @@ function renderHome(app) {
   const hero = el('section', { class: 'hero' });
   const left = el('div', { class: 'panel' });
   left.appendChild(el('h1', {}, `Welcome back, ${state.name}.`));
-  left.appendChild(el('p', {}, 'Choose a topic and a story. Pick the best word in every container, then type the sentence out. Forge a full paragraph to unlock a 60-second reward game.'));
+  left.appendChild(el('p', {}, 'Choose a theme then a story below. Pick the best word in every container, then type the sentence out. Forge a full paragraph to unlock a 60-second reward game.'));
   // Topic tabs
   const tabs = el('div', { class: 'topic-tabs' });
   for (const t of TOPICS) {
@@ -3694,6 +4153,7 @@ function renderHome(app) {
   stats.appendChild(stat('Stories', `${state.paragraphs.length} / 24`));
   stats.appendChild(stat('Badges', `${state.badges.length} / ${Object.keys(BADGES).length}`));
   stats.appendChild(stat('Streak', state.streak + ' 🔥'));
+  stats.appendChild(stat('Forge Invaders High Score', state.bestArcadeScore || 0));
   right.appendChild(stats);
   hero.appendChild(right);
   app.appendChild(hero);
@@ -4101,23 +4561,34 @@ function finishStory() {
   const sentencesTotal = f.sentencesState.length;
 
   const mult = lvl === 1 ? 1 : lvl === 2 ? 1.5 : 2;
-  let earned = 0;
+  let earnedBase = 0;
   // Per sentence: 50 each
-  earned += sentencesTotal * 50;
+  earnedBase += sentencesTotal * 50;
   // +50 perfect-build per sentence
-  earned += sentencesPerfect * 50;
+  earnedBase += sentencesPerfect * 50;
   // +30 typed (always 30 if typed completed)
-  earned += sentencesTotal * 30;
+  earnedBase += sentencesTotal * 30;
   // Paragraph bonus
-  earned += 200;
-  if (allPerfect) earned += 150;
-  earned = Math.round(earned * mult);
+  earnedBase += 200;
+  if (allPerfect) earnedBase += 150;
+  earnedBase = Math.round(earnedBase * mult);
 
+  // Replay discount: first time you forge a story you get the full payout;
+  // every subsequent attempt is worth 25% so grinding for ship XP still
+  // works but doesn't trivialise the campaign economy.
   const firstTime = !state.completed[story.id];
+  const replayMul = firstTime ? 1 : 0.25;
+  const earned = Math.round(earnedBase * replayMul);
+  const prevAttempts = (state.completed[story.id] && state.completed[story.id].attempts) || 0;
   state.points += earned;
-  state.completed[story.id] = { perfect: allPerfect, attempts: 1, score: earned };
+  state.completed[story.id] = {
+    perfect: allPerfect || (state.completed[story.id] && state.completed[story.id].perfect),
+    attempts: prevAttempts + 1,
+    score: earned,
+  };
   state.streak = (state.lastSession === todayStr() || !state.lastSession) ? state.streak + 1 : 1;
   state.lastSession = todayStr();
+  checkStreakUnlocks();
 
   // Save the forged paragraph
   const paragraphText = correctParagraph(story);
@@ -4141,6 +4612,10 @@ function finishStory() {
   m.appendChild(el('p', {}, allPerfect
     ? `${state.name}, every sentence built clean. This one is a keeper.`
     : `${state.name}, you forged the full paragraph for "${story.title}".`));
+  if (!firstTime) {
+    m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', marginTop: '-4px' } },
+      `↻ Replay #${prevAttempts + 1} — XP reduced to 25% of first-time payout (${earnedBase} → ${earned}).`));
+  }
   m.appendChild(el('div', { class: 'paragraph-reveal' }, paragraphText));
   const row = el('div', { class: 'stat-row' });
   row.appendChild(stat('XP earned', '+' + earned));
@@ -4211,7 +4686,7 @@ function renderGallery() {
 
 function buildAllText() {
   const lines = [];
-  lines.push(`gforge — My Forged Paragraphs`);
+  lines.push(`Granny Boom — My Forged Paragraphs`);
   lines.push(`Player: ${state.name}`);
   lines.push(`Generated: ${new Date().toLocaleString()}`);
   lines.push('');
@@ -4250,7 +4725,7 @@ function downloadAllParagraphs() {
   const a = document.createElement('a');
   a.href = url;
   const safe = (state.name || 'player').replace(/[^a-z0-9_\-]+/gi, '_');
-  a.download = `gforge-paragraphs-${safe}.txt`;
+  a.download = `grannyboom-paragraphs-${safe}.txt`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Downloaded.', '⬇');
@@ -4353,7 +4828,9 @@ function openTrophyModal() {
     onclick: () => {
       if (confirm('Sign out and clear all progress on this device?')) {
         localStorage.removeItem(STORE_KEY);
-        try { localStorage.removeItem(LEGACY_STORE_KEY); } catch (_) {}
+        for (const oldKey of LEGACY_STORE_KEYS) {
+          try { localStorage.removeItem(oldKey); } catch (_) {}
+        }
         state = defaultState();
         closeModal(); render();
       }
@@ -4401,9 +4878,14 @@ function openHangar() {
 function buildShipCard(s) {
   const owned = state.ships.owned.includes(s.id);
   const equipped = state.ships.equipped === s.id;
-  const canBuy = !owned && state.points >= s.cost;
-  const card = el('div', { class: 'hangar-card' + (equipped ? ' equipped' : owned ? ' owned' : ' locked') });
-  const shotsBadge = el('div', { class: 'hangar-shots' }, `× ${s.barrels.length}`);
+  const isStreakReward = s.unlock && s.unlock.type === 'streak';
+  const streakOk = !isStreakReward || state.streak >= s.unlock.value;
+  const canBuy = !owned && !isStreakReward && state.points >= s.cost;
+  const cardCls = 'hangar-card' + (equipped ? ' equipped' : owned ? ' owned' : ' locked')
+    + (isStreakReward ? ' streak' : '');
+  const card = el('div', { class: cardCls });
+  const badgeLabel = s.special === 'granny' ? '💥' : `× ${s.barrels.length}`;
+  const shotsBadge = el('div', { class: 'hangar-shots' }, badgeLabel);
   card.appendChild(shotsBadge);
   const imgWrap = el('div', { class: 'hangar-img-wrap' });
   const img = document.createElement('img');
@@ -4420,6 +4902,25 @@ function buildShipCard(s) {
       state.ships.equipped = s.id; saveState(); closeModal(); openHangar();
       toast(`${s.name} equipped — ready to fly!`, '🛸');
     } }, 'Equip'));
+  } else if (isStreakReward) {
+    // Streak-gated unlock. We never show a Buy button — she's earned, not
+    // bought. If the streak isn't there yet we show the progress meter.
+    if (streakOk) {
+      card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
+        state.ships.owned.push(s.id);
+        state.ships.equipped = s.id;
+        getShipSprite(s.id);
+        saveState(); closeModal(); openHangar();
+        toast(`${s.name} unlocked & equipped!`, '🔥');
+      } }, '🔥 Claim streak reward'));
+    } else {
+      const need = s.unlock.value - state.streak;
+      card.appendChild(el('div', { class: 'hangar-cta cta-locked' },
+        el('div', { style: { fontSize: '22px' } }, '🔥'),
+        el('div', {}, `${s.unlock.value}-day streak`),
+        el('div', { class: 'hangar-need' }, `${state.streak}/${s.unlock.value} days — ${need} to go`)
+      ));
+    }
   } else if (canBuy) {
     card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
       if (!confirm(`Unlock ${s.name} for ${s.cost.toLocaleString()} XP?`)) return;
@@ -4490,6 +4991,7 @@ function startArcade(opts = {}) {
     mother: null, motherCount: 0, motherLastSpawnMs: 0,
     boss: null, bossSpawnedThisGame: false, bossDefeated: false,
     postBossUntil: 0, hyperToastShown: false,
+    deathCinematic: false, deathStartTs: 0, deathPhase: 0,
     shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
   };
   renderArcade();
@@ -4599,22 +5101,97 @@ function arcadeLoop(ts) {
 }
 function updateArcade(dt) {
   const a = arcade;
+  // While the death cinematic is rolling, freeze all gameplay (no player
+  // movement, no enemy fire, no wave clears) and only tick particles +
+  // shake decay so the skull → explosion → GAME OVER sequence animates.
+  if (a.deathCinematic) {
+    updateDeathCinematic();
+    for (const p of a.particles) {
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.gravity) p.vy += p.gravity * dt;
+      if (p.expand)  p.r  += p.expand * dt;
+      if (p.type === 'ring') p.r = p.rMax * (1 - Math.max(0, p.life) / p.maxLife);
+      p.life -= dt;
+    }
+    a.particles = a.particles.filter(p => p.life > 0);
+    if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 0.05);
+    updateArcHud();
+    return;
+  }
   if (ARC_KEYS.left)  a.player.x -= a.player.speed * dt;
   if (ARC_KEYS.right) a.player.x += a.player.speed * dt;
   a.player.x = Math.max(a.player.w/2 + 6, Math.min(ARC_W - a.player.w/2 - 6, a.player.x));
-  if (ARC_KEYS.fire && performance.now() - a.lastFire > a.fireCooldown) {
+  // Granny fires cupcake nukes from her bazooka muzzle — a single, slow,
+  // curving projectile that explodes in a wide AOE on contact. Different
+  // cooldown to balance the AOE.
+  const isGranny = a.shipDef && a.shipDef.special === 'granny';
+  const fireGate = isGranny ? 600 : a.fireCooldown;
+  if (ARC_KEYS.fire && performance.now() - a.lastFire > fireGate) {
     const def = a.shipDef || SHIPS[0];
     const sw = a.shipW || a.player.w;
     const sh = a.shipH || a.player.h;
-    for (const bar of def.barrels) {
+    if (isGranny) {
+      // Single cupcake nuke from the bazooka muzzle. Initial velocity is
+      // slightly right + up so it visibly comes out of the barrel; the
+      // per-frame steering below curves it left and skyward as it climbs.
+      const bar = def.barrels[0];
       const bx = a.player.x + (bar.fx - 0.5) * sw;
       const by = a.player.y + (bar.fy - 0.5) * sh;
-      a.bullets.push({ x: bx, y: by, w: 4, h: 12, vx: bar.vx || 0, vy: -0.9 });
+      a.bullets.push({
+        x: bx, y: by, w: 38, h: 60,
+        vx: 0.16, vy: -0.32,
+        type: 'cupcake',
+        targetVx: -0.14, targetVy: -0.34,
+        angle: 0, smokeTimer: 0,
+      });
+    } else {
+      for (const bar of def.barrels) {
+        const bx = a.player.x + (bar.fx - 0.5) * sw;
+        const by = a.player.y + (bar.fy - 0.5) * sh;
+        a.bullets.push({ x: bx, y: by, w: 4, h: 12, vx: bar.vx || 0, vy: -0.9 });
+      }
     }
     a.lastFire = performance.now();
   }
-  for (const b of a.bullets) { b.y += b.vy * dt; if (b.vx) b.x += b.vx * dt; }
-  a.bullets = a.bullets.filter(b => b.y > -20 && b.x > -10 && b.x < ARC_W + 10);
+  // Bullet integration. Cupcakes get smooth steering toward their target
+  // velocity (which curves them left + up over ~1s), a smoke trail, and a
+  // velocity-aligned rotation angle for rendering.
+  for (const b of a.bullets) {
+    if (b.type === 'cupcake') {
+      const STEER = 0.0014;
+      b.vx += (b.targetVx - b.vx) * STEER * dt;
+      b.vy += (b.targetVy - b.vy) * STEER * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      // Sprite's "forward" is straight up, so add π/2 to the motion angle.
+      b.angle = Math.atan2(b.vy, b.vx) + Math.PI / 2;
+      b.smokeTimer += dt;
+      if (b.smokeTimer >= 32) {
+        b.smokeTimer = 0;
+        const sp = Math.hypot(b.vx, b.vy) || 0.001;
+        const tx = b.x - (b.vx / sp) * 22;
+        const ty = b.y - (b.vy / sp) * 22;
+        // 'trail' type — light, slightly green-tinted puff so it reads
+        // against the dark arcade background (regular dark 'smoke' was
+        // basically invisible out there).
+        a.particles.push({
+          type: 'trail',
+          x: tx + (Math.random() - 0.5) * 4,
+          y: ty + (Math.random() - 0.5) * 4,
+          vx: -b.vx * 0.22 + (Math.random() - 0.5) * 0.05,
+          vy: -b.vy * 0.22 + (Math.random() - 0.5) * 0.05,
+          r: 10 + Math.random() * 6,
+          expand: 0.018,
+          life: 750 + Math.random() * 250,
+          maxLife: 1000,
+        });
+      }
+    } else {
+      b.y += b.vy * dt;
+      if (b.vx) b.x += b.vx * dt;
+    }
+  }
+  a.bullets = a.bullets.filter(b => b.y > -40 && b.x > -40 && b.x < ARC_W + 40);
   a.enemyStepTimer += dt;
   const alive = a.enemies.filter(e => e.alive);
   const killCount = a.enemies.length - alive.length;
@@ -4652,6 +5229,7 @@ function updateArcade(dt) {
   for (const b of a.enemyBullets) { b.y += b.vy * dt; if (b.vx) b.x += b.vx * dt; }
   a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20 && b.x > -10 && b.x < ARC_W + 10);
   for (const b of a.bullets) {
+    if (b.type === 'cupcake') continue; // cupcakes get their own AOE pass below
     for (const e of alive) {
       if (!e.alive) continue;
       if (Math.abs(b.x - e.x) < e.w/2 + b.w/2 && Math.abs(b.y - e.y) < e.h/2 + b.h/2) {
@@ -4661,7 +5239,28 @@ function updateArcade(dt) {
       }
     }
   }
-  a.bullets = a.bullets.filter(b => b.y > -20);
+  // Cupcake nukes: scan each one against ANY hostile (regular aliens, mother,
+  // boss). On any contact, detonate with a wide AOE blast that kills every
+  // alien in radius, one-shots the mother, and deals heavy damage to the
+  // boss. The bullet itself is consumed regardless.
+  for (const b of a.bullets) {
+    if (b.type !== 'cupcake' || b.y < -50) continue;
+    let triggered = false;
+    for (const e of alive) {
+      if (!e.alive) continue;
+      if (Math.abs(b.x - e.x) < e.w/2 + 14 && Math.abs(b.y - e.y) < e.h/2 + 18) { triggered = true; break; }
+    }
+    if (!triggered && a.mother && a.mother.t > 200) {
+      const m = a.mother;
+      if (Math.abs(b.x - m.x) < m.w/2 + 14 && Math.abs(b.y - m.y) < m.h/2 + 14) triggered = true;
+    }
+    if (!triggered && a.boss && a.boss.t > 1800) {
+      const bs = a.boss;
+      if (Math.abs(b.x - bs.x) < bs.hitW/2 + 14 && Math.abs(b.y - bs.y) < bs.hitH/2 + 14) triggered = true;
+    }
+    if (triggered) { detonateCupcake(b); b.y = -1000; }
+  }
+  a.bullets = a.bullets.filter(b => b.y > -40);
   if (a.player.invuln <= 0) {
     for (const b of a.enemyBullets) {
       if (Math.abs(b.x - a.player.x) < a.player.w/2 + b.w/2 && Math.abs(b.y - a.player.y) < a.player.h/2 + b.h/2) {
@@ -4730,7 +5329,14 @@ function updateArcade(dt) {
       a.over = true; a.won = true;
     }
   }
-  else if (a.lives <= 0 || reachedBottom) { a.over = true; a.won = false; }
+  else if (a.lives <= 0) {
+    // Player lost their third ship — kick off the dramatic death cinematic
+    // (skull → explode → GAME OVER → result modal). a.over is flipped at
+    // the END of the sequence so the existing arcadeLoop endgame flow
+    // (freeze + open result modal) fires naturally after the show.
+    if (!a.deathCinematic) startDeathCinematic();
+  }
+  else if (reachedBottom) { a.over = true; a.won = false; }
   else if (a.timeRemaining <= 0) { a.over = true; a.won = false; a.timeUp = true; }
   // Mother ship: spawn periodically and update independently of the regular
   // marching pack. First one shows up ~12s in, then again every ~18s.
@@ -4790,6 +5396,7 @@ function updateMother(dt) {
   // Hit detection vs player bullets — generous bonus and confetti when downed.
   if (m.t > 200) {
     for (const b of arcade.bullets) {
+      if (b.type === 'cupcake') continue; // AOE handled in updateArcade
       if (Math.abs(b.x - m.x) < m.w / 2 + b.w / 2 && Math.abs(b.y - m.y) < m.h / 2 + b.h / 2) {
         b.y = -100;
         arcade.score += 250;
@@ -4878,47 +5485,93 @@ function updateBoss(dt) {
   // Collision with player bullets.
   for (const bul of arcade.bullets) {
     if (bul.y < -50) continue;
+    if (bul.type === 'cupcake') continue; // AOE pass in updateArcade handles boss damage
     if (Math.abs(bul.x - b.x) < b.hitW / 2 + bul.w / 2 && Math.abs(bul.y - b.y) < b.hitH / 2 + bul.h / 2) {
       bul.y = -100;
       b.hp -= 1;
       arcade.score += 5;
       spawnParticles(bul.x, bul.y, '#ff8a3d');
-      if (b.hp <= 0) {
-        // BOSS DOWN — chain of cinematic explosions across the wingspan so
-        // it actually feels like a 360px ship breaking apart. Big central
-        // boom + staggered secondary pops at the wingtips and crown.
-        const bx = b.x, by = b.y, hw = b.hitW, hh = b.hitH;
-        spawnBigExplosion(bx, by, 1.8);
-        setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.32, by + 6,        0.95); }, 120);
-        setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.32, by + 6,        0.95); }, 240);
-        setTimeout(() => { if (arcade) spawnBigExplosion(bx,             by - hh * 0.3, 1.10); }, 380);
-        setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.15, by + hh * 0.2, 0.80); }, 520);
-        setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.15, by + hh * 0.2, 0.80); }, 640);
-        arcade.shake = Math.max(arcade.shake, 38);
-        arcade.score += 1500;
-        arcade.bossDefeated = true;
-        arcade.boss = null;
-        // Floating bonus text — staggered so it reads dramatically over the
-        // explosion chain. Each line rises slowly and fades out.
-        spawnBonusText(ARC_W / 2, ARC_H / 2 - 50, 'GRAND-DADDY', '#ff5a3d', 32);
-        setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2,      'DEFEATED!', '#ff8a3d', 48); }, 220);
-        setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2 + 60, '+1500 XP',  '#ffd166', 52); }, 520);
-        toast('GRAND-DADDY DEFEATED! +1500 XP', '🏆');
-        awardBadge('boss');
-        // Hold the empty arena for a beat before the next wave drops in.
-        // The wave-clear branch is gated by postBossUntil, so it won't fire
-        // until this window elapses.
-        arcade.enemies = [];
-        arcade.bullets = [];
-        arcade.enemyBullets = [];
-        arcade.enemyDir = 1;
-        arcade.enemyStepTimer = 0;
-        arcade.enemyFireTimer = 0;
-        arcade.enemyDropPending = false;
-        arcade.livesLostInWave = 0;
-        arcade.postBossUntil = performance.now() + 2500;
-        return;
-      }
+      if (b.hp <= 0) { defeatBoss(b); return; }
+    }
+  }
+}
+// Shared boss-defeat sequence (cinematic explosions, bonus text, post-boss
+// hold). Called from regular bullet hits and the cupcake AOE pass.
+function defeatBoss(b) {
+  const bx = b.x, by = b.y, hw = b.hitW, hh = b.hitH;
+  spawnBigExplosion(bx, by, 1.8);
+  setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.32, by + 6,        0.95); }, 120);
+  setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.32, by + 6,        0.95); }, 240);
+  setTimeout(() => { if (arcade) spawnBigExplosion(bx,             by - hh * 0.3, 1.10); }, 380);
+  setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.15, by + hh * 0.2, 0.80); }, 520);
+  setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.15, by + hh * 0.2, 0.80); }, 640);
+  arcade.shake = Math.max(arcade.shake, 38);
+  arcade.score += 1500;
+  arcade.bossDefeated = true;
+  arcade.boss = null;
+  spawnBonusText(ARC_W / 2, ARC_H / 2 - 50, 'GRAND-DADDY', '#ff5a3d', 32);
+  setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2,      'DEFEATED!', '#ff8a3d', 48); }, 220);
+  setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2 + 60, '+1500 XP',  '#ffd166', 52); }, 520);
+  toast('GRAND-DADDY DEFEATED! +1500 XP', '🏆');
+  awardBadge('boss');
+  arcade.enemies = [];
+  arcade.bullets = [];
+  arcade.enemyBullets = [];
+  arcade.enemyDir = 1;
+  arcade.enemyStepTimer = 0;
+  arcade.enemyFireTimer = 0;
+  arcade.enemyDropPending = false;
+  arcade.livesLostInWave = 0;
+  arcade.postBossUntil = performance.now() + 2500;
+}
+// Granny's cupcake nuke goes off — wide AOE blast that wipes every alien in
+// radius, one-shots the mother ship, and chunks 8 HP off the boss. Visual:
+// medium-big explosion + a damage ring so the radius is legible.
+function detonateCupcake(b) {
+  if (!arcade) return;
+  const RADIUS = 117; // 50% bigger blast — wipes a much wider swath
+  spawnBigExplosion(b.x, b.y, 1.45);
+  arcade.shake = Math.max(arcade.shake, 22);
+  // Damage ring — readable AOE feedback that matches the blast radius.
+  arcade.particles.push({
+    type: 'ring', x: b.x, y: b.y, vx: 0, vy: 0,
+    r: 8, rMax: RADIUS, life: 360, maxLife: 360,
+  });
+  let aoeKills = 0;
+  for (const e of arcade.enemies) {
+    if (!e.alive) continue;
+    const dx = e.x - b.x, dy = e.y - b.y;
+    if (dx * dx + dy * dy <= RADIUS * RADIUS) {
+      e.alive = false;
+      arcade.score += 10;
+      aoeKills++;
+      spawnParticles(e.x, e.y, '#ff8a3d');
+    }
+  }
+  if (aoeKills >= 3) {
+    spawnBonusText(b.x, b.y - 40, `×${aoeKills} COMBO!`, '#ffd166', 28);
+  }
+  const m = arcade.mother;
+  if (m && m.t > 200) {
+    const dx = m.x - b.x, dy = m.y - b.y;
+    const reach = RADIUS + m.w * 0.35;
+    if (dx * dx + dy * dy <= reach * reach) {
+      arcade.score += 250;
+      spawnBigExplosion(m.x, m.y, 1.0);
+      arcade.shake = Math.max(arcade.shake, 22);
+      toast('Mother ship down! +250 XP', '💥');
+      arcade.mother = null;
+    }
+  }
+  const bs = arcade.boss;
+  if (bs && bs.t > 1800) {
+    const dx = bs.x - b.x, dy = bs.y - b.y;
+    const reach = RADIUS + bs.hitW * 0.4;
+    if (dx * dx + dy * dy <= reach * reach) {
+      bs.hp -= 8;
+      arcade.score += 40;
+      spawnParticles(b.x, b.y, '#ff8a3d');
+      if (bs.hp <= 0) defeatBoss(bs);
     }
   }
 }
@@ -5003,6 +5656,73 @@ function spawnBonusText(x, y, text, color, size) {
     life: 2200, maxLife: 2200,
   });
 }
+// Death cinematic — kicks off when the player loses their third ship.
+// Timeline (ms from start, all driven off wall-clock so frame rate jitter
+// can't desync it from the result modal):
+//   0     skull pops in at screen centre + tiny puff at player's last spot
+//   1400  skull is blown apart by a big explosion (screen shake)
+//   2000  giant red "GAME OVER" text slams in
+//   3400  arcade.over flips true → arcadeLoop freezes + queues result modal
+//         (existing 600ms settle delay puts the modal at ~4000ms, i.e. a
+//         clean ~2s hold on the GAME OVER text before the screen swaps)
+function startDeathCinematic() {
+  const a = arcade;
+  a.deathCinematic = true;
+  a.deathStartTs = performance.now();
+  a.deathPhase = 0;
+  // Remember exactly where the third ship was vaporised — skull rises from
+  // those ashes and the second explosion lands there too.
+  a.deathX = a.player.x;
+  a.deathY = a.player.y;
+  // Puff where the player's ship was — the third one is gone for good.
+  spawnBigExplosion(a.deathX, a.deathY, 0.7);
+  a.shake = Math.max(a.shake, 22);
+  // Clear hostile + friendly bullets so they don't clutter the cinematic.
+  a.bullets = [];
+  a.enemyBullets = [];
+  // Spawn the skull right where the ship just blew up. The 'skull'
+  // particle type is rendered specially in drawArcade (large emoji glyph
+  // with a red glow, pop-in scale anim).
+  a.particles.push({
+    type: 'skull',
+    x: a.deathX, y: a.deathY,
+    vx: 0, vy: 0,
+    life: 1500, maxLife: 1500,
+    targetSize: 150,
+  });
+}
+function updateDeathCinematic() {
+  const a = arcade;
+  const t = performance.now() - a.deathStartTs;
+  if (t >= 1400 && a.deathPhase < 1) {
+    a.deathPhase = 1;
+    // BOOM — vaporise the skull with a big layered explosion right where
+    // the player went down.
+    a.particles = a.particles.filter(p => p.type !== 'skull');
+    spawnBigExplosion(a.deathX, a.deathY, 2.2);
+    a.shake = 40;
+  }
+  if (t >= 2000 && a.deathPhase < 2) {
+    a.deathPhase = 2;
+    // GAME OVER — big, red, centred. Drawn by the 'gameover' particle
+    // branch in drawArcade with its own scale-in + hold-then-fade alpha.
+    a.particles.push({
+      type: 'gameover',
+      x: ARC_W / 2, y: ARC_H / 2,
+      vx: 0, vy: 0,
+      life: 2200, maxLife: 2200,
+      text: 'GAME OVER',
+      color: '#ff2a44',
+      size: 78,
+    });
+    a.shake = Math.max(a.shake, 16);
+  }
+  if (t >= 3400 && !a.over) {
+    // Cinematic done — hand off to the standard endgame flow.
+    a.over = true;
+    a.won = false;
+  }
+}
 function updateArcHud() {
   const a = arcade;
   const sc = $('#arcScore'); const lv = $('#arcLives'); const xp = $('#arcXp'); const tm = $('#arcTime');
@@ -5066,8 +5786,27 @@ function drawArcade() {
     const entry = MONSTER_SPRITES[`${GRANDDADDY_SRC}@${GRANDDADDY_W}x${GRANDDADDY_H}`] || buildMonsterSprite(GRANDDADDY_SRC, GRANDDADDY_W, GRANDDADDY_H);
     ctx.drawImage(entry.canvas, b.x - GRANDDADDY_W / 2, b.y - GRANDDADDY_H / 2);
   }
-  ctx.fillStyle = '#ffe066';
-  for (const b of arcade.bullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+  // Player projectiles. Cupcake nukes get their own sprite + rotation,
+  // everything else stays as the classic yellow tracer.
+  for (const b of arcade.bullets) {
+    if (b.type === 'cupcake') {
+      if (CUPCAKE_IMG.complete && CUPCAKE_IMG.naturalHeight > 0) {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.angle || 0);
+        const targetH = 64;
+        const dw = CUPCAKE_IMG.naturalWidth * (targetH / CUPCAKE_IMG.naturalHeight);
+        ctx.drawImage(CUPCAKE_IMG, -dw / 2, -targetH / 2, dw, targetH);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#a1ff5a';
+        ctx.fillRect(b.x - 6, b.y - 10, 12, 20);
+      }
+    } else {
+      ctx.fillStyle = '#ffe066';
+      ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+    }
+  }
   for (const b of arcade.enemyBullets) {
     ctx.fillStyle = b.fang ? '#ffae3d'
       : b.boss   ? '#ff7a1a'
@@ -5097,12 +5836,14 @@ function drawArcade() {
   if (ship && ship.complete && ship.naturalHeight > 0) {
     // Lazy-compute display dimensions the first time the sprite is ready.
     if (!arcade.shipH) {
-      const targetH = 84;
+      const targetH = (arcade.shipDef && arcade.shipDef.displayH) || 84;
       arcade.shipH = targetH;
       arcade.shipW = ship.naturalWidth * (targetH / ship.naturalHeight);
     }
   }
-  if (!blink) {
+  // Hide the player while the death cinematic is playing — the third ship
+  // was just vaporised so it shouldn't sit on screen during the skull bit.
+  if (!blink && !arcade.deathCinematic) {
     if (arcade.shipH) {
       const sw = arcade.shipW, sh = arcade.shipH;
       ctx.drawImage(ship, p.x - sw/2, p.y - sh/2, sw, sh);
@@ -5134,6 +5875,24 @@ function drawArcade() {
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.globalAlpha = 1;
+  // Pass 1b: cupcake trail — bright greenish puff. Drawn additively so it
+  // pops against the dark space background where regular dark smoke is
+  // invisible.
+  ctx.globalCompositeOperation = 'lighter';
+  for (const pt of parts) {
+    if (pt.type !== 'trail') continue;
+    const lp = Math.max(0, pt.life / pt.maxLife);
+    const r = pt.r;
+    const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+    g.addColorStop(0,   'rgba(220,255,180,0.55)');
+    g.addColorStop(0.5, 'rgba(140,230,120,0.32)');
+    g.addColorStop(1,   'rgba(80,180,100,0)');
+    ctx.globalAlpha = lp * 0.9;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
   // Pass 2: bright effects with additive blending — fireball, core,
   // sparks and ring all stack into a brilliant white-hot glow where they
@@ -5216,6 +5975,59 @@ function drawArcade() {
     ctx.textBaseline = 'alphabetic';
   }
   ctx.globalAlpha = 1;
+  // Pass 4b: skull glyph (death cinematic). Pops in with a scale anim,
+  // then holds with a subtle pulse and a red glow so it reads as ominous.
+  for (const pt of parts) {
+    if (pt.type !== 'skull') continue;
+    const elapsed = pt.maxLife - pt.life;
+    let scale = 1;
+    if (elapsed < 280)       scale = (elapsed / 280) * 1.15;            // pop-in to 1.15×
+    else if (elapsed < 520)  scale = 1.15 - ((elapsed - 280) / 240) * 0.15; // settle to 1.0
+    else                     scale = 1 + Math.sin((elapsed - 520) / 110) * 0.04; // gentle pulse
+    const size = Math.round(pt.targetSize * scale);
+    ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ff3344';
+    ctx.shadowBlur = 38;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('💀', pt.x, pt.y);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.globalAlpha = 1;
+  // Pass 4c: GAME OVER text (death cinematic). Slams in with a scale
+  // animation, holds solid for most of its life, then fades at the end so
+  // it bridges cleanly into the result modal.
+  for (const pt of parts) {
+    if (pt.type !== 'gameover') continue;
+    const elapsed = pt.maxLife - pt.life;
+    let scale = 1;
+    if (elapsed < 260)       scale = (elapsed / 260) * 1.2;             // pop-in to 1.2×
+    else if (elapsed < 540)  scale = 1.2 - ((elapsed - 260) / 280) * 0.2; // settle to 1.0
+    // Hold full alpha for most of the life, then fade out in the last 400ms.
+    let alpha = 1;
+    const fadeStart = pt.maxLife - 400;
+    if (elapsed > fadeStart) alpha = (pt.maxLife - elapsed) / 400;
+    alpha = Math.max(0, Math.min(1, alpha));
+    ctx.globalAlpha = alpha;
+    const fontSize = Math.round(pt.size * scale);
+    ctx.font = `900 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = pt.color;
+    ctx.shadowBlur = 36;
+    ctx.fillStyle = '#1a0408';
+    ctx.fillText(pt.text, pt.x + 3, pt.y + 4);
+    ctx.shadowBlur = 44;
+    ctx.fillStyle = pt.color;
+    ctx.fillText(pt.text, pt.x, pt.y);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.globalAlpha = 1;
   // Pass 5: full-screen flash — drawn on top so it briefly washes the
   // scene white. Oversized so the shake translate doesn't reveal edges.
   for (const pt of parts) {
@@ -5236,6 +6048,10 @@ function showArcadeResult() {
   const timeUp = a.timeUp || a.won; // a.won only fires on the buzzer-beater edge case
   const xpEarned = a.reward ? previewXp(score) : 0;
   if (a.reward && xpEarned > 0) state.points += xpEarned;
+  // Personal best for Alien Atax — shown on the home stats card.
+  const prevBest = state.bestArcadeScore || 0;
+  const newBest = score > prevBest;
+  if (newBest) state.bestArcadeScore = score;
   if (score >= 200) awardBadge('arcade');
   if (waves >= 1) awardBadge('defender');
   const bossDef = a.bossDefeated;
@@ -5271,6 +6087,11 @@ function showArcadeResult() {
   m.appendChild(el('div', { style: { fontSize: '52px' } }, emoji));
   m.appendChild(el('h2', {}, title));
   m.appendChild(el('p', {}, sub));
+  if (newBest && score > 0) {
+    m.appendChild(el('p', { style: { color: 'var(--accent)', fontWeight: '700', marginTop: '-4px' } },
+      `★ NEW PERSONAL BEST! (was ${prevBest})`));
+    toast(`New Forge Invaders record: ${score}!`, '🏅');
+  }
   const row = el('div', { class: 'stat-row' });
   row.appendChild(stat('Score', score));
   row.appendChild(stat('Waves', waves));
@@ -5286,8 +6107,128 @@ function showArcadeResult() {
   openModal(m);
 }
 
+/* --------------------- SPLASH --------------------- */
+// Intro screen: hero artwork, tagline, fake loading bar with a rotating
+// quip, then 3-2-1-BOOM countdown before the home screen fades in. Skip
+// button bails early. Splash shows once per browser tab (sessionStorage)
+// unless the user URL-overrides with ?splash=always (handy for showing it
+// off) or ?dev (assume the dev is iterating and wants it skipped).
+const SPLASH_MESSAGES = [
+  'Mixing nuclear frosting…',
+  'Polishing the bazooka…',
+  'Briefing Granny on grammar…',
+  'Defrosting the cupcake nukes…',
+  'Adjusting Granny\u2019s bifocals…',
+  'Loading semicolons…',
+  'Stocking up on sprinkles…',
+  'Sharpening Granny\u2019s wit…',
+  'Teaching aliens to read…',
+  'Calibrating the rocket launcher…',
+  'Spell-checking the warheads…',
+  'Warning the aliens…',
+  'Brewing Granny\u2019s tea…',
+];
+function runSplash() {
+  const splash = document.getElementById('splash');
+  if (!splash) { boot(); return; }
+  const params = new URLSearchParams(location.search);
+  const force = params.get('splash') === 'always';
+  // Explicit override only — '?nosplash' bails immediately. (Previously
+  // '?dev' auto-skipped, but that hides the splash during dev work where
+  // the user is actively iterating on it.)
+  if (params.has('nosplash') && !force) {
+    console.log('[splash] skipped via ?nosplash');
+    hideSplash(true); boot(); return;
+  }
+  // Per-session: once you've watched it through, refreshes don't replay it.
+  // Override with ?splash=always or open a new tab.
+  let seen = false;
+  try { seen = sessionStorage.getItem('grannyboom.splashSeen') === '1'; } catch (_) {}
+  if (seen && !force) {
+    console.log('[splash] skipped — already seen this tab session. Use ?splash=always to replay.');
+    hideSplash(true); boot(); return;
+  }
+
+  const fill = document.getElementById('splashFill');
+  const msg  = document.getElementById('splashMsg');
+  const cnt  = document.getElementById('splashCount');
+  const loading = document.getElementById('splashLoading');
+  const skipBtn = document.getElementById('splashSkip');
+  const welcome = document.getElementById('splashWelcome');
+  // Personalise the welcome heading if we already know the player's name.
+  // New visitors (state.name empty) just get the generic greeting.
+  if (welcome) {
+    const nm = (state && state.name) ? String(state.name).trim() : '';
+    if (nm) {
+      welcome.innerHTML = 'Granny Boom welcomes you, <span class="name"></span>!';
+      welcome.querySelector('.name').textContent = nm;
+    } else {
+      welcome.textContent = 'Granny Boom welcomes you!';
+    }
+  }
+
+  let cancelled = false;
+  const timers = [];
+  const setT = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
+  const clearAll = () => { for (const t of timers) clearTimeout(t); timers.length = 0; };
+
+  // Loading bar fills smoothly over LOAD_MS while the quip rotates a couple
+  // of times. Then the countdown takes over.
+  const LOAD_MS = 2400;
+  const STEPS = 30;
+  const showMsg = (text) => {
+    msg.classList.remove('show');
+    setT(() => { msg.textContent = text; msg.classList.add('show'); }, 120);
+  };
+  const pickMsg = () => SPLASH_MESSAGES[Math.floor(Math.random() * SPLASH_MESSAGES.length)];
+  showMsg(pickMsg());
+  setT(() => showMsg(pickMsg()), Math.round(LOAD_MS * 0.4));
+  setT(() => showMsg(pickMsg()), Math.round(LOAD_MS * 0.75));
+  for (let i = 1; i <= STEPS; i++) {
+    setT(() => { if (!cancelled) fill.style.width = ((i / STEPS) * 100) + '%'; },
+      Math.round((LOAD_MS / STEPS) * i));
+  }
+  setT(() => { if (!cancelled) showMsg('Ready to slay!'); }, LOAD_MS + 60);
+
+  // Countdown — three numbers then BOOM. Each slot reuses the same node;
+  // CSS animation fires anew because we remove + re-append the element.
+  const showCount = (html, slotMs) => setT(() => {
+    if (cancelled) return;
+    loading.style.opacity = '0';
+    cnt.innerHTML = html;
+    // Force a reflow so the animation restarts every slot.
+    void cnt.offsetWidth;
+  }, slotMs);
+  let t = LOAD_MS + 400;
+  showCount('<span class="num">3</span>', t);          t += 700;
+  showCount('<span class="num">2</span>', t);          t += 700;
+  showCount('<span class="num">1</span>', t);          t += 700;
+  showCount('<span class="boom">BOOM!</span>', t);     t += 900;
+  setT(() => { if (!cancelled) finish(false); }, t);
+
+  function finish(skipped) {
+    cancelled = true;
+    clearAll();
+    hideSplash(skipped);
+    boot();
+  }
+  skipBtn.addEventListener('click', () => finish(true));
+  splash.addEventListener('click', (e) => {
+    if (e.target === splash) finish(true);
+  });
+}
+function hideSplash(immediate) {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  try { sessionStorage.setItem('grannyboom.splashSeen', '1'); } catch (_) {}
+  if (immediate) { splash.remove(); return; }
+  splash.classList.add('fade-out');
+  setTimeout(() => splash.remove(), 600);
+}
+function boot() { render(); }
+
 /* --------------------- BOOT --------------------- */
-render();
+runSplash();
 </script>
 </body>
 </html>
