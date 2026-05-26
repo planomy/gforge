@@ -138,51 +138,132 @@
   .name-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.25); }
 
   /* Topic tabs */
-  .topic-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+  .topic-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
   .topic-tab {
     background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
-    padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 14px;
+    padding: 11px 16px; border-radius: 14px; cursor: pointer; font-weight: 800; font-size: 14px;
     display: inline-flex; align-items: center; gap: 8px;
+    transition: transform .12s, background .2s, box-shadow .2s, border-color .2s;
   }
-  .topic-tab.active {
-    background: linear-gradient(135deg, var(--accent-3), var(--accent));
-    color: #1a0a04; border-color: transparent; box-shadow: 0 4px 14px rgba(255,138,61,0.35);
+  .topic-tab:hover:not(.active) { background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+  .topic-tab.active { color: #0a0710; border-color: transparent; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
+  .topic-tab.active[data-topic="sport"]     { background: linear-gradient(135deg, #4ade80, #22d3ee); }
+  .topic-tab.active[data-topic="adventure"] { background: linear-gradient(135deg, #ff8a3d, #ffc24a); }
+  .topic-tab.active[data-topic="mystery"]   { background: linear-gradient(135deg, #a78bfa, #ec4899); }
+  .topic-tab.active[data-topic="scifi"]     { background: linear-gradient(135deg, #6be3ff, #8b5cf6); }
+  .topic-tab .progress {
+    font-size: 11px; opacity: 0.9; padding: 2px 8px; border-radius: 999px;
+    background: rgba(0,0,0,0.28); font-weight: 800;
   }
-  .topic-tab:hover:not(.active) { background: rgba(255,255,255,0.10); }
+  .topic-tab.active .progress { background: rgba(0,0,0,0.18); color: #0a0710; }
 
   /* Story cards */
-  .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 14px; }
+  .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
   .story-card {
-    position: relative; padding: 16px; background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 16px; cursor: pointer; text-align: left;
-    transition: transform .12s, border-color .15s, box-shadow .15s, background .15s;
+    --t1: #ff8a3d; --t2: #ffc24a;
+    position: relative; padding: 0; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 18px; cursor: pointer; text-align: left;
+    transition: transform .15s ease, box-shadow .25s ease, border-color .25s;
+    overflow: hidden; isolation: isolate;
+  }
+  .story-card[data-topic="sport"]     { --t1: #4ade80; --t2: #22d3ee; }
+  .story-card[data-topic="adventure"] { --t1: #ff8a3d; --t2: #ffc24a; }
+  .story-card[data-topic="mystery"]   { --t1: #a78bfa; --t2: #ec4899; }
+  .story-card[data-topic="scifi"]     { --t1: #6be3ff; --t2: #8b5cf6; }
+  .story-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--t1) 55%, transparent);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--t1) 30%, transparent),
+                0 0 36px color-mix(in srgb, var(--t1) 22%, transparent);
+  }
+
+  .story-card .art {
+    position: relative; aspect-ratio: 4 / 3; width: 100%;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--t1) 65%, #1a0a14), color-mix(in srgb, var(--t2) 55%, #140a1f));
     overflow: hidden;
   }
-  .story-card:hover { transform: translateY(-2px); border-color: rgba(255,138,61,0.45); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
-  .story-card.done { background: linear-gradient(160deg, rgba(255,138,61,0.18), rgba(255,194,74,0.06)); border-color: rgba(255,194,74,0.5); }
+  /* When the real image loads, JS sets the art's aspect-ratio to match the
+     image's natural ratio, so cover never has to crop. */
+  .story-card .art img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .5s ease, filter .25s;
+  }
+  .story-card:hover .art img { transform: scale(1.07); }
+  .story-card .art-fallback {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 72px; pointer-events: none;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+    opacity: 0.7;
+  }
+  .story-card .art::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent 45%, rgba(10,7,16,0.78) 100%);
+  }
+  .story-card .art .sheen {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+    transition: opacity .35s, transform .6s;
+    transform: translateX(-30%);
+  }
+  .story-card:hover .art .sheen { opacity: 1; transform: translateX(30%); }
+
   .story-card .l {
-    position: absolute; top: 10px; right: 12px; font-size: 11px; font-weight: 900; letter-spacing: 1px;
-    color: var(--muted); background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 999px;
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    font-size: 11px; font-weight: 900; letter-spacing: 1.2px;
+    color: #fff; background: rgba(0,0,0,0.55); padding: 4px 10px; border-radius: 999px;
+    backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.12);
   }
-  .story-card .l.l1 { color: #4ade80; }
-  .story-card .l.l2 { color: var(--accent-2); }
-  .story-card .l.l3 { color: var(--bad); }
-  .story-card .ctx { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.45; }
+  .story-card .l.l1 { color: #b6ffd0; }
+  .story-card .l.l2 { color: #ffe7a8; }
+  .story-card .l.l3 { color: #ffb6c4; }
+
+  .story-card .forged-stamp {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    font-size: 11px; font-weight: 900; letter-spacing: 1px;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #052e13; padding: 4px 10px; border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(34,197,94,0.45);
+  }
+
+  .story-card .body { padding: 14px 16px 16px; position: relative; z-index: 1; }
   .story-card h3 {
-    margin: 16px 0 0; font-size: 18px; font-weight: 900; letter-spacing: 0.2px;
-    color: #ffd9a8; /* fallback for browsers without gradient text */
-    background: linear-gradient(135deg, #ffd9a8, #ffc24a 55%, #ff8a3d);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    margin: 0; font-size: 18px; font-weight: 900; letter-spacing: 0.2px;
+    color: #fff4e8;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.35);
   }
-  .story-card.done h3 {
-    background: linear-gradient(135deg, #fff4e8, #ffd166 60%, #ff8a3d);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .story-card .ctx {
+    color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    min-height: 2.9em;
   }
-  .story-card .meta { display: flex; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 12px; }
-  .story-card.done .meta { color: var(--gold); }
+  .story-card .meta {
+    display: flex; gap: 8px; margin-top: 12px; align-items: center; justify-content: space-between;
+    color: var(--muted); font-size: 12px; font-weight: 700;
+  }
+  /* When art loads, title is baked into the image — hide the text title + context
+     and tighten the body so it's just the CTA row. */
+  .story-card.has-art .body { padding: 12px 14px 14px; }
+  .story-card.has-art h3,
+  .story-card.has-art .ctx { display: none; }
+  .story-card.has-art .meta { margin-top: 0; }
+  .story-card .play-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, var(--t1), var(--t2));
+    color: #0a0710; padding: 6px 12px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 900; letter-spacing: 0.4px;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--t1) 35%, transparent);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .story-card:hover .play-cta { transform: translateX(2px); }
+  .story-card.done .play-cta {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #052e13;
+    box-shadow: 0 4px 14px rgba(34,197,94,0.35);
+  }
+  .story-card .paragon-mark {
+    color: var(--gold); font-weight: 900; letter-spacing: 0.5px; font-size: 11px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
 
   /* Forge screen */
   .forge { display: flex; flex-direction: column; gap: 14px; }
@@ -3310,8 +3391,9 @@ function renderHome(app) {
     const cnt = STORIES.filter(s => s.topic === t.id && state.completed[s.id]).length;
     const tab = el('button', {
       class: 'topic-tab' + (state.selectedTopic === t.id ? ' active' : ''),
+      'data-topic': t.id,
       onclick: () => { state.selectedTopic = t.id; saveState(); render(); }
-    }, t.emoji + ' ' + t.name, el('span', { style: { opacity: 0.7, marginLeft: '6px', fontSize: '12px' } }, `${cnt}/6`));
+    }, t.emoji + ' ' + t.name, el('span', { class: 'progress' }, `${cnt}/6`));
     tabs.appendChild(tab);
   }
   left.appendChild(tabs);
@@ -3336,16 +3418,23 @@ function renderHome(app) {
   for (const s of stories) {
     const done = !!state.completed[s.id];
     const completion = state.completed[s.id];
+    const topicEmoji = (TOPICS.find(t => t.id === s.topic) || {}).emoji || '✨';
     const card = el('button', {
       class: 'story-card' + (done ? ' done' : ''),
+      'data-topic': s.topic,
       onclick: () => startForge(s.id)
-    },
-      el('div', { class: 'l l' + s.level }, 'L' + s.level),
-      el('h3', {}, s.title),
-      el('div', { class: 'ctx' }, s.context),
-      el('div', { class: 'meta' },
-        done ? '✓ Forged' : 'Tap to forge',
-        completion && completion.perfect ? ' · ★ Paragon' : ''
+    });
+    card.appendChild(buildStoryArt(s, topicEmoji, done, card));
+    card.appendChild(
+      el('div', { class: 'body' },
+        el('h3', {}, s.title),
+        el('div', { class: 'ctx' }, s.context),
+        el('div', { class: 'meta' },
+          completion && completion.perfect
+            ? el('span', { class: 'paragon-mark' }, '★ Paragon')
+            : el('span', {}, done ? 'Completed' : 'Ready to forge'),
+          el('span', { class: 'play-cta' }, done ? '✓ Forged' : 'Forge →')
+        )
       )
     );
     grid.appendChild(card);
@@ -3361,6 +3450,48 @@ function stat(k, v) {
     el('div', { class: 'k' }, k),
     el('div', { class: 'v' }, String(v))
   );
+}
+
+// Hero art for story cards. Tries art/<id>.png -> .jpg -> .webp,
+// then falls back to a topic-colored gradient with the topic emoji.
+const ART_EXT_ORDER = ['png', 'jpg', 'webp'];
+function buildStoryArt(s, topicEmoji, done, cardRef) {
+  const art = el('div', { class: 'art' });
+  // Fallback emoji sits behind the image so it shows through if image fails or is transparent
+  const fallback = el('div', { class: 'art-fallback' }, topicEmoji);
+  art.appendChild(fallback);
+
+  const img = document.createElement('img');
+  img.alt = s.title;
+  img.loading = 'lazy';
+  img.decoding = 'async';
+  img.draggable = false;
+  let attempt = 0;
+  const tryNext = () => {
+    if (attempt >= ART_EXT_ORDER.length) {
+      img.remove(); // give up; fallback emoji + text title remain visible
+      return;
+    }
+    img.src = `art/${s.id}.${ART_EXT_ORDER[attempt++]}`;
+  };
+  img.addEventListener('error', tryNext);
+  img.addEventListener('load', () => {
+    fallback.style.display = 'none';
+    // Match the art container's aspect-ratio to the image's natural ratio so the
+    // image always displays in full (no cropping) regardless of 1:1 / 4:3 / etc.
+    if (img.naturalWidth && img.naturalHeight) {
+      art.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+    }
+    // Title is baked into the image — collapse the text title/context in the body.
+    if (cardRef && cardRef.classList) cardRef.classList.add('has-art');
+  });
+  tryNext();
+  art.appendChild(img);
+
+  art.appendChild(el('div', { class: 'sheen' }));
+  art.appendChild(el('div', { class: 'l l' + s.level }, 'L' + s.level));
+  if (done) art.appendChild(el('div', { class: 'forged-stamp' }, '✓ FORGED'));
+  return art;
 }
 
 /* --------------------- FORGE ENGINE --------------------- */
