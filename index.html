@@ -141,25 +141,44 @@
   }
   .name-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.25); }
 
-  /* Topic tabs */
-  .topic-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
+  /* Topic tabs — illustrated banner buttons */
+  .topic-tabs { display: flex; gap: 14px; flex-wrap: wrap; margin: 14px 0 18px; }
   .topic-tab {
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
-    padding: 11px 16px; border-radius: 14px; cursor: pointer; font-weight: 800; font-size: 14px;
-    display: inline-flex; align-items: center; gap: 8px;
-    transition: transform .12s, background .2s, box-shadow .2s, border-color .2s;
+    position: relative;
+    background: transparent; border: none; padding: 0; cursor: pointer;
+    transition: transform .15s ease, filter .25s ease;
+    filter: brightness(0.55) saturate(0.55) drop-shadow(0 4px 12px rgba(0,0,0,0.45));
+    display: inline-flex; align-items: center; line-height: 0;
   }
-  .topic-tab:hover:not(.active) { background: rgba(255,255,255,0.10); transform: translateY(-1px); }
-  .topic-tab.active { color: #0a0710; border-color: transparent; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
-  .topic-tab.active[data-topic="sport"]     { background: linear-gradient(135deg, #4ade80, #22d3ee); }
-  .topic-tab.active[data-topic="adventure"] { background: linear-gradient(135deg, #ff8a3d, #ffc24a); }
-  .topic-tab.active[data-topic="mystery"]   { background: linear-gradient(135deg, #a78bfa, #ec4899); }
-  .topic-tab.active[data-topic="scifi"]     { background: linear-gradient(135deg, #6be3ff, #8b5cf6); }
+  .topic-tab:hover {
+    filter: brightness(0.85) saturate(0.85) drop-shadow(0 6px 18px rgba(0,0,0,0.5));
+    transform: translateY(-2px);
+  }
+  .topic-tab.active {
+    transform: translateY(-3px);
+    filter: brightness(1.05) saturate(1.1)
+            drop-shadow(0 8px 22px rgba(0,0,0,0.5))
+            drop-shadow(0 0 18px var(--tab-glow, rgba(255,138,61,0.6)));
+  }
+  .topic-tab[data-topic="sport"]     { --tab-glow: rgba(74,222,128,0.6); }
+  .topic-tab[data-topic="adventure"] { --tab-glow: rgba(255,194,74,0.6); }
+  .topic-tab[data-topic="mystery"]   { --tab-glow: rgba(167,139,250,0.65); }
+  .topic-tab[data-topic="scifi"]     { --tab-glow: rgba(107,227,255,0.6); }
+  .topic-tab img {
+    height: 56px; width: auto; display: block; pointer-events: none;
+  }
   .topic-tab .progress {
-    font-size: 11px; opacity: 0.9; padding: 2px 8px; border-radius: 999px;
-    background: rgba(0,0,0,0.28); font-weight: 800;
+    position: absolute; top: 4px; right: 8px; z-index: 2;
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(10,7,16,0.85); color: #fff4e8; font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(4px);
+    line-height: 1.5;
   }
-  .topic-tab.active .progress { background: rgba(0,0,0,0.18); color: #0a0710; }
+  @media (max-width: 520px) {
+    .topic-tab img { height: 42px; }
+    .topic-tabs { gap: 8px; }
+  }
 
   /* Story cards */
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
@@ -3407,8 +3426,12 @@ function renderHome(app) {
     const tab = el('button', {
       class: 'topic-tab' + (state.selectedTopic === t.id ? ' active' : ''),
       'data-topic': t.id,
+      title: t.name,
       onclick: () => { state.selectedTopic = t.id; saveState(); render(); }
-    }, t.emoji + ' ' + t.name, el('span', { class: 'progress' }, `${cnt}/6`));
+    },
+      el('img', { src: `topics/${t.id}.png`, alt: t.name }),
+      el('span', { class: 'progress' }, `${cnt}/6`)
+    );
     tabs.appendChild(tab);
   }
   left.appendChild(tabs);
