@@ -329,6 +329,30 @@
   .forge { display: flex; flex-direction: column; gap: 14px; }
   .forge-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .forge-head .crumb { color: var(--muted); font-size: 13px; }
+
+  .forge-title-row {
+    display: flex; align-items: center; gap: 14px;
+    margin: 8px 0 4px;
+  }
+  .forge-title-col { flex: 1 1 auto; min-width: 0; }
+  .forge-title-col h2 {
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .forge-thumb {
+    flex: 0 0 auto;
+    height: 80px; max-width: 140px;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    background: rgba(0,0,0,0.3);
+  }
+  .forge-thumb img {
+    height: 100%; width: auto; max-width: 100%;
+    display: block; object-fit: cover;
+  }
+  @media (max-width: 520px) {
+    .forge-thumb { height: 56px; max-width: 100px; }
+  }
   .progress-dots { display: flex; gap: 8px; }
   .progress-dots .d {
     width: 26px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.12);
@@ -3641,8 +3665,21 @@ function renderForge() {
     })()
   ));
 
-  head.appendChild(el('h2', { style: { margin: '8px 0 4px' } }, s.title));
-  head.appendChild(el('div', { style: { color: 'var(--muted)', fontSize: '13px' } }, `Sentence ${i + 1} of ${f.sentencesState.length} · ${s.context}`));
+  const titleRow = el('div', { class: 'forge-title-row' });
+  const titleCol = el('div', { class: 'forge-title-col' },
+    el('h2', { style: { margin: '0 0 4px' } }, s.title),
+    el('div', { style: { color: 'var(--muted)', fontSize: '13px' } }, `Sentence ${i + 1} of ${f.sentencesState.length} · ${s.context}`)
+  );
+  titleRow.appendChild(titleCol);
+  const thumb = el('div', { class: 'forge-thumb' });
+  const thumbImg = document.createElement('img');
+  thumbImg.alt = s.title;
+  thumbImg.draggable = false;
+  thumbImg.addEventListener('error', () => thumb.remove());
+  thumbImg.src = `art/${s.id}.png`;
+  thumb.appendChild(thumbImg);
+  titleRow.appendChild(thumb);
+  head.appendChild(titleRow);
 
   // Build display: shows opener + slots (blank or filled)
   const buildEl = el('div', { class: 'build-display', style: { marginTop: '12px' } });
