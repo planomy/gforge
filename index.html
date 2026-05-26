@@ -589,6 +589,11 @@
   .arcade-hud .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-right: 6px; }
   .arcade-hud .score { color: var(--gold); font-size: 18px; }
   .arcade-hud .lives { color: var(--bad); letter-spacing: 4px; font-size: 20px; }
+  .arcade-hud .lives .life-ship {
+    height: 22px; width: 26px; object-fit: contain; vertical-align: middle;
+    margin-left: 4px; filter: drop-shadow(0 0 4px rgba(80,180,255,0.55));
+  }
+  @media (max-width: 520px) { .arcade-hud .lives .life-ship { height: 18px; width: 22px; } }
   .arcade-hud .timer { color: var(--accent-2); font-size: 18px; font-variant-numeric: tabular-nums; }
   .arcade-hud .timer.low { color: var(--bad); animation: lowPulse 0.7s ease-in-out infinite; }
   @keyframes lowPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
@@ -3370,7 +3375,8 @@ const BADGES = {
   l3:         { name: 'Three-Level Forge', icon: '🥇', desc: 'Complete a Level 3 story.' },
   streak5:    { name: 'On Fire',          icon: '🔥', desc: 'Pass 5 stories in a row.' },
   arcade:     { name: 'Arcade Ace',       icon: '🕹️', desc: 'Score 200+ in the reward game.' },
-  defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear all aliens in the reward game.' }
+  defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear a full wave in the arcade.' },
+  boss:       { name: 'Grand-Daddy Slayer',icon: '😈', desc: 'Defeat the Grand-Daddy boss.' }
 };
 
 /* --------------------- SHIPS (hangar / upgrades) --------------------- */
@@ -3428,28 +3434,41 @@ const MONSTER_SRC = [
   'monsters/monster5.png'
 ];
 const MONSTER_SPRITES = {};
-function buildMonsterSprite(src) {
-  if (MONSTER_SPRITES[src]) return MONSTER_SPRITES[src];
-  const SZ = 64;
+function buildMonsterSprite(src, w, h) {
+  w = w || 64; h = h || 64;
+  const key = (w === 64 && h === 64) ? src : `${src}@${w}x${h}`;
+  if (MONSTER_SPRITES[key]) return MONSTER_SPRITES[key];
   const off = document.createElement('canvas');
-  off.width = SZ; off.height = SZ;
+  off.width = w; off.height = h;
   const entry = { canvas: off, loaded: false };
-  MONSTER_SPRITES[src] = entry;
+  MONSTER_SPRITES[key] = entry;
   const img = new Image();
   img.decoding = 'async';
   img.onload = () => {
     const c = off.getContext('2d');
-    const ratio = Math.min(SZ / img.naturalWidth, SZ / img.naturalHeight);
+    const ratio = Math.min(w / img.naturalWidth, h / img.naturalHeight);
     const dw = img.naturalWidth * ratio;
     const dh = img.naturalHeight * ratio;
-    c.clearRect(0, 0, SZ, SZ);
-    c.drawImage(img, (SZ - dw) / 2, (SZ - dh) / 2, dw, dh);
+    c.clearRect(0, 0, w, h);
+    c.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
     entry.loaded = true;
   };
   img.src = src;
   return entry;
 }
 for (const src of MONSTER_SRC) buildMonsterSprite(src); // preload at boot
+
+// Mother ship: bigger sprite, wider than tall. Pre-rendered at its display size.
+const MOTHER_SRC = 'monsters/mothership.png';
+const MOTHER_W = 110, MOTHER_H = 60;
+buildMonsterSprite(MOTHER_SRC, MOTHER_W, MOTHER_H);
+
+// Grand-Daddy boss: ~5.6× the linear size of a regular enemy. Spawns once
+// per game after 5 waves are cleared, in place of the 6th wave. Lots of HP,
+// lots of firepower — designed to outlast the timer for most players.
+const GRANDDADDY_SRC = 'monsters/granddaddy.png';
+const GRANDDADDY_W = 360, GRANDDADDY_H = 180;
+buildMonsterSprite(GRANDDADDY_SRC, GRANDDADDY_W, GRANDDADDY_H);
 
 const SHIP_SPRITES = {};
 function getShipSprite(id) {
@@ -4435,6 +4454,15 @@ function arcKeyDown(e) {
   if (!arcade || !arcade.active) return;
   const k = (e.key || '').toLowerCase();
   if (k === 'p') { arcade.paused = !arcade.paused; return; }
+  // Dev shortcut: press B to summon the Grand-Daddy instantly (?dev only).
+  if (DEV_MODE && k === 'b' && !arcade.boss && !arcade.bossSpawnedThisGame) {
+    arcade.bossSpawnedThisGame = true;
+    arcade.enemies = []; arcade.mother = null;
+    arcade.bullets = []; arcade.enemyBullets = [];
+    spawnBoss();
+    toast('DEV: Grand-Daddy summoned', '😈');
+    return;
+  }
   const m = ARC_KEYMAP[k];
   if (m) { ARC_KEYS[m] = true; e.preventDefault(); }
 }
@@ -4454,11 +4482,14 @@ function startArcade(opts = {}) {
     startTs: 0, pausedAccum: 0, pausedSince: 0,
     player: { x: ARC_W / 2, y: ARC_H - 50, w: 44, h: 30, speed: 0.42, invuln: 0 },
     bullets: [], enemyBullets: [], enemies: createWave(), particles: [],
-    score: 0, lives: 3, livesLostThisGame: 0,
+    score: 0, lives: 3, livesLostThisGame: 0, livesLostInWave: 0, wavesCleared: 0,
     enemyDir: 1, enemyStepEvery: 700, enemyStepTimer: 0, enemyDropPending: false,
     lastFire: 0, fireCooldown: 240, enemyFireTimer: 0, enemyFireEvery: 700,
     shake: 0, raf: null, lastTs: 0,
     bgCanvas: null,
+    mother: null, motherCount: 0, motherLastSpawnMs: 0,
+    boss: null, bossSpawnedThisGame: false, bossDefeated: false,
+    postBossUntil: 0, hyperToastShown: false,
     shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
   };
   renderArcade();
@@ -4498,7 +4529,7 @@ function renderArcade() {
   hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Score'), el('span', { class: 'score', id: 'arcScore' }, '0')));
   hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Time'), el('span', { id: 'arcTime', class: 'timer' }, '60s')));
   hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'XP'), el('span', { id: 'arcXp', style: { color: 'var(--accent)' } }, '+0')));
-  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Lives'), el('span', { class: 'lives', id: 'arcLives' }, '❤❤❤')));
+  hud.appendChild(el('div', {}, el('span', { class: 'k' }, 'Lives'), el('span', { class: 'lives', id: 'arcLives' })));
   frame.appendChild(hud);
   const wrap = el('div', { class: 'arcade-canvas-wrap' });
   wrap.appendChild(el('canvas', { id: 'arcCanvas', width: String(ARC_W), height: String(ARC_H) }));
@@ -4546,11 +4577,24 @@ function arcadeLoop(ts) {
       updateArcade(dt);
     }
   }
+  // Game-over freeze: zero out the shake before the final draw so the
+  // canvas doesn't keep ctx.translate-jittering forever. updateArcade()
+  // stops running on `over`, which means without this the most recent
+  // shake value (typically 18 from the killing hit) sticks around and
+  // every subsequent frame the canvas is re-shaken, producing the exact
+  // "elements jittering in place behind the modal" that testers saw.
+  if (arcade.over) arcade.shake = 0;
   drawArcade();
-  arcade.raf = requestAnimationFrame(arcadeLoop);
-  if (arcade.over && !arcade.resultShown) {
-    arcade.resultShown = true;
-    setTimeout(() => showArcadeResult(), 600);
+  if (!arcade.over) {
+    arcade.raf = requestAnimationFrame(arcadeLoop);
+  } else {
+    // One settled frame is enough — stop the RAF treadmill so we don't
+    // burn CPU (and re-shake the canvas) while the result modal is up.
+    arcade.raf = null;
+    if (!arcade.resultShown) {
+      arcade.resultShown = true;
+      setTimeout(() => showArcadeResult(), 600);
+    }
   }
 }
 function updateArcade(dt) {
@@ -4574,7 +4618,11 @@ function updateArcade(dt) {
   a.enemyStepTimer += dt;
   const alive = a.enemies.filter(e => e.alive);
   const killCount = a.enemies.length - alive.length;
-  a.enemyStepEvery = Math.max(120, 700 - killCount * 18);
+  // HYPER MODE: once the Grand-Daddy is down, every subsequent rack is on
+  // overdrive — half the step interval, half the fire interval, double the
+  // bullet speed, double the on-screen cap, and a 2-shot volley each fire.
+  const hyperMul = a.bossDefeated ? 0.5 : 1;
+  a.enemyStepEvery = Math.max(120, 700 - killCount * 18) * hyperMul;
   if (a.enemyStepTimer >= a.enemyStepEvery && alive.length > 0) {
     a.enemyStepTimer = 0;
     if (a.enemyDropPending) { for (const e of alive) e.y += 22; a.enemyDir *= -1; a.enemyDropPending = false; }
@@ -4587,17 +4635,22 @@ function updateArcade(dt) {
     }
   }
   a.enemyFireTimer += dt;
-  a.enemyFireEvery = Math.max(180, 700 - killCount * 12);
-  if (a.enemyFireTimer >= a.enemyFireEvery && alive.length > 0 && a.enemyBullets.length < 4) {
+  a.enemyFireEvery = Math.max(180, 700 - killCount * 12) * hyperMul;
+  const bulletCap = a.bossDefeated ? 8 : 4;
+  const bulletVy = a.bossDefeated ? 0.64 : 0.32;
+  const shotsPerVolley = a.bossDefeated ? 2 : 1;
+  if (a.enemyFireTimer >= a.enemyFireEvery && alive.length > 0 && a.enemyBullets.length < bulletCap) {
     a.enemyFireTimer = 0;
     const byCol = {};
     for (const e of alive) if (!byCol[e.col] || e.y > byCol[e.col].y) byCol[e.col] = e;
     const fronts = Object.values(byCol);
-    const sh = fronts[Math.floor(Math.random() * fronts.length)];
-    if (sh) a.enemyBullets.push({ x: sh.x, y: sh.y + 16, w: 4, h: 10, vy: 0.32 });
+    for (let s = 0; s < shotsPerVolley && fronts.length > 0 && a.enemyBullets.length < bulletCap; s++) {
+      const sh = fronts[Math.floor(Math.random() * fronts.length)];
+      if (sh) a.enemyBullets.push({ x: sh.x, y: sh.y + 16, w: 4, h: 10, vy: bulletVy, hyper: true });
+    }
   }
-  for (const b of a.enemyBullets) b.y += b.vy * dt;
-  a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20);
+  for (const b of a.enemyBullets) { b.y += b.vy * dt; if (b.vx) b.x += b.vx * dt; }
+  a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20 && b.x > -10 && b.x < ARC_W + 10);
   for (const b of a.bullets) {
     for (const e of alive) {
       if (!e.alive) continue;
@@ -4612,7 +4665,7 @@ function updateArcade(dt) {
   if (a.player.invuln <= 0) {
     for (const b of a.enemyBullets) {
       if (Math.abs(b.x - a.player.x) < a.player.w/2 + b.w/2 && Math.abs(b.y - a.player.y) < a.player.h/2 + b.h/2) {
-        a.lives--; a.livesLostThisGame++; a.player.invuln = 1200; a.shake = 18; b.y = ARC_H + 100;
+        a.lives--; a.livesLostThisGame++; a.livesLostInWave++; a.player.invuln = 1200; a.shake = 18; b.y = ARC_H + 100;
         spawnParticles(a.player.x, a.player.y, '#ff5a7a');
         break;
       }
@@ -4620,17 +4673,261 @@ function updateArcade(dt) {
     a.enemyBullets = a.enemyBullets.filter(b => b.y < ARC_H + 20);
   } else a.player.invuln -= dt;
   const reachedBottom = alive.some(e => e.y + e.h/2 >= a.player.y - 10);
-  for (const p of a.particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+  for (const p of a.particles) {
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.gravity) p.vy += p.gravity * dt;
+    if (p.expand)  p.r  += p.expand * dt;
+    if (p.type === 'ring') p.r = p.rMax * (1 - Math.max(0, p.life) / p.maxLife);
+    p.life -= dt;
+  }
   a.particles = a.particles.filter(p => p.life > 0);
   if (a.shake > 0) a.shake = Math.max(0, a.shake - dt * 0.05);
-  if (alive.length === 0) { a.over = true; a.won = true; a.score += 100; if (a.livesLostThisGame === 0) a.score += 50; }
+  // Post-boss cinematic hold: after the Grand-Daddy explodes we sit on the
+  // empty arena for ~2.5s so the player can soak in the explosion chain and
+  // the floating bonus text before the hyper-wave drops.
+  const postBossActive = a.postBossUntil && performance.now() < a.postBossUntil;
+  if (alive.length === 0 && !a.boss && !postBossActive) {
+    // Wave cleared! Award a base bonus, plus a perfect-wave bonus if the
+    // player took no hits during this wave. If there's still time on the
+    // clock, immediately spawn the next wave so the player can keep racking
+    // up score until the 60s timer expires.
+    let waveBonus = 100;
+    if (a.livesLostInWave === 0) waveBonus += 50;
+    a.score += waveBonus;
+    a.wavesCleared++;
+    if (a.timeRemaining > 0) {
+      a.bullets = [];
+      a.enemyBullets = [];
+      a.enemyDir = 1;
+      a.enemyStepTimer = 0;
+      a.enemyFireTimer = 0;
+      a.enemyDropPending = false;
+      a.livesLostInWave = 0;
+      // After clearing 5 waves the Grand-Daddy boss takes the stage in place
+      // of wave 6. Only one boss per game — bossSpawnedThisGame guards it.
+      if (a.wavesCleared >= 5 && !a.bossSpawnedThisGame) {
+        a.bossSpawnedThisGame = true;
+        a.enemies = [];
+        a.mother = null; // clear out the mother so the boss owns the spotlight
+        spawnBoss();
+        for (let i = 0; i < 12; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ff5a3d');
+        for (let i = 0; i < 8; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ffd166');
+        toast(`GRAND-DADDY incoming! +${waveBonus} XP`, '😈');
+      } else if (a.bossDefeated && !a.hyperToastShown) {
+        // First wave after slaying the boss — announce HYPER MODE.
+        a.hyperToastShown = true;
+        a.enemies = createWave();
+        spawnBonusText(ARC_W / 2, ARC_H / 2 - 10, 'HYPER MODE!', '#ff3d1a', 46);
+        spawnBonusText(ARC_W / 2, ARC_H / 2 + 36, 'ALIENS ENRAGED', '#ffd166', 22);
+        toast(`Hyper wave incoming — aliens enraged! +${waveBonus} XP`, '🔥');
+      } else {
+        a.enemies = createWave();
+        for (let i = 0; i < 6; i++) spawnParticles(ARC_W / 2 + (i - 2.5) * 90, 80, '#ffd166');
+        toast(`Wave ${a.wavesCleared} cleared! +${waveBonus} XP`, '🌊');
+      }
+    } else {
+      // Edge case: cleared the last alien at the same instant the timer hit 0.
+      a.over = true; a.won = true;
+    }
+  }
   else if (a.lives <= 0 || reachedBottom) { a.over = true; a.won = false; }
   else if (a.timeRemaining <= 0) { a.over = true; a.won = false; a.timeUp = true; }
+  // Mother ship: spawn periodically and update independently of the regular
+  // marching pack. First one shows up ~12s in, then again every ~18s.
+  const elapsedMs = a.duration - a.timeRemaining;
+  const nextSpawnAt = a.motherCount === 0 ? 12000 : a.motherLastSpawnMs + 18000;
+  if (!a.mother && !a.over && elapsedMs > nextSpawnAt) {
+    spawnMother();
+    a.motherLastSpawnMs = elapsedMs;
+  }
+  updateMother(dt);
+  updateBoss(dt);
   updateArcHud();
+}
+function spawnMother() {
+  const fromLeft = Math.random() < 0.5;
+  arcade.mother = {
+    x: fromLeft ? -90 : ARC_W + 90,
+    y: 50,
+    w: 92, h: 50,        // hitbox (slightly tighter than the 110×60 sprite)
+    t: 0, lifetime: 12000,
+    fireTimer: 0, fireEvery: 650,
+    fromLeft
+  };
+  arcade.motherCount++;
+}
+function updateMother(dt) {
+  const m = arcade.mother; if (!m) return;
+  m.t += dt;
+  const ENTER_MS = 1400;
+  if (m.t < ENTER_MS) {
+    // Swoop in: ease-out lerp from spawn point to orbit centre.
+    const k = m.t / ENTER_MS;
+    const ease = k * (2 - k);
+    const startX = m.fromLeft ? -90 : ARC_W + 90;
+    m.x = startX + (ARC_W / 2 - startX) * ease;
+    m.y = 50 + (105 - 50) * ease;
+  } else if (m.t < m.lifetime) {
+    // Swirl: wide horizontal sine + smaller vertical bob, around (ARC_W/2, 105).
+    const orbitT = (m.t - ENTER_MS) / 1000;
+    const dir = m.fromLeft ? 1 : -1;
+    m.x = ARC_W / 2 + dir * 240 * Math.sin(orbitT * 1.25);
+    m.y = 105 + 28 * Math.sin(orbitT * 1.9 + 0.4);
+  } else {
+    // Retreat: lift off the top of the canvas, then despawn.
+    m.y -= 0.22 * dt;
+    if (m.y < -120) { arcade.mother = null; return; }
+  }
+  // Drop bombs only during the active swirl phase, capped so the screen
+  // doesn't get carpeted in projectiles.
+  if (m.t >= 1100 && m.t < m.lifetime) {
+    m.fireTimer += dt;
+    if (m.fireTimer >= m.fireEvery && arcade.enemyBullets.length < 9) {
+      m.fireTimer = 0;
+      arcade.enemyBullets.push({ x: m.x, y: m.y + m.h / 2, w: 6, h: 14, vy: 0.46, mother: true });
+    }
+  }
+  // Hit detection vs player bullets — generous bonus and confetti when downed.
+  if (m.t > 200) {
+    for (const b of arcade.bullets) {
+      if (Math.abs(b.x - m.x) < m.w / 2 + b.w / 2 && Math.abs(b.y - m.y) < m.h / 2 + b.h / 2) {
+        b.y = -100;
+        arcade.score += 250;
+        spawnBigExplosion(m.x, m.y, 1.0);
+        arcade.shake = Math.max(arcade.shake, 18);
+        toast('Mother ship down! +250 XP', '💥');
+        arcade.mother = null;
+        return;
+      }
+    }
+  }
+}
+// Grand-Daddy boss: spawns from centre-top after 5 waves are cleared. Lots of
+// HP, three independent firing groups (eyes / mouth / claws), and a big
+// fanfare on defeat.
+function spawnBoss() {
+  arcade.boss = {
+    x: ARC_W / 2, y: -110,
+    w: GRANDDADDY_W, h: GRANDDADDY_H,          // sprite dimensions
+    hitW: 300, hitH: 130,                       // tighter hitbox than the wing-span
+    hp: 120, maxHp: 120,
+    t: 0,
+    eyeTimer: 0, eyeEvery: 720,
+    mouthTimer: 0, mouthEvery: 950,
+    clawTimer: 0, clawEvery: 1500,
+    swayPhase: Math.random() * Math.PI * 2,
+  };
+}
+function updateBoss(dt) {
+  const b = arcade.boss; if (!b) return;
+  b.t += dt;
+  const ENTER_MS = 2200;
+  if (b.t < ENTER_MS) {
+    // Heavy ease-out descent from above the canvas into hover position.
+    const k = b.t / ENTER_MS;
+    const ease = 1 - Math.pow(1 - k, 3);
+    b.x = ARC_W / 2;
+    b.y = -110 + (140 - (-110)) * ease;
+  } else {
+    // Hover with a slow horizontal sway + tiny vertical bob.
+    const s = (b.t - ENTER_MS) / 1000;
+    b.x = ARC_W / 2 + 70 * Math.sin(s * 0.6 + b.swayPhase);
+    b.y = 140 + 10 * Math.sin(s * 1.1 + b.swayPhase);
+  }
+  // Only start the gun show once the boss has finished its dramatic entrance.
+  if (b.t > ENTER_MS - 200) {
+    b.eyeTimer += dt;
+    b.mouthTimer += dt;
+    b.clawTimer += dt;
+    const cap = 22; // generous projectile cap during boss fight
+    // EYES: two parallel straight-down bombs from the eye sockets.
+    if (b.eyeTimer >= b.eyeEvery && arcade.enemyBullets.length < cap) {
+      b.eyeTimer = 0;
+      arcade.enemyBullets.push({ x: b.x - 38, y: b.y + 6,  w: 5, h: 13, vy: 0.42, boss: true });
+      arcade.enemyBullets.push({ x: b.x + 38, y: b.y + 6,  w: 5, h: 13, vy: 0.42, boss: true });
+    }
+    // MOUTH: fang-driven aimed bomb that tracks the player at fire-time.
+    if (b.mouthTimer >= b.mouthEvery && arcade.enemyBullets.length < cap) {
+      b.mouthTimer = 0;
+      const px = arcade.player.x, py = arcade.player.y;
+      const dx = px - b.x, dy = py - (b.y + 40);
+      const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const sp = 0.5;
+      arcade.enemyBullets.push({
+        x: b.x, y: b.y + 40, w: 7, h: 15,
+        vx: (dx / dist) * sp, vy: (dy / dist) * sp,
+        boss: true, fang: true,
+      });
+    }
+    // CLAWS: wide 3-bullet fan from each claw tip.
+    if (b.clawTimer >= b.clawEvery && arcade.enemyBullets.length < cap) {
+      b.clawTimer = 0;
+      for (const side of [-1, 1]) {
+        const cx = b.x + side * 150;
+        const cy = b.y + 20;
+        for (let i = -1; i <= 1; i++) {
+          arcade.enemyBullets.push({
+            x: cx, y: cy, w: 5, h: 12,
+            vx: side * 0.06 + i * 0.09, vy: 0.36,
+            boss: true,
+          });
+        }
+      }
+    }
+  }
+  // Collision with player bullets.
+  for (const bul of arcade.bullets) {
+    if (bul.y < -50) continue;
+    if (Math.abs(bul.x - b.x) < b.hitW / 2 + bul.w / 2 && Math.abs(bul.y - b.y) < b.hitH / 2 + bul.h / 2) {
+      bul.y = -100;
+      b.hp -= 1;
+      arcade.score += 5;
+      spawnParticles(bul.x, bul.y, '#ff8a3d');
+      if (b.hp <= 0) {
+        // BOSS DOWN — chain of cinematic explosions across the wingspan so
+        // it actually feels like a 360px ship breaking apart. Big central
+        // boom + staggered secondary pops at the wingtips and crown.
+        const bx = b.x, by = b.y, hw = b.hitW, hh = b.hitH;
+        spawnBigExplosion(bx, by, 1.8);
+        setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.32, by + 6,        0.95); }, 120);
+        setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.32, by + 6,        0.95); }, 240);
+        setTimeout(() => { if (arcade) spawnBigExplosion(bx,             by - hh * 0.3, 1.10); }, 380);
+        setTimeout(() => { if (arcade) spawnBigExplosion(bx - hw * 0.15, by + hh * 0.2, 0.80); }, 520);
+        setTimeout(() => { if (arcade) spawnBigExplosion(bx + hw * 0.15, by + hh * 0.2, 0.80); }, 640);
+        arcade.shake = Math.max(arcade.shake, 38);
+        arcade.score += 1500;
+        arcade.bossDefeated = true;
+        arcade.boss = null;
+        // Floating bonus text — staggered so it reads dramatically over the
+        // explosion chain. Each line rises slowly and fades out.
+        spawnBonusText(ARC_W / 2, ARC_H / 2 - 50, 'GRAND-DADDY', '#ff5a3d', 32);
+        setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2,      'DEFEATED!', '#ff8a3d', 48); }, 220);
+        setTimeout(() => { if (arcade) spawnBonusText(ARC_W / 2, ARC_H / 2 + 60, '+1500 XP',  '#ffd166', 52); }, 520);
+        toast('GRAND-DADDY DEFEATED! +1500 XP', '🏆');
+        awardBadge('boss');
+        // Hold the empty arena for a beat before the next wave drops in.
+        // The wave-clear branch is gated by postBossUntil, so it won't fire
+        // until this window elapses.
+        arcade.enemies = [];
+        arcade.bullets = [];
+        arcade.enemyBullets = [];
+        arcade.enemyDir = 1;
+        arcade.enemyStepTimer = 0;
+        arcade.enemyFireTimer = 0;
+        arcade.enemyDropPending = false;
+        arcade.livesLostInWave = 0;
+        arcade.postBossUntil = performance.now() + 2500;
+        return;
+      }
+    }
+  }
 }
 function spawnParticles(x, y, color) {
   const arr = arcade.particles;
-  const PARTICLE_CAP = 80;
+  // Soft cap raised so regular alien kills still throw confetti even while a
+  // big-explosion is happening on the boss/mother (which spawns ~150–250
+  // particles in one go).
+  const PARTICLE_CAP = 320;
   for (let i = 0; i < 10; i++) {
     if (arr.length >= PARTICLE_CAP) break;
     const ang = Math.random() * Math.PI * 2;
@@ -4638,11 +4935,92 @@ function spawnParticles(x, y, color) {
     arr.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 500 + Math.random() * 300, maxLife: 800, color });
   }
 }
+// Big cinematic boom for boss / mother-ship kills. Five layers:
+//   1. flash      — full-screen white wash that fades out fast
+//   2. core       — bright white-hot disk that puffs and fades
+//   3. ring       — expanding white shockwave stroke
+//   4. blob×N     — additive-blended glowing fireball chunks
+//   5. spark×N    — bright streaks that arc with gravity
+//   6. smoke×N    — dark gradient puffs that drift upward and expand
+// `scale` controls overall size/particle counts. 1.0 = mother ship, 1.8 ≈ boss.
+function spawnBigExplosion(x, y, scale) {
+  scale = scale || 1;
+  const arr = arcade.particles;
+  arr.push({ type: 'flash', x, y, vx: 0, vy: 0, life: 180, maxLife: 180, color: '#fff' });
+  arr.push({ type: 'core',  x, y, vx: 0, vy: 0, r: 26 * scale, life: 450, maxLife: 450 });
+  arr.push({ type: 'ring',  x, y, vx: 0, vy: 0, r: 0, rMax: 170 * scale, life: 520, maxLife: 520 });
+  const palette = ['#fff5b0', '#ffd166', '#ff8a3d', '#ff5a3d', '#ff3d1a'];
+  const blobs = Math.floor(20 * scale);
+  for (let i = 0; i < blobs; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = (0.07 + Math.random() * 0.16) * scale;
+    arr.push({
+      type: 'blob', x, y,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      r: (9 + Math.random() * 9) * scale,
+      life: 600 + Math.random() * 350, maxLife: 950,
+      color: palette[Math.floor(Math.random() * palette.length)],
+    });
+  }
+  const sparks = Math.floor(28 * scale);
+  for (let i = 0; i < sparks; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = (0.28 + Math.random() * 0.45) * scale;
+    arr.push({
+      type: 'spark', x, y,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      gravity: 0.0007,
+      life: 700 + Math.random() * 500, maxLife: 1200,
+      color: Math.random() < 0.55 ? '#ffe066' : '#ff8a3d',
+    });
+  }
+  const smoke = Math.floor(10 * scale);
+  for (let i = 0; i < smoke; i++) {
+    const a = (Math.random() - 0.5) * 0.9 - Math.PI / 2; // upward bias
+    const sp = 0.05 + Math.random() * 0.06;
+    arr.push({
+      type: 'smoke',
+      x: x + (Math.random() - 0.5) * 28 * scale,
+      y: y + (Math.random() - 0.5) * 18 * scale,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      r: (16 + Math.random() * 12) * scale,
+      expand: 0.018,
+      life: 1000 + Math.random() * 600, maxLife: 1600,
+      color: '#1a0e0c',
+    });
+  }
+}
+// Floating in-canvas bonus text — pops in with a scale animation, drifts
+// upward, and fades. Rendered as a particle (type 'text') so it stays in
+// sync with the arcade canvas (shake-translates correctly, dies with the
+// arcade lifecycle, etc).
+function spawnBonusText(x, y, text, color, size) {
+  if (!arcade) return;
+  arcade.particles.push({
+    type: 'text', x, y,
+    vx: 0, vy: -0.04,
+    text, color: color || '#ffd166', size: size || 36,
+    life: 2200, maxLife: 2200,
+  });
+}
 function updateArcHud() {
   const a = arcade;
   const sc = $('#arcScore'); const lv = $('#arcLives'); const xp = $('#arcXp'); const tm = $('#arcTime');
   if (sc) sc.textContent = String(a.score);
-  if (lv) lv.textContent = a.lives > 0 ? '❤'.repeat(a.lives) : '✖';
+  if (lv && lv.dataset.lives !== String(a.lives)) {
+    lv.dataset.lives = String(a.lives);
+    lv.innerHTML = '';
+    if (a.lives <= 0) {
+      lv.textContent = '✖';
+    } else {
+      const shipSrc = (a.shipDef && a.shipDef.src) || 'ships/ship1.png';
+      for (let i = 0; i < a.lives; i++) {
+        const img = document.createElement('img');
+        img.src = shipSrc; img.className = 'life-ship'; img.alt = '';
+        lv.appendChild(img);
+      }
+    }
+  }
   if (xp) xp.textContent = '+' + previewXp(a.score);
   if (tm) { const s = Math.ceil(a.timeRemaining / 1000); tm.textContent = s + 's'; tm.classList.toggle('low', s <= 10); }
 }
@@ -4675,10 +5053,44 @@ function drawArcade() {
     const entry = MONSTER_SPRITES[e.sprite] || buildMonsterSprite(e.sprite);
     ctx.drawImage(entry.canvas, e.x - 32, e.y - 32);
   }
+  // Mother ship sits above the regular enemies but below the player's bullets.
+  if (arcade.mother) {
+    const m = arcade.mother;
+    const entry = MONSTER_SPRITES[`${MOTHER_SRC}@${MOTHER_W}x${MOTHER_H}`] || buildMonsterSprite(MOTHER_SRC, MOTHER_W, MOTHER_H);
+    ctx.drawImage(entry.canvas, m.x - MOTHER_W / 2, m.y - MOTHER_H / 2);
+  }
+  // Grand-Daddy boss — bigger than everything else, so draw before bullets so
+  // the player's shots and the HP bar overlay on top of it.
+  if (arcade.boss) {
+    const b = arcade.boss;
+    const entry = MONSTER_SPRITES[`${GRANDDADDY_SRC}@${GRANDDADDY_W}x${GRANDDADDY_H}`] || buildMonsterSprite(GRANDDADDY_SRC, GRANDDADDY_W, GRANDDADDY_H);
+    ctx.drawImage(entry.canvas, b.x - GRANDDADDY_W / 2, b.y - GRANDDADDY_H / 2);
+  }
   ctx.fillStyle = '#ffe066';
   for (const b of arcade.bullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
-  ctx.fillStyle = '#ff5a7a';
-  for (const b of arcade.enemyBullets) ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+  for (const b of arcade.enemyBullets) {
+    ctx.fillStyle = b.fang ? '#ffae3d'
+      : b.boss   ? '#ff7a1a'
+      : b.mother ? '#ff5af0'
+      : b.hyper  ? '#ff3d1a'
+      : '#ff5a7a';
+    ctx.fillRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h);
+  }
+  // Boss HP bar pinned to the top of the canvas while the boss is alive.
+  if (arcade.boss) {
+    const b = arcade.boss;
+    const barW = ARC_W - 80, barX = 40, barY = 18;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(barX - 2, barY - 2, barW + 4, 12);
+    const pct = Math.max(0, b.hp / b.maxHp);
+    ctx.fillStyle = pct > 0.5 ? '#ff8a3d' : pct > 0.25 ? '#ffd166' : '#ff5a7a';
+    ctx.fillRect(barX, barY, barW * pct, 8);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`GRAND-DADDY  ${b.hp}/${b.maxHp}`, ARC_W / 2, barY - 4);
+    ctx.textAlign = 'start';
+  }
   const p = arcade.player;
   const blink = p.invuln > 0 && Math.floor(performance.now() / 80) % 2 === 0;
   const ship = arcade.shipImg;
@@ -4704,9 +5116,114 @@ function drawArcade() {
       ctx.closePath(); ctx.fill();
     }
   }
-  for (const pt of arcade.particles) {
-    ctx.fillStyle = pt.color; ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+  // ---- Particles ----
+  // Multi-pass renderer so smoke sits behind bright glowy stuff, default
+  // square particles render normally, and the full-screen flash overlays
+  // everything else.
+  const parts = arcade.particles;
+  // Pass 1: smoke (dark, normal blend, drawn first so it's behind glow).
+  for (const pt of parts) {
+    if (pt.type !== 'smoke') continue;
+    const lp = Math.max(0, pt.life / pt.maxLife);
+    const r = pt.r;
+    const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+    g.addColorStop(0,   'rgba(40,28,24,0.55)');
+    g.addColorStop(0.7, 'rgba(18,12,12,0.22)');
+    g.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.globalAlpha = lp * 0.75;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // Pass 2: bright effects with additive blending — fireball, core,
+  // sparks and ring all stack into a brilliant white-hot glow where they
+  // overlap.
+  ctx.globalCompositeOperation = 'lighter';
+  for (const pt of parts) {
+    const lp = Math.max(0, pt.life / pt.maxLife);
+    if (pt.type === 'core') {
+      const r = pt.r * (1 + (1 - lp) * 0.7);
+      const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+      g.addColorStop(0,   'rgba(255,255,255,1)');
+      g.addColorStop(0.3, 'rgba(255,224,102,0.9)');
+      g.addColorStop(0.7, 'rgba(255,138,61,0.45)');
+      g.addColorStop(1,   'rgba(255,90,29,0)');
+      ctx.globalAlpha = lp;
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
+    } else if (pt.type === 'ring') {
+      ctx.globalAlpha = lp * 0.85;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3 * lp + 0.5;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.stroke();
+    } else if (pt.type === 'blob') {
+      const r = pt.r * (0.7 + 0.3 * lp);
+      const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
+      g.addColorStop(0, pt.color);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = lp;
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
+    } else if (pt.type === 'spark') {
+      const sp = Math.hypot(pt.vx, pt.vy);
+      ctx.globalAlpha = lp;
+      ctx.strokeStyle = pt.color;
+      ctx.lineWidth = 1.8;
+      if (sp > 0.001) {
+        const tl = Math.min(14, sp * 26);
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
+        ctx.lineTo(pt.x - (pt.vx / sp) * tl, pt.y - (pt.vy / sp) * tl);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = pt.color;
+        ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
+      }
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  // Pass 3: legacy 4×4 square particles (regular alien kills, player hits).
+  for (const pt of parts) {
+    if (pt.type) continue;
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
     ctx.fillRect(pt.x - 2, pt.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+  // Pass 4: floating bonus text — pops in with a scale animation, glows
+  // via canvas shadowBlur, and drifts up while fading.
+  for (const pt of parts) {
+    if (pt.type !== 'text') continue;
+    const lp = Math.max(0, pt.life / pt.maxLife);
+    const elapsed = pt.maxLife - pt.life;
+    let scale = 1;
+    if (elapsed < 220)      scale = (elapsed / 220) * 1.25;          // pop-in to 1.25×
+    else if (elapsed < 620) scale = 1.25 - ((elapsed - 220) / 400) * 0.25; // settle back to 1.0
+    ctx.globalAlpha = Math.min(1, lp * 1.4); // hold full alpha most of the life
+    ctx.font = `900 ${Math.round(pt.size * scale)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = pt.color;
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#0b0708';
+    ctx.fillText(pt.text, pt.x + 2, pt.y + 3);
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = pt.color;
+    ctx.fillText(pt.text, pt.x, pt.y);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.globalAlpha = 1;
+  // Pass 5: full-screen flash — drawn on top so it briefly washes the
+  // scene white. Oversized so the shake translate doesn't reveal edges.
+  for (const pt of parts) {
+    if (pt.type !== 'flash') continue;
+    const lp = Math.max(0, pt.life / pt.maxLife);
+    ctx.globalAlpha = lp * 0.45;
+    ctx.fillStyle = pt.color;
+    ctx.fillRect(-40, -40, ARC_W + 80, ARC_H + 80);
   }
   ctx.globalAlpha = 1;
   ctx.restore();
@@ -4715,25 +5232,48 @@ function drawArcade() {
 }
 function showArcadeResult() {
   const a = arcade;
-  const won = a.won, score = a.score, livesLost = a.livesLostThisGame;
+  const score = a.score, livesLost = a.livesLostThisGame, waves = a.wavesCleared;
+  const timeUp = a.timeUp || a.won; // a.won only fires on the buzzer-beater edge case
   const xpEarned = a.reward ? previewXp(score) : 0;
   if (a.reward && xpEarned > 0) state.points += xpEarned;
   if (score >= 200) awardBadge('arcade');
-  if (won) awardBadge('defender');
+  if (waves >= 1) awardBadge('defender');
+  const bossDef = a.bossDefeated;
+  const bossKilledYou = a.bossSpawnedThisGame && !a.bossDefeated && !a.timeUp; // boss alive AND player died
+  const bossSurvived = a.bossSpawnedThisGame && !a.bossDefeated && a.timeUp;   // boss alive AND clock ran out
   saveState();
   const m = el('div');
-  const emoji = won ? '🛸' : a.timeUp ? '⏰' : '👾';
-  const title = won ? 'Wave Cleared!' : a.timeUp ? "Time's Up — Back to the Forge!" : 'Game Over';
-  const sub = won
-    ? `Brilliant flying, ${state.name}! Every alien blasted.`
-    : a.timeUp
-    ? `60 seconds is up, ${state.name}. Score locked in — now back to forging.`
-    : `Tough wave, ${state.name}. The aliens got you this time.`;
+  const emoji = bossDef ? '😈'
+    : bossSurvived ? '🛡️'
+    : bossKilledYou ? '💀'
+    : timeUp ? (waves >= 3 ? '🏆' : waves >= 1 ? '🛸' : '⏰')
+    : '👾';
+  const title = bossDef
+    ? 'Grand-Daddy Slain!'
+    : bossSurvived
+      ? 'You Survived the Grand-Daddy!'
+      : bossKilledYou
+        ? 'The Grand-Daddy Got You'
+        : timeUp
+          ? (waves >= 1 ? (waves === 1 ? 'Wave Conquered!' : `${waves} Waves Conquered!`) : "Time's Up!")
+          : 'Game Over';
+  const sub = bossDef
+    ? `Legendary, ${state.name}! You took down the Grand-Daddy and lived to tell the tale.`
+    : bossSurvived
+      ? `You outlasted the Grand-Daddy, ${state.name}! It got first blood — but you got the buzzer.`
+      : bossKilledYou
+        ? `So close, ${state.name}. The Grand-Daddy got the last laugh — try again with an upgraded ship!`
+        : timeUp
+          ? (waves >= 1
+              ? `Brilliant flying, ${state.name}! You cleared ${waves} wave${waves === 1 ? '' : 's'} before the buzzer.`
+              : `60 seconds is up, ${state.name}. Score locked in — back to the forge.`)
+          : `Tough run, ${state.name}. The aliens got you on wave ${waves + 1}.`;
   m.appendChild(el('div', { style: { fontSize: '52px' } }, emoji));
   m.appendChild(el('h2', {}, title));
   m.appendChild(el('p', {}, sub));
   const row = el('div', { class: 'stat-row' });
   row.appendChild(stat('Score', score));
+  row.appendChild(stat('Waves', waves));
   row.appendChild(stat('Lives lost', livesLost));
   if (a.reward) row.appendChild(stat('Bonus XP', '+' + xpEarned));
   m.appendChild(row);
