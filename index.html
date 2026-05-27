@@ -408,6 +408,15 @@
       drop-shadow(0 0 16px rgba(120,200,255,0.85))
       drop-shadow(0 4px 6px rgba(0,0,0,0.55));
   }
+  /* Writing-hand icon — keep full colour (pencil glow, cupcake wristband). */
+  .icon-btn.stories-btn img {
+    filter: drop-shadow(0 0 8px rgba(120,255,120,0.45))
+            drop-shadow(0 2px 4px rgba(0,0,0,0.55));
+  }
+  .icon-btn.stories-btn:hover img {
+    filter: drop-shadow(0 0 14px rgba(160,255,160,0.7))
+            drop-shadow(0 4px 6px rgba(0,0,0,0.55));
+  }
 
   @media (max-width: 520px) {
     .top-chip img { height: 30px; }
@@ -1273,12 +1282,13 @@
     font-size: clamp(18px, 2.2vw, 24px);
     color: #ffd28a;
     text-shadow: 0 2px 4px rgba(0,0,0,0.55);
-    /* Some leading emojis (e.g. ✍️ Writing Hand) have negative left-bearing
-       in Apple/Segoe emoji fonts — the glyph extends a few pixels past its
-       character cell on the left and gets visually clipped against the
-       container edge. A small left padding gives the emoji breathing room
-       without affecting alignment of the rest of the page. */
+    display: flex; align-items: center; gap: 10px;
     padding-left: 14px;
+  }
+  .section-title-icon {
+    width: 36px; height: 36px; object-fit: contain; flex-shrink: 0;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.45));
+    margin-left: -2px;
   }
   .stat .k {
     font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
@@ -4753,8 +4763,8 @@ function topbar() {
         el('img', { src: 'topbar/xp.png', alt: 'XP' }),
         el('span', { class: 'pts' }, String(state.points))
       ),
-      el('button', { class: 'icon-btn', 'data-tip': 'My stories', onclick: renderGallery },
-        el('img', { src: 'topbar/stories.png', alt: 'My stories' })
+      el('button', { class: 'icon-btn stories-btn', 'data-tip': 'My stories', onclick: renderGallery },
+        el('img', { src: 'ui/writing_hand.png', alt: 'My stories' })
       ),
       el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
@@ -4836,7 +4846,13 @@ function renderHome(app) {
 
   // Stories grid for current topic
   const stories = STORIES.filter(s => s.topic === state.selectedTopic);
-  app.appendChild(el('div', { class: 'section-title' }, '✍️ Stories — ' + TOPICS.find(t => t.id === state.selectedTopic).name));
+  const storiesHeading = el('div', { class: 'section-title' });
+  storiesHeading.appendChild(el('img', {
+    class: 'section-title-icon', src: 'ui/writing_hand.png', alt: '', draggable: false
+  }));
+  storiesHeading.appendChild(document.createTextNode(
+    'Stories — ' + TOPICS.find(t => t.id === state.selectedTopic).name));
+  app.appendChild(storiesHeading);
   const grid = el('div', { class: 'stories-grid' });
   for (const s of stories) {
     const done = !!state.completed[s.id];
