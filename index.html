@@ -586,6 +586,104 @@
     .topic-tabs { gap: 8px; }
   }
 
+  /* Daily Quest hero tile — sits above the stories grid on home. Pure
+     additive UI; no other layout depends on it. */
+  .daily-quest {
+    position: relative;
+    margin: 18px 0 14px;
+    padding: 26px 18px 16px;
+    display: flex; align-items: center; gap: 16px;
+    background: linear-gradient(135deg, #2a1530 0%, #3a1f44 60%, #2a1530 100%);
+    border: 1px solid rgba(255, 209, 102, 0.45);
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.12), 0 14px 36px rgba(0,0,0,0.45);
+    overflow: hidden; isolation: isolate;
+  }
+  .daily-quest::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(900px 240px at 20% -20%, rgba(255,209,102,0.18), transparent 60%);
+  }
+  .daily-quest .dq-ribbon {
+    position: absolute; top: 0; left: 0;
+    background: linear-gradient(135deg, #ffd166, #ffaa00);
+    color: #2a1d04;
+    font-family: 'Bangers', 'Black Ops One', Impact, sans-serif;
+    font-size: 13px; letter-spacing: 1.6px;
+    padding: 6px 16px;
+    border-radius: 0 0 12px 0;
+    box-shadow: 0 6px 16px rgba(255,170,0,0.35);
+  }
+  .daily-quest .dq-emoji {
+    font-size: 54px; line-height: 1;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55));
+    flex-shrink: 0;
+  }
+  .daily-quest .dq-text { flex: 1; min-width: 0; }
+  .daily-quest .dq-title {
+    font-family: 'Bangers', 'Black Ops One', Impact, sans-serif;
+    font-size: 28px; letter-spacing: 1.1px; line-height: 1.05;
+    color: #fff4e8; margin: 0 0 4px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5);
+  }
+  .daily-quest .dq-sub {
+    font-family: 'Patrick Hand', system-ui, sans-serif;
+    font-size: 16px; color: #f5e9ff; opacity: 0.9;
+    line-height: 1.25; margin: 0;
+  }
+  .daily-quest .dq-cta {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #ffd166, #ffaa00);
+    color: #2a1d04;
+    font-family: 'Bangers', 'Black Ops One', Impact, sans-serif;
+    font-size: 17px; letter-spacing: 1.4px;
+    padding: 12px 22px; border-radius: 14px;
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(255,170,0,0.4);
+    transition: transform .15s ease, box-shadow .2s ease, filter .15s;
+  }
+  .daily-quest .dq-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(255,170,0,0.55); filter: brightness(1.06); }
+  .daily-quest .dq-cta:active { transform: translateY(0); }
+  .daily-quest.claimed {
+    border-color: rgba(74, 222, 128, 0.4);
+    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.15), 0 14px 36px rgba(0,0,0,0.4);
+    opacity: 0.95;
+  }
+  .daily-quest.claimed::before {
+    background: radial-gradient(900px 240px at 20% -20%, rgba(74,222,128,0.14), transparent 60%);
+  }
+  .daily-quest.claimed .dq-ribbon {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #052e13;
+    box-shadow: 0 6px 16px rgba(34,197,94,0.35);
+  }
+  .daily-quest .dq-cta-done {
+    background: rgba(74, 222, 128, 0.14);
+    color: #b6ffd0;
+    cursor: default;
+    border: 1px solid rgba(74, 222, 128, 0.32);
+    box-shadow: none;
+  }
+  .daily-quest .dq-cta-done:hover { transform: none; box-shadow: none; filter: none; }
+  @media (max-width: 560px) {
+    .daily-quest { flex-direction: column; align-items: stretch; text-align: center; padding-top: 38px; gap: 10px; }
+    .daily-quest .dq-emoji { margin: 0 auto; }
+    .daily-quest .dq-cta { width: 100%; }
+  }
+  /* Gold banner shown inside the forge result modal when the player
+     just claimed today's Daily Quest 2× XP bonus. */
+  .daily-bonus-banner {
+    margin: 14px auto 0;
+    max-width: 380px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #ffd166, #ffaa00);
+    color: #2a1d04;
+    font-family: 'Bangers', 'Black Ops One', Impact, sans-serif;
+    font-size: 20px; letter-spacing: 1.2px;
+    text-align: center;
+    box-shadow: 0 10px 28px rgba(255,170,0,0.45);
+  }
+
   /* Story cards */
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
   .story-card {
@@ -3939,7 +4037,11 @@ function defaultState() {
     // / GRANNY_PITY_THRESHOLD). `arcadeRunsSinceGranny` counts arcade games
     // played without her so we can force a visit before it gets boring.
     arcadeRunsSinceGranny: 0,
-    grannyVisits: 0
+    grannyVisits: 0,
+    // Daily Quest: one rotating "Today's Special" story per local day.
+    // Forging it grants 2× XP exactly once per day. `date` is YYYY-M-D
+    // (see todayStr()); when it doesn't match today we re-pick.
+    dailyQuest: { date: null, storyId: null, claimed: false }
   };
 }
 function pushHistory(entry) {
@@ -3981,6 +4083,11 @@ function loadState() {
     if (merged.ships.equipped === 'granny') merged.ships.equipped = 'mk1';
     if (typeof merged.arcadeRunsSinceGranny !== 'number') merged.arcadeRunsSinceGranny = 0;
     if (typeof merged.grannyVisits !== 'number') merged.grannyVisits = 0;
+    // Daily Quest shape — older saves won't have it. ensureDailyQuest()
+    // will fill in date/storyId on the next home render.
+    if (!merged.dailyQuest || typeof merged.dailyQuest !== 'object') {
+      merged.dailyQuest = { date: null, storyId: null, claimed: false };
+    }
     return merged;
   } catch (e) { return defaultState(); }
 }
@@ -4247,6 +4354,63 @@ function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
+
+// Daily Quest picker. Deterministic per local day: same kid opening the
+// app five times today sees the same featured story. Prefers stories
+// they haven't completed yet; falls back to any story so the feature
+// keeps working once the campaign is fully forged.
+function ensureDailyQuest() {
+  const today = todayStr();
+  // Already chosen for today AND the story still exists in STORIES.
+  if (state.dailyQuest && state.dailyQuest.date === today && state.dailyQuest.storyId) {
+    if (STORIES.some(s => s.id === state.dailyQuest.storyId)) return state.dailyQuest;
+  }
+  const todo = STORIES.filter(s => !state.completed[s.id]);
+  const pool = todo.length > 0 ? todo : STORIES;
+  if (pool.length === 0) return state.dailyQuest;
+  // Simple date-string hash — good enough to vary the pick day to day
+  // while staying stable within a single day.
+  let seed = 0;
+  for (let i = 0; i < today.length; i++) seed = (seed * 31 + today.charCodeAt(i)) >>> 0;
+  const pick = pool[seed % pool.length];
+  state.dailyQuest = { date: today, storyId: pick.id, claimed: false };
+  saveState();
+  return state.dailyQuest;
+}
+
+// Build the "Today's Special" hero tile shown above the stories grid.
+// Returns null if there's nothing to feature (shouldn't happen in
+// practice — STORIES is always populated).
+function buildDailyQuestTile() {
+  const dq = ensureDailyQuest();
+  if (!dq || !dq.storyId) return null;
+  const story = STORIES.find(s => s.id === dq.storyId);
+  if (!story) return null;
+  const topic = TOPICS.find(t => t.id === story.topic) || {};
+  const claimed = !!dq.claimed;
+  const wrap = el('div', { class: 'daily-quest' + (claimed ? ' claimed' : '') });
+  wrap.appendChild(el('div', { class: 'dq-ribbon' },
+    claimed ? '✅ CLAIMED TODAY' : '✨ TODAY\u2019S SPECIAL · 2× XP'));
+  wrap.appendChild(el('div', { class: 'dq-emoji' }, topic.emoji || '🎯'));
+  const txt = el('div', { class: 'dq-text' });
+  txt.appendChild(el('h3', { class: 'dq-title' }, story.title));
+  txt.appendChild(el('p', { class: 'dq-sub' }, claimed
+    ? 'Nice work! Come back tomorrow for a fresh challenge.'
+    : `${topic.name || 'Story'} · Level ${story.level} — forge it today for double XP!`));
+  wrap.appendChild(txt);
+  if (!claimed) {
+    wrap.appendChild(el('button', { class: 'dq-cta', onclick: (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      // If the daily pick is in a different topic, switch first so the
+      // home view is coherent when the kid returns from the forge.
+      if (state.selectedTopic !== story.topic) state.selectedTopic = story.topic;
+      startForge(story.id);
+    } }, 'FORGE NOW →'));
+  } else {
+    wrap.appendChild(el('div', { class: 'dq-cta dq-cta-done' }, 'See you tomorrow'));
+  }
+  return wrap;
+}
 function formatDate(ts) {
   if (!ts) return '';
   const d = new Date(ts);
@@ -4505,6 +4669,12 @@ function renderHome(app) {
   right.appendChild(stats);
   hero.appendChild(right);
   app.appendChild(hero);
+
+  // Daily Quest hero tile — one rotating "Today's Special" story per
+  // local day, granting 2× XP exactly once. Sits above the stories grid
+  // so it's the first thing the kid sees after the topic tabs.
+  const dqTile = buildDailyQuestTile();
+  if (dqTile) app.appendChild(dqTile);
 
   // Stories grid for current topic
   const stories = STORIES.filter(s => s.topic === state.selectedTopic);
@@ -4969,6 +5139,17 @@ function finishStory() {
   const earned = Math.round(earnedBase * replayMul);
   const prevAttempts = (state.completed[story.id] && state.completed[story.id].attempts) || 0;
   state.points += earned;
+  // Daily Quest bonus: if this story is today's featured pick AND we
+  // haven't already claimed it today, grant +earned again (i.e. 2× XP).
+  // Claim is one-shot per day so replays don't keep doubling it.
+  let dailyBonus = 0;
+  const _todayDQ = todayStr();
+  if (state.dailyQuest && state.dailyQuest.storyId === story.id
+      && state.dailyQuest.date === _todayDQ && !state.dailyQuest.claimed) {
+    dailyBonus = earned;
+    state.points += dailyBonus;
+    state.dailyQuest.claimed = true;
+  }
   state.completed[story.id] = {
     perfect: allPerfect || (state.completed[story.id] && state.completed[story.id].perfect),
     attempts: prevAttempts + 1,
@@ -4994,6 +5175,7 @@ function finishStory() {
 
   // Modal: paragraph reveal
   confetti();
+  if (dailyBonus > 0) toast(`Daily Special! +${dailyBonus} bonus XP`, '✨');
   const m = el('div');
   m.appendChild(el('div', { style: { fontSize: '52px' } }, allPerfect ? '💎' : '🔨'));
   m.appendChild(el('h2', {}, allPerfect ? 'Paragon Paragraph!' : 'Paragraph Forged!'));
@@ -5005,8 +5187,14 @@ function finishStory() {
       `↻ Replay #${prevAttempts + 1} — XP reduced to 25% of first-time payout (${earnedBase} → ${earned}).`));
   }
   m.appendChild(el('div', { class: 'paragraph-reveal' }, paragraphText));
+  // Daily Quest bonus banner — shown only when this completion just
+  // claimed today's 2× XP special. Big, gold, hard to miss.
+  if (dailyBonus > 0) {
+    m.appendChild(el('div', { class: 'daily-bonus-banner' },
+      `✨ DAILY SPECIAL — +${dailyBonus} BONUS XP!`));
+  }
   const row = el('div', { class: 'stat-row' });
-  row.appendChild(stat('XP earned', '+' + earned));
+  row.appendChild(stat('XP earned', '+' + (earned + dailyBonus) + (dailyBonus > 0 ? ' ✨' : '')));
   row.appendChild(stat('Perfect builds', `${sentencesPerfect}/${sentencesTotal}`));
   row.appendChild(stat('Streak', state.streak + ' 🔥'));
   m.appendChild(row);
