@@ -737,18 +737,64 @@
     box-shadow: 0 10px 28px rgba(255,170,0,0.45);
   }
 
-  /* Streak ladder + skill tree panels */
-  .streak-ladder { margin-top: 12px; }
-  .streak-ladder .ladder-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 0; font-size: 12px; color: var(--muted);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+  /* Streak ladder — short table rows, 3 columns */
+  .streak-ladder { margin-top: 8px; }
+  .streak-ladder .ladder-title {
+    margin-bottom: 4px;
+    font-size: clamp(14px, 1.6vw, 17px);
   }
-  .streak-ladder .ladder-row.unlocked { color: #b6ffd0; }
-  .streak-ladder .ladder-row .days {
-    width: 28px; font-weight: 900; color: #ffd166; flex-shrink: 0;
+  .streak-ladder .ladder-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    line-height: 1.2;
   }
-  .streak-ladder .ladder-row.unlocked .days { color: #4ade80; }
+  .streak-ladder .ladder-table td {
+    padding: 2px 6px 2px 0;
+    vertical-align: middle;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .streak-ladder .ladder-table td.unlocked { color: #b6ffd0; }
+  .streak-ladder .ladder-tip { cursor: help; outline: none; }
+  .streak-ladder .ladder-table .days {
+    display: inline-block;
+    min-width: 18px;
+    margin-right: 4px;
+    font-weight: 800;
+    color: #ffd166;
+  }
+  .streak-ladder .ladder-table td.unlocked .days { color: #4ade80; }
+  .streak-ladder .ladder-table .name { letter-spacing: 0.15px; }
+  /* Fixed milestone popup — always on top, not clipped by panels/tables */
+  .ladder-float-tip {
+    position: fixed;
+    z-index: 100000;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .12s ease, visibility .12s ease;
+    max-width: 220px;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #2a1320 0%, #170914 100%);
+    color: #ffd29a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.2px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 180, 90, 0.45);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.65), 0 0 20px rgba(255,140,60,0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    transform: translate(-50%, -100%);
+  }
+  .ladder-float-tip.show { opacity: 1; visibility: visible; }
+  @media (max-width: 520px) {
+    .streak-ladder .ladder-table { font-size: 10px; }
+    .streak-ladder .ladder-table td { padding-right: 4px; }
+    .ladder-float-tip { max-width: 180px; font-size: 12px; }
+  }
   .veteran-tag {
     display: inline-block; margin-left: 8px;
     font-family: 'Bangers', system-ui, sans-serif;
@@ -1457,6 +1503,7 @@
 </div>
 <div class="app" id="app"></div>
 <div class="toast" id="toast"><span class="em">⚡</span><span id="toastText">Nice!</span></div>
+<div class="ladder-float-tip" id="ladderFloatTip" role="tooltip" aria-hidden="true"></div>
 <div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
@@ -4226,6 +4273,10 @@ function loadState() {
     if (typeof merged.motherDefeated !== 'boolean') merged.motherDefeated = false;
     if (typeof merged.bossSeen !== 'boolean') merged.bossSeen = false;
     if (typeof merged.arcadeFireBoost !== 'boolean') merged.arcadeFireBoost = false;
+    if (!Array.isArray(merged.badges)) merged.badges = [];
+    if (!Array.isArray(merged.paragraphs)) merged.paragraphs = [];
+    if (!merged.completed || typeof merged.completed !== 'object') merged.completed = {};
+    if (!TOPICS.some(t => t.id === merged.selectedTopic)) merged.selectedTopic = 'sport';
     return merged;
   } catch (e) { return defaultState(); }
 }
@@ -4243,7 +4294,7 @@ const BADGES = {
   paragon:    { name: 'Paragon',          icon: '💎', desc: 'Forge a paragraph with zero wrong picks.' },
   l3:         { name: 'Three-Level Forge', icon: '🥇', desc: 'Complete a Level 3 story.' },
   streak5:    { name: 'On Fire',          icon: '🔥', desc: 'Reach a 5-day forge streak.' },
-  veteran:    { name: 'Backyard Veteran', icon: '🎖️', desc: 'Reach a 50-day forge streak.' },
+  veteran:    { name: "Granny Boom's Favourite Child", icon: '🎖️', desc: 'Reach a 50-day forge streak.' },
   arcade:     { name: 'Arcade Ace',       icon: '🕹️', desc: 'Score 200+ in the reward game.' },
   defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear a full wave in the arcade.' },
   boss:       { name: 'Grand-Daddy Slayer',icon: '😈', desc: 'Defeat the Grand-Daddy boss.' }
@@ -4448,7 +4499,7 @@ const STREAK_MILESTONES = [
   { id: 'streak_shield',   days: 14, icon: '🛡️', name: 'Streak Shield',   desc: 'One free hit per arcade run.' },
   { id: 'granny_favour',   days: 21, icon: '👵', name: "Granny's Favour", desc: 'Granny visits more often for 7 days.' },
   { id: 'golden_forge',    days: 30, icon: '🔨', name: 'Golden Forge',    desc: '+10% XP on every forge.' },
-  { id: 'veteran',         days: 50, icon: '🎖️', name: 'Backyard Veteran', desc: 'Prestige title + badge.' }
+  { id: 'veteran',         days: 50, icon: '🎖️', name: "Granny Boom's Favourite Child", desc: 'Prestige title + badge on your profile.' }
 ];
 function hasStreakUnlock(id) {
   return Array.isArray(state.streakUnlocks) && state.streakUnlocks.includes(id);
@@ -4488,16 +4539,76 @@ function getGrannyMinGap() {
   if (state.grannyFavourUntil && today <= state.grannyFavourUntil) return 3;
   return GRANNY_MIN_GAP;
 }
+function hideLadderFloatTip() {
+  const tip = document.getElementById('ladderFloatTip');
+  if (tip) {
+    tip.classList.remove('show');
+    tip.setAttribute('aria-hidden', 'true');
+  }
+}
+function showLadderFloatTip(anchor, text) {
+  const tip = document.getElementById('ladderFloatTip');
+  if (!tip || !anchor) return;
+  tip.textContent = text;
+  tip.classList.add('show');
+  tip.setAttribute('aria-hidden', 'false');
+  const r = anchor.getBoundingClientRect();
+  let left = r.left + r.width / 2;
+  let top = r.top - 8;
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+  requestAnimationFrame(() => {
+    const tr = tip.getBoundingClientRect();
+    if (tr.left < 8) left += 8 - tr.left;
+    if (tr.right > window.innerWidth - 8) left -= tr.right - (window.innerWidth - 8);
+    if (tr.top < 8) {
+      top = r.bottom + 8;
+      tip.style.transform = 'translate(-50%, 0)';
+    } else {
+      tip.style.transform = 'translate(-50%, -100%)';
+    }
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  });
+}
+function bindLadderTip(el, text) {
+  const show = () => showLadderFloatTip(el, text);
+  const hide = () => hideLadderFloatTip();
+  el.addEventListener('mouseenter', show);
+  el.addEventListener('mouseleave', hide);
+  el.addEventListener('focus', show);
+  el.addEventListener('blur', hide);
+}
 function buildStreakLadderEl() {
   const wrap = el('div', { class: 'streak-ladder' });
-  wrap.appendChild(el('div', { class: 'section-title', style: { marginTop: '0', paddingLeft: '0' } }, 'Streak ladder 🔥'));
-  for (const m of STREAK_MILESTONES) {
-    const ok = hasStreakUnlock(m.id);
-    const row = el('div', { class: 'ladder-row' + (ok ? ' unlocked' : '') });
-    row.appendChild(el('span', { class: 'days' }, m.days));
-    row.appendChild(el('span', {}, `${m.icon} ${m.name}`));
-    wrap.appendChild(row);
+  wrap.appendChild(el('div', {
+    class: 'section-title ladder-title',
+    style: { marginTop: '0', paddingLeft: '0' }
+  }, 'Streak ladder'));
+  const table = el('table', { class: 'ladder-table' });
+  const cols = 3;
+  for (let i = 0; i < STREAK_MILESTONES.length; i += cols) {
+    const tr = el('tr');
+    for (let c = 0; c < cols; c++) {
+      const m = STREAK_MILESTONES[i + c];
+      const td = el('td');
+      if (m) {
+        const ok = hasStreakUnlock(m.id);
+        if (ok) td.className = 'unlocked';
+        const tip = ok
+          ? `Unlocked — ${m.desc}`
+          : `${m.days} days in a row — ${m.desc}`;
+        const cell = el('span', { class: 'ladder-tip', tabindex: '0' });
+        cell.appendChild(el('span', { class: 'days' }, String(m.days)));
+        cell.appendChild(el('span', { class: 'name' }, m.name));
+        bindLadderTip(cell, tip);
+        td.appendChild(cell);
+      }
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
   }
+  wrap.appendChild(table);
   return wrap;
 }
 
@@ -4647,9 +4758,9 @@ function openSkillTree() {
 getShipSprite(state.ships.equipped);
 const _fireBtnPreload = new Image();
 _fireBtnPreload.src = 'ui/fire_btn.png';
-// Backfill permanent streak rewards for returning players (silent).
-syncStreakUnlocks(true);
 function awardBadge(id) {
+  if (!BADGES[id]) return false;
+  if (!Array.isArray(state.badges)) state.badges = [];
   if (!state.badges.includes(id)) {
     state.badges.push(id);
     saveState();
@@ -4680,7 +4791,11 @@ function el(tag, props = {}, ...children) {
   }
   for (const c of children.flat()) {
     if (c == null) continue;
-    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    if (typeof c === 'string' || typeof c === 'number' || typeof c === 'boolean') {
+      e.appendChild(document.createTextNode(String(c)));
+    } else if (c instanceof Node) {
+      e.appendChild(c);
+    }
   }
   return e;
 }
@@ -4994,10 +5109,20 @@ function correctParagraph(story) {
 
 /* --------------------- VIEWS --------------------- */
 function render() {
+  hideLadderFloatTip();
   const app = $('#app');
+  if (!app) return;
   app.innerHTML = '';
   if (!state.name) return renderName(app);
-  renderHome(app);
+  try {
+    renderHome(app);
+  } catch (err) {
+    console.error('[render] renderHome failed:', err);
+    app.appendChild(el('div', { class: 'panel', style: { marginTop: '16px' } },
+      el('h2', {}, 'Oops — home screen hit a snag'),
+      el('p', { style: { color: 'var(--muted)' } }, (err && err.message) ? err.message : String(err)),
+      el('button', { class: 'btn primary', style: { marginTop: '12px' }, onclick: () => location.reload() }, 'Reload')));
+  }
 }
 function topbar() {
   return el('header', { class: 'topbar' },
@@ -5029,7 +5154,7 @@ function topbar() {
         el('img', { src: 'topbar/stories.png', alt: 'My stories' })
       ),
       el('button', { class: 'icon-btn', 'data-tip': 'Skill Tree', onclick: openSkillTree },
-        el('img', { src: 'topbar/skills.png', alt: 'Skill Tree' })
+        el('img', { src: 'topbar/skills.png?v=3', alt: 'Skill Tree' })
       ),
       el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
@@ -5067,12 +5192,13 @@ function start(name) {
   state.name = n; saveState(); render();
 }
 function renderHome(app) {
+  if (!TOPICS.some(t => t.id === state.selectedTopic)) state.selectedTopic = 'sport';
   app.appendChild(topbar());
   const hero = el('section', { class: 'hero' });
   const left = el('div', { class: 'panel' });
   const welcomeTitle = el('h1', {}, `Welcome back, ${state.name}.`);
   if (hasStreakUnlock('veteran')) {
-    welcomeTitle.appendChild(el('span', { class: 'veteran-tag' }, 'Backyard Veteran'));
+    welcomeTitle.appendChild(el('span', { class: 'veteran-tag' }, "Granny Boom's Favourite Child"));
   }
   left.appendChild(welcomeTitle);
   left.appendChild(el('p', {}, 'Choose a theme then a story below. Pick the best word in every container, then type the sentence out. Forge a full paragraph to unlock a 60-second reward game.'));
@@ -5100,15 +5226,11 @@ function renderHome(app) {
   const stats = el('div', { class: 'stat-row' });
   stats.appendChild(stat('XP', state.points));
   stats.appendChild(stat('Stories', `${state.paragraphs.length} / 24`));
-  stats.appendChild(stat('Badges', `${state.badges.length} / ${Object.keys(BADGES).length}`));
+  stats.appendChild(stat('Badges', `${(state.badges || []).length} / ${Object.keys(BADGES).length}`));
   stats.appendChild(stat('Streak', state.streak + ' 🔥'));
   stats.appendChild(stat('Forge Invaders High Score', state.bestArcadeScore || 0));
   right.appendChild(stats);
   right.appendChild(buildStreakLadderEl());
-  const skillRow = el('div', { class: 'row-wrap', style: { marginTop: '12px', justifyContent: 'center' } });
-  skillRow.appendChild(el('button', { class: 'btn primary', onclick: openSkillTree },
-    '⚡ Skill Tree'));
-  right.appendChild(skillRow);
   hero.appendChild(right);
   app.appendChild(hero);
 
@@ -5124,8 +5246,8 @@ function renderHome(app) {
   storiesHeading.appendChild(el('img', {
     class: 'section-title-icon', src: 'ui/writing_hand.png', alt: '', draggable: false
   }));
-  storiesHeading.appendChild(document.createTextNode(
-    'Stories — ' + TOPICS.find(t => t.id === state.selectedTopic).name));
+  const topicName = (TOPICS.find(t => t.id === state.selectedTopic) || {}).name || 'Stories';
+  storiesHeading.appendChild(document.createTextNode('Stories — ' + topicName));
   app.appendChild(storiesHeading);
   const grid = el('div', { class: 'stories-grid' });
   for (const s of stories) {
@@ -7622,6 +7744,7 @@ function runSplash() {
   const LOAD_MS = 2400;
   const STEPS = 30;
   const showMsg = (text) => {
+    if (!msg) return;
     msg.classList.remove('show');
     setT(() => { msg.textContent = text; msg.classList.add('show'); }, 120);
   };
@@ -7630,7 +7753,7 @@ function runSplash() {
   setT(() => showMsg(pickMsg()), Math.round(LOAD_MS * 0.4));
   setT(() => showMsg(pickMsg()), Math.round(LOAD_MS * 0.75));
   for (let i = 1; i <= STEPS; i++) {
-    setT(() => { if (!cancelled) fill.style.width = ((i / STEPS) * 100) + '%'; },
+    setT(() => { if (!cancelled && fill) fill.style.width = ((i / STEPS) * 100) + '%'; },
       Math.round((LOAD_MS / STEPS) * i));
   }
   setT(() => { if (!cancelled) showMsg('Ready to slay!'); }, LOAD_MS + 60);
@@ -7639,10 +7762,12 @@ function runSplash() {
   // CSS animation fires anew because we remove + re-append the element.
   const showCount = (html, slotMs) => setT(() => {
     if (cancelled) return;
-    loading.style.opacity = '0';
-    cnt.innerHTML = html;
-    // Force a reflow so the animation restarts every slot.
-    void cnt.offsetWidth;
+    if (loading) loading.style.opacity = '0';
+    if (cnt) {
+      cnt.innerHTML = html;
+      // Force a reflow so the animation restarts every slot.
+      void cnt.offsetWidth;
+    }
   }, slotMs);
   let t = LOAD_MS + 400;
   showCount('<span class="num">3</span>', t);          t += 700;
@@ -7670,7 +7795,10 @@ function hideSplash(immediate) {
   splash.classList.add('fade-out');
   setTimeout(() => splash.remove(), 600);
 }
-function boot() { render(); }
+function boot() {
+  syncStreakUnlocks(true);
+  render();
+}
 
 /* --------------------- BOOT --------------------- */
 runSplash();
