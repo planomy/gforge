@@ -408,16 +408,6 @@
       drop-shadow(0 0 16px rgba(120,200,255,0.85))
       drop-shadow(0 4px 6px rgba(0,0,0,0.55));
   }
-  /* Writing-hand icon — keep full colour (pencil glow, cupcake wristband). */
-  .icon-btn.stories-btn img {
-    filter: drop-shadow(0 0 8px rgba(120,255,120,0.45))
-            drop-shadow(0 2px 4px rgba(0,0,0,0.55));
-  }
-  .icon-btn.stories-btn:hover img {
-    filter: drop-shadow(0 0 14px rgba(160,255,160,0.7))
-            drop-shadow(0 4px 6px rgba(0,0,0,0.55));
-  }
-
   @media (max-width: 520px) {
     .top-chip img { height: 30px; }
     .top-chip.xp img { height: 28px; }
@@ -5043,8 +5033,8 @@ function topbar() {
         el('img', { src: 'topbar/xp.png', alt: 'XP' }),
         el('span', { class: 'pts' }, String(state.points))
       ),
-      el('button', { class: 'icon-btn stories-btn', 'data-tip': 'My stories', onclick: renderGallery },
-        el('img', { src: 'ui/writing_hand.png', alt: 'My stories' })
+      el('button', { class: 'icon-btn', 'data-tip': 'My stories', onclick: renderGallery },
+        el('img', { src: 'topbar/stories.png', alt: 'My stories' })
       ),
       el('button', { class: 'icon-btn skills-btn', 'data-tip': 'Skill Tree', onclick: openSkillTree }, '⚡'),
       el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
