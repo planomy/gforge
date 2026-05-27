@@ -613,10 +613,26 @@
     border-radius: 0 0 12px 0;
     box-shadow: 0 6px 16px rgba(255,170,0,0.35);
   }
-  .daily-quest .dq-emoji {
-    font-size: 54px; line-height: 1;
-    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55));
+  /* Square thumbnail of the actual story art on the left side of the
+     tile. Falls back to the topic emoji if no art file exists. */
+  .daily-quest .dq-thumb {
+    position: relative;
+    width: 96px; height: 96px;
+    border-radius: 14px;
+    overflow: hidden;
     flex-shrink: 0;
+    background: linear-gradient(135deg, #2a1530, #140d20);
+    border: 1px solid rgba(255, 209, 102, 0.4);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  }
+  .daily-quest.claimed .dq-thumb { border-color: rgba(74, 222, 128, 0.45); }
+  .daily-quest .dq-thumb img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .daily-quest .dq-thumb-fallback {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 48px; line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
   }
   .daily-quest .dq-text { flex: 1; min-width: 0; }
   .daily-quest .dq-title {
@@ -666,7 +682,7 @@
   .daily-quest .dq-cta-done:hover { transform: none; box-shadow: none; filter: none; }
   @media (max-width: 560px) {
     .daily-quest { flex-direction: column; align-items: stretch; text-align: center; padding-top: 38px; gap: 10px; }
-    .daily-quest .dq-emoji { margin: 0 auto; }
+    .daily-quest .dq-thumb { width: 108px; height: 108px; margin: 0 auto; }
     .daily-quest .dq-cta { width: 100%; }
   }
   /* Gold banner shown inside the forge result modal when the player
@@ -4391,7 +4407,34 @@ function buildDailyQuestTile() {
   const wrap = el('div', { class: 'daily-quest' + (claimed ? ' claimed' : '') });
   wrap.appendChild(el('div', { class: 'dq-ribbon' },
     claimed ? '✅ CLAIMED TODAY' : '✨ TODAY\u2019S SPECIAL · 2× XP'));
-  wrap.appendChild(el('div', { class: 'dq-emoji' }, topic.emoji || '🎯'));
+  // Thumbnail of the actual story art. Same loading chain as the story
+  // grid cards (png → jpg → webp), with the topic emoji as a graceful
+  // fallback so the tile never looks broken if an art file is missing.
+  const thumb = el('div', { class: 'dq-thumb' });
+  const thumbFallback = el('div', { class: 'dq-thumb-fallback' }, topic.emoji || '🎯');
+  thumbFallback.style.display = 'none';
+  thumb.appendChild(thumbFallback);
+  const thumbImg = document.createElement('img');
+  thumbImg.alt = '';
+  thumbImg.draggable = false;
+  thumbImg.style.opacity = '0';
+  thumbImg.style.transition = 'opacity .25s ease';
+  let thumbAttempt = 0;
+  const tryNextThumb = () => {
+    if (thumbAttempt >= ART_EXT_ORDER.length) {
+      thumbImg.remove();
+      thumbFallback.style.display = '';
+      return;
+    }
+    thumbImg.src = `art/${story.id}.${ART_EXT_ORDER[thumbAttempt++]}`;
+  };
+  thumbImg.addEventListener('error', tryNextThumb);
+  thumbImg.addEventListener('load', () => {
+    requestAnimationFrame(() => { thumbImg.style.opacity = '1'; });
+  });
+  tryNextThumb();
+  thumb.appendChild(thumbImg);
+  wrap.appendChild(thumb);
   const txt = el('div', { class: 'dq-text' });
   txt.appendChild(el('h3', { class: 'dq-title' }, story.title));
   txt.appendChild(el('p', { class: 'dq-sub' }, claimed
