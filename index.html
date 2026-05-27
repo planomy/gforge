@@ -590,7 +590,12 @@
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
   .story-card {
     --t1: #ff8a3d; --t2: #ffc24a;
-    position: relative; padding: 0; background: var(--panel-2); border: 1px solid var(--border);
+    position: relative;
+    /* Equal inset on all four sides — the artwork sits inside the card
+       like a picture in a frame. Picked specifically to match the
+       adventure deck look the user singled out as the gold standard. */
+    padding: 10px 10px 12px;
+    background: var(--panel-2); border: 1px solid var(--border);
     border-radius: 18px; cursor: pointer; text-align: left;
     transition: transform .15s ease, box-shadow .25s ease, border-color .25s;
     overflow: hidden; isolation: isolate;
@@ -610,6 +615,9 @@
     position: relative; aspect-ratio: 4 / 3; width: 100%;
     background: linear-gradient(135deg, color-mix(in srgb, var(--t1) 65%, #1a0a14), color-mix(in srgb, var(--t2) 55%, #140a1f));
     overflow: hidden;
+    /* Curved inner corners so every theme reads as a framed picture
+       inside the outer card, not a flush edge-to-edge poster. */
+    border-radius: 12px;
   }
   /* When the real image loads, JS sets the art's aspect-ratio to match the
      image's natural ratio, so cover never has to crop. */
@@ -654,7 +662,9 @@
     box-shadow: 0 6px 18px rgba(34,197,94,0.45);
   }
 
-  .story-card .body { padding: 14px 16px 16px; position: relative; z-index: 1; }
+  /* Card padding (10px) now provides the horizontal inset, so the body
+     just adds vertical spacing between the framed art and the meta row. */
+  .story-card .body { padding: 12px 4px 2px; position: relative; z-index: 1; }
   .story-card h3 {
     margin: 0; font-size: 18px; font-weight: 900; letter-spacing: 0.2px;
     color: #fff4e8;
@@ -671,7 +681,7 @@
   }
   /* When art loads, title is baked into the image — hide the text title + context
      and tighten the body so it's just the CTA row. */
-  .story-card.has-art .body { padding: 12px 14px 14px; }
+  .story-card.has-art .body { padding: 10px 4px 0; }
   .story-card.has-art h3,
   .story-card.has-art .ctx { display: none; }
   .story-card.has-art .meta { margin-top: 0; }
@@ -855,6 +865,38 @@
   .modal.wide { max-width: 960px; }
   @keyframes pop { from { transform: scale(.9); opacity: 0;} to { transform: scale(1); opacity: 1;} }
   .modal h2 { margin: 0 0 6px; font-size: 28px; }
+
+  /* Themed confirm dialog — replaces native browser confirm() so we don't
+     get a flat OS-styled popup floating at the top of the page. Lives on
+     z-index: 220 so it can sit on top of the regular #modalBack (z:100). */
+  .confirm-back {
+    position: fixed; inset: 0; background: rgba(2,2,8,0.82);
+    display: none; align-items: center; justify-content: center;
+    z-index: 220; padding: 18px;
+    backdrop-filter: blur(6px);
+  }
+  .confirm-back.show { display: flex; }
+  .confirm-dlg {
+    width: 100%; max-width: 420px;
+    background: linear-gradient(160deg, #2a1530, #140d20);
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 22px 22px 18px; text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    animation: pop .22s ease;
+  }
+  .confirm-emoji { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+  .confirm-title {
+    font-family: 'Bangers', 'Patrick Hand', system-ui, sans-serif;
+    font-size: 28px; letter-spacing: 0.6px;
+    margin: 0 0 10px; color: var(--accent);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+  }
+  .confirm-msg {
+    margin: 0 0 18px; color: var(--text);
+    font-size: 15px; line-height: 1.45;
+  }
+  .confirm-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .confirm-row .btn { min-width: 120px; padding: 10px 18px; }
   .modal p { color: var(--muted); margin: 0 0 14px; }
 
   .paragraph-reveal {
@@ -4234,6 +4276,85 @@ function openModal(content) {
   back.onclick = (e) => { if (e.target === back) closeModal(); };
 }
 function closeModal() { $('#modalBack').classList.remove('show'); const m = $('#modal'); if (m) m.classList.remove('wide'); }
+
+// Themed promise-based confirm. Use instead of window.confirm() so we
+// don't get a Win-95-looking OS popup floating at the top of the page.
+//
+// Example:
+//   if (!(await confirmDialog({
+//     title: 'Unlock Twin Striker MK II?',
+//     message: 'This will spend 500 XP.',
+//     confirmText: 'Unlock',
+//     emoji: '🛸'
+//   }))) return;
+//
+// Returns a Promise that resolves to true (confirm) or false
+// (cancel / Esc / backdrop click).
+function confirmDialog(opts) {
+  opts = opts || {};
+  return new Promise(resolve => {
+    const back = document.createElement('div');
+    back.className = 'confirm-back';
+    const dlg = document.createElement('div');
+    dlg.className = 'confirm-dlg';
+    if (opts.emoji) {
+      const em = document.createElement('div');
+      em.className = 'confirm-emoji';
+      em.textContent = opts.emoji;
+      dlg.appendChild(em);
+    }
+    if (opts.title) {
+      const h = document.createElement('h3');
+      h.className = 'confirm-title';
+      h.textContent = opts.title;
+      dlg.appendChild(h);
+    }
+    if (opts.message) {
+      const p = document.createElement('p');
+      p.className = 'confirm-msg';
+      p.textContent = opts.message;
+      dlg.appendChild(p);
+    }
+    const row = document.createElement('div');
+    row.className = 'confirm-row';
+    const cancel = document.createElement('button');
+    cancel.className = 'btn ghost';
+    cancel.type = 'button';
+    cancel.textContent = opts.cancelText || 'Cancel';
+    const ok = document.createElement('button');
+    const okVariant = opts.confirmVariant || 'primary';
+    ok.className = 'btn ' + okVariant;
+    ok.type = 'button';
+    ok.textContent = opts.confirmText || 'OK';
+    row.appendChild(cancel);
+    row.appendChild(ok);
+    dlg.appendChild(row);
+    back.appendChild(dlg);
+    document.body.appendChild(back);
+    // Force a reflow so the .show transition (if any) runs from scratch.
+    void back.offsetWidth;
+    back.classList.add('show');
+    let settled = false;
+    const close = (val) => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKey, true);
+      back.classList.remove('show');
+      // Small delay so we don't yank the DOM mid-fade.
+      setTimeout(() => { if (back.parentNode) back.parentNode.removeChild(back); }, 180);
+      resolve(val);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); close(true); }
+    };
+    cancel.onclick = () => close(false);
+    ok.onclick = () => close(true);
+    back.onclick = (e) => { if (e.target === back) close(false); };
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(() => { try { ok.focus(); } catch(_) {} }, 30);
+  });
+}
 function confetti(durationMs = 2200, count = 80) {
   const wrap = $('#confetti');
   const colors = ['#ff8a3d', '#ffc24a', '#ff5a3d', '#ffd166', '#ffaa66', '#ff77b7', '#4ade80'];
@@ -4522,8 +4643,16 @@ function renderForge() {
 
   const head = el('div', { class: 'panel forge' });
   const headRow = el('div', { class: 'forge-head' },
-    el('button', { class: 'btn ghost', onclick: () => {
-      if (confirm('Leave this forge? Your work on this story will be lost.')) { forge = null; render(); }
+    el('button', { class: 'btn ghost', onclick: async () => {
+      const ok = await confirmDialog({
+        emoji: '✍️',
+        title: 'Leave this forge?',
+        message: 'Your work on this story will be lost.',
+        confirmText: 'Leave',
+        cancelText: 'Stay',
+        confirmVariant: 'warn'
+      });
+      if (ok) { forge = null; render(); }
     } }, '← Stories'),
     el('div', { class: 'crumb' }, `L${s.level} · ${s.title}`),
     (() => {
@@ -5084,8 +5213,16 @@ function openTrophyModal() {
   btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
   btns.appendChild(el('button', {
     class: 'btn danger',
-    onclick: () => {
-      if (confirm('Sign out and clear all progress on this device?')) {
+    onclick: async () => {
+      const ok = await confirmDialog({
+        emoji: '⚠️',
+        title: 'Sign out & wipe progress?',
+        message: 'This clears every story, ship, streak and XP on this device. There is no undo.',
+        confirmText: 'Wipe & sign out',
+        cancelText: 'Keep my progress',
+        confirmVariant: 'danger'
+      });
+      if (ok) {
         localStorage.removeItem(STORE_KEY);
         for (const oldKey of LEGACY_STORE_KEYS) {
           try { localStorage.removeItem(oldKey); } catch (_) {}
@@ -5186,8 +5323,15 @@ function buildShipCard(s) {
       ));
     }
   } else if (canBuy) {
-    card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
-      if (!confirm(`Unlock ${s.name} for ${s.cost.toLocaleString()} XP?`)) return;
+    card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: async () => {
+      const ok = await confirmDialog({
+        emoji: '🛸',
+        title: `Unlock ${s.name}?`,
+        message: `Spend ${s.cost.toLocaleString()} XP to add this ship to your hangar. You'll have ${(state.points - s.cost).toLocaleString()} XP left.`,
+        confirmText: `Unlock — ${s.cost.toLocaleString()} XP`,
+        cancelText: 'Not yet'
+      });
+      if (!ok) return;
       state.points -= s.cost;
       state.ships.owned.push(s.id);
       state.ships.equipped = s.id;
