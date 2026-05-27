@@ -747,6 +747,62 @@
     box-shadow: 0 10px 28px rgba(255,170,0,0.45);
   }
 
+  /* Streak ladder + skill tree panels */
+  .streak-ladder { margin-top: 12px; }
+  .streak-ladder .ladder-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; font-size: 12px; color: var(--muted);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .streak-ladder .ladder-row.unlocked { color: #b6ffd0; }
+  .streak-ladder .ladder-row .days {
+    width: 28px; font-weight: 900; color: #ffd166; flex-shrink: 0;
+  }
+  .streak-ladder .ladder-row.unlocked .days { color: #4ade80; }
+  .veteran-tag {
+    display: inline-block; margin-left: 8px;
+    font-family: 'Bangers', system-ui, sans-serif;
+    font-size: 14px; letter-spacing: 1px;
+    color: #ffd166; text-shadow: 0 0 12px rgba(255,209,102,0.5);
+  }
+  .skill-tree { max-width: 960px; text-align: left; }
+  .skill-tree h2 { text-align: center; }
+  .skill-tree-sub { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+  .skill-tier-label {
+    font-family: 'Bangers', system-ui, sans-serif;
+    font-size: 16px; letter-spacing: 1.2px; color: #ffd28a;
+    margin: 14px 0 8px;
+  }
+  .skill-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 8px;
+  }
+  .skill-card {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px; text-align: center;
+  }
+  .skill-card.owned { border-color: rgba(74, 222, 128, 0.35); }
+  .skill-card.equipped {
+    border-color: #4ad6ff;
+    box-shadow: 0 0 0 2px rgba(74,214,255,0.25);
+  }
+  .skill-card.locked-gate { opacity: 0.55; }
+  .skill-card .sk-icon { font-size: 32px; line-height: 1; }
+  .skill-card h4 {
+    font-family: 'Bangers', system-ui, sans-serif;
+    font-size: 18px; letter-spacing: 0.8px; margin: 6px 0 4px; color: #fff4e8;
+  }
+  .skill-card .sk-desc { font-size: 12px; color: var(--muted); line-height: 1.35; margin: 0 0 8px; }
+  .skill-card .sk-gate { font-size: 11px; color: #ffd28a; margin-bottom: 8px; }
+  .icon-btn.skills-btn {
+    font-family: 'Bangers', system-ui, sans-serif;
+    font-size: 13px; letter-spacing: 0.8px;
+    color: #ffd28a; padding: 4px 10px; line-height: 1.2;
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    border-radius: 10px; min-width: 52px; height: 40px;
+  }
+  .icon-btn.skills-btn:hover { color: #fff4e8; border-color: #ffd166; }
+
   /* Story cards */
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
   .story-card {
@@ -4120,7 +4176,17 @@ function defaultState() {
     // Forging it grants 2× XP exactly once per day. `date` is YYYY-M-D
     // (see todayStr()); when it doesn't match today we re-pick.
     // `history` logs past picks { date, storyId } for the 7-day cooldown.
-    dailyQuest: { date: null, storyId: null, claimed: false, history: [] }
+    dailyQuest: { date: null, storyId: null, claimed: false, history: [] },
+    // Permanent streak-milestone unlocks (see STREAK_MILESTONES).
+    streakUnlocks: [],
+    grannyFavourUntil: null,  // YYYY-M-D — 7-day friendlier Granny cadence
+    // Skill tree: writing gates unlock nodes; XP buys them; one equipped.
+    upgrades: { owned: [], equipped: null },
+    totalXpEarned: 0,
+    dailyQuestClaims: 0,
+    motherDefeated: false,
+    bossSeen: false,
+    arcadeFireBoost: false   // Paragon Overdrive — next arcade only
   };
 }
 function pushHistory(entry) {
@@ -4168,6 +4234,16 @@ function loadState() {
       merged.dailyQuest = { date: null, storyId: null, claimed: false, history: [] };
     }
     if (!Array.isArray(merged.dailyQuest.history)) merged.dailyQuest.history = [];
+    if (!Array.isArray(merged.streakUnlocks)) merged.streakUnlocks = [];
+    if (!merged.upgrades || typeof merged.upgrades !== 'object') {
+      merged.upgrades = { owned: [], equipped: null };
+    }
+    if (!Array.isArray(merged.upgrades.owned)) merged.upgrades.owned = [];
+    if (typeof merged.totalXpEarned !== 'number') merged.totalXpEarned = merged.points || 0;
+    if (typeof merged.dailyQuestClaims !== 'number') merged.dailyQuestClaims = 0;
+    if (typeof merged.motherDefeated !== 'boolean') merged.motherDefeated = false;
+    if (typeof merged.bossSeen !== 'boolean') merged.bossSeen = false;
+    if (typeof merged.arcadeFireBoost !== 'boolean') merged.arcadeFireBoost = false;
     return merged;
   } catch (e) { return defaultState(); }
 }
@@ -4184,7 +4260,8 @@ const BADGES = {
   perfect:    { name: 'Flawless Forge',   icon: '✨', desc: 'Build a sentence with no wrong picks.' },
   paragon:    { name: 'Paragon',          icon: '💎', desc: 'Forge a paragraph with zero wrong picks.' },
   l3:         { name: 'Three-Level Forge', icon: '🥇', desc: 'Complete a Level 3 story.' },
-  streak5:    { name: 'On Fire',          icon: '🔥', desc: 'Pass 5 stories in a row.' },
+  streak5:    { name: 'On Fire',          icon: '🔥', desc: 'Reach a 5-day forge streak.' },
+  veteran:    { name: 'Backyard Veteran', icon: '🎖️', desc: 'Reach a 50-day forge streak.' },
   arcade:     { name: 'Arcade Ace',       icon: '🕹️', desc: 'Score 200+ in the reward game.' },
   defender:   { name: 'Galactic Defender',icon: '🛸', desc: 'Clear a full wave in the arcade.' },
   boss:       { name: 'Grand-Daddy Slayer',icon: '😈', desc: 'Defeat the Grand-Daddy boss.' }
@@ -4290,18 +4367,11 @@ const GRANNY_PREGAME_MESSAGES = [
   "Granny means business."
 ];
 function rollGrannyRound() {
+  const minGap = getGrannyMinGap();
   const runs = state.arcadeRunsSinceGranny || 0;
-  // Quiet zone: the first GRANNY_MIN_GAP arcade runs after a Granny visit
-  // (or from a fresh save) are guaranteed granny-free.
-  if (runs < GRANNY_MIN_GAP) return false;
-  // Window of GRANNY_WINDOW runs in which Granny lands EXACTLY ONCE.
-  // We pick the slot uniformly using per-slot conditional probability so
-  // we don't need to persist a pre-picked target. Each slot is equally
-  // likely overall (each 1/GRANNY_WINDOW):
-  //   slot 0 (first run in window): 1 / 3
-  //   slot 1 (second run in window): 1 / 2 of the remaining 2/3 = 1/3
-  //   slot 2 (third run in window):  1 / 1 of the remaining 1/3 = 1/3 (forced)
-  const slot = runs - GRANNY_MIN_GAP;
+  // Quiet zone: the first N arcade runs after a Granny visit are granny-free.
+  if (runs < minGap) return false;
+  const slot = runs - minGap;
   const remaining = GRANNY_WINDOW - slot;
   if (remaining <= 1) return true; // last slot in the window (or overshoot)
   return Math.floor(Math.random() * remaining) === 0;
@@ -4384,9 +4454,219 @@ function checkStreakUnlocks() {
       toast(`${s.name} unlocked — ${s.unlock.value}-day streak reward! Check the Hangar.`, '🔥');
     }
   }
+  syncStreakUnlocks();
 }
+
+/* --------------------- STREAK LADDER --------------------- */
+const STREAK_MILESTONES = [
+  { id: 'spark_trail',     days: 3,  icon: '✨', name: 'Spark Trail',     desc: 'Gold sparkle trail on your shots.' },
+  { id: 'extended_round',  days: 5,  icon: '⏱️', name: 'Extended Round',  desc: '90-second arcade runs.' },
+  { id: 'daily_boost',     days: 7,  icon: '📅', name: 'Daily Boost',     desc: "Today's Special pays 2.5× XP." },
+  { id: 'twin_tap',        days: 10, icon: '🎯', name: 'Twin Tap',        desc: 'Every 3rd shot adds a side pellet.' },
+  { id: 'streak_shield',   days: 14, icon: '🛡️', name: 'Streak Shield',   desc: 'One free hit per arcade run.' },
+  { id: 'granny_favour',   days: 21, icon: '👵', name: "Granny's Favour", desc: 'Granny visits more often for 7 days.' },
+  { id: 'golden_forge',    days: 30, icon: '🔨', name: 'Golden Forge',    desc: '+10% XP on every forge.' },
+  { id: 'veteran',         days: 50, icon: '🎖️', name: 'Backyard Veteran', desc: 'Prestige title + badge.' }
+];
+function hasStreakUnlock(id) {
+  return Array.isArray(state.streakUnlocks) && state.streakUnlocks.includes(id);
+}
+function addDaysToDateStr(dateStr, days) {
+  const p = dateStr.split('-').map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+function isYesterday(dateStr) {
+  if (!dateStr) return false;
+  return addDaysToDateStr(dateStr, 1) === todayStr();
+}
+function bumpDailyStreak() {
+  const today = todayStr();
+  const last = state.lastSession;
+  if (last === today) { syncStreakUnlocks(); return; }
+  if (isYesterday(last)) state.streak = (state.streak || 0) + 1;
+  else state.streak = 1;
+  state.lastSession = today;
+  syncStreakUnlocks();
+}
+function syncStreakUnlocks(silent) {
+  if (!Array.isArray(state.streakUnlocks)) state.streakUnlocks = [];
+  const today = todayStr();
+  for (const m of STREAK_MILESTONES) {
+    if (state.streak < m.days || hasStreakUnlock(m.id)) continue;
+    state.streakUnlocks.push(m.id);
+    if (m.id === 'granny_favour') state.grannyFavourUntil = addDaysToDateStr(today, 7);
+    if (m.id === 'veteran') awardBadge('veteran');
+    if (!silent) toast(`Streak reward: ${m.name}!`, m.icon);
+  }
+}
+function getGrannyMinGap() {
+  const today = todayStr();
+  if (state.grannyFavourUntil && today <= state.grannyFavourUntil) return 3;
+  return GRANNY_MIN_GAP;
+}
+function buildStreakLadderEl() {
+  const wrap = el('div', { class: 'streak-ladder' });
+  wrap.appendChild(el('div', { class: 'section-title', style: { marginTop: '0', paddingLeft: '0' } }, 'Streak ladder 🔥'));
+  for (const m of STREAK_MILESTONES) {
+    const ok = hasStreakUnlock(m.id);
+    const row = el('div', { class: 'ladder-row' + (ok ? ' unlocked' : '') });
+    row.appendChild(el('span', { class: 'days' }, m.days));
+    row.appendChild(el('span', {}, `${m.icon} ${m.name}`));
+    wrap.appendChild(row);
+  }
+  return wrap;
+}
+
+/* --------------------- SKILL TREE --------------------- */
+function countStoriesCompleted() {
+  return Object.keys(state.completed || {}).length;
+}
+function countParagons() {
+  return Object.values(state.completed || {}).filter(c => c && c.perfect).length;
+}
+function countLevelStories(level) {
+  return STORIES.filter(s => s.level === level && state.completed[s.id]).length;
+}
+const UPGRADES = [
+  { id: 'rapid_fire', tier: 1, name: 'Rapid Fire', icon: '⚡', cost: 300,
+    desc: 'Fire 15% faster.', gate: 'Forge 3 stories',
+    check: () => countStoriesCompleted() >= 3 },
+  { id: 'wide_spread', tier: 1, name: 'Wide Spread', icon: '💥', cost: 400,
+    desc: 'Three bullets in a tight spread.', gate: '1 Paragon paragraph',
+    check: () => countParagons() >= 1 },
+  { id: 'sturdy_hull', tier: 1, name: 'Sturdy Hull', icon: '🛡️', cost: 350,
+    desc: 'Start with 4 lives.', gate: 'Forge 6 stories',
+    check: () => countStoriesCompleted() >= 6 },
+  { id: 'piercing_round', tier: 2, name: 'Piercing Round', icon: '➡️', cost: 800,
+    desc: 'Every 4th shot pierces one extra alien.', gate: '3 Paragons',
+    check: () => countParagons() >= 3 },
+  { id: 'score_magnet', tier: 2, name: 'Score Magnet', icon: '🧲', cost: 600,
+    desc: '+2 score per alien kill.', gate: 'Earn 2,000 XP total',
+    check: () => (state.totalXpEarned || 0) >= 2000 },
+  { id: 'focus_burst', tier: 2, name: 'Focus Burst', icon: '🔥', cost: 750,
+    desc: 'Once per run: 3s double fire rate.', gate: 'Forge 2 Level-2 stories',
+    check: () => countLevelStories(2) >= 2 },
+  { id: 'slow_mo', tier: 3, name: 'Slow-Mo Bubble', icon: '🫧', cost: 1200,
+    desc: 'Once per run: 2s slow enemies when boss appears.', gate: '1 perfect L3 story',
+    check: () => STORIES.some(s => s.level === 3 && state.completed[s.id] && state.completed[s.id].perfect) },
+  { id: 'mother_buster', tier: 3, name: 'Mother Buster', icon: '🚀', cost: 1000,
+    desc: 'Double damage vs the mother ship.', gate: 'Defeat the mother ship once',
+    check: () => !!state.motherDefeated },
+  { id: 'boss_chisel', tier: 3, name: 'Boss Chisel', icon: '⛏️', cost: 1500,
+    desc: 'Boss hits deal +1 damage.', gate: 'Face the Grand-Daddy once',
+    check: () => !!state.bossSeen },
+  { id: 'granny_recipe', tier: 4, name: "Granny's Recipe", icon: '🧁', cost: 2000,
+    desc: 'Granny fires a bonus cupcake each volley.', gate: 'Claim 5 Daily Quests',
+    check: () => (state.dailyQuestClaims || 0) >= 5 },
+  { id: 'paragon_overdrive', tier: 4, name: 'Paragon Overdrive', icon: '💎', cost: 2500,
+    desc: 'After a Paragon forge, next arcade +20% fire rate.', gate: '5 Paragons',
+    check: () => countParagons() >= 5 },
+  { id: 'campaign_ace', tier: 4, name: 'Campaign Ace', icon: '🏆', cost: 3000,
+    desc: '+25% arcade score.', gate: 'Forge 18 / 24 stories',
+    check: () => countStoriesCompleted() >= 18 }
+];
+function getEquippedUpgrade() {
+  const id = state.upgrades && state.upgrades.equipped;
+  if (!id) return null;
+  return UPGRADES.find(u => u.id === id) || null;
+}
+function ownsUpgrade(id) {
+  return state.upgrades && Array.isArray(state.upgrades.owned) && state.upgrades.owned.includes(id);
+}
+function upgradeUnlocked(u) { return u.check(); }
+function initArcadeUpgrades(a) {
+  a.shotCounter = 0;
+  a.streakShieldUsed = false;
+  a.focusBurstUsed = false;
+  a.slowMoUsed = false;
+  a.focusBurstUntil = 0;
+  a.slowMoUntil = 0;
+  a.upgradeId = (state.upgrades && state.upgrades.equipped) || null;
+  const isGranny = a.shipDef && a.shipDef.special === 'granny';
+  if (!isGranny && a.upgradeId === 'rapid_fire') a.fireCooldown = Math.round(a.fireCooldown * 0.85);
+  if (a.upgradeId === 'sturdy_hull') a.lives = 4;
+  if (state.arcadeFireBoost) {
+    a.fireCooldown = Math.round(a.fireCooldown * 0.8);
+    state.arcadeFireBoost = false;
+    saveState();
+  }
+}
+function openSkillTree() {
+  const wrap = el('div', { class: 'skill-tree' });
+  wrap.appendChild(el('h2', {}, 'Skill Tree'));
+  wrap.appendChild(el('p', { class: 'skill-tree-sub' },
+    'Master writing to unlock nodes. Spend XP to buy — equip one power at a time.'));
+  wrap.appendChild(el('p', { class: 'skill-tree-sub', style: { marginTop: '-8px' } },
+    `Your XP: ${state.points.toLocaleString()}`));
+  for (let t = 1; t <= 4; t++) {
+    const tierUps = UPGRADES.filter(u => u.tier === t);
+    if (!tierUps.length) continue;
+    wrap.appendChild(el('div', { class: 'skill-tier-label' }, `Tier ${t}`));
+    const grid = el('div', { class: 'skill-grid' });
+    for (const u of tierUps) {
+    const gateOk = upgradeUnlocked(u);
+    const owned = ownsUpgrade(u.id);
+    const equipped = state.upgrades.equipped === u.id;
+    const card = el('div', {
+      class: 'skill-card' + (owned ? ' owned' : '') + (equipped ? ' equipped' : '')
+        + (!gateOk ? ' locked-gate' : '')
+    });
+    card.appendChild(el('div', { class: 'sk-icon' }, u.icon));
+    card.appendChild(el('h4', {}, u.name));
+    card.appendChild(el('p', { class: 'sk-desc' }, u.desc));
+    card.appendChild(el('p', { class: 'sk-gate' }, gateOk ? '✓ ' + u.gate : '🔒 ' + u.gate));
+    if (!gateOk) {
+      card.appendChild(el('div', { class: 'hangar-cta cta-locked' }, el('div', {}, 'Locked')));
+    } else if (owned) {
+      if (equipped) {
+        card.appendChild(el('button', { class: 'btn ghost hangar-btn-cta', onclick: () => {
+          state.upgrades.equipped = null; saveState(); closeModal(); openSkillTree();
+        } }, 'Unequip'));
+      } else {
+        card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
+          state.upgrades.equipped = u.id; saveState(); closeModal(); openSkillTree();
+        } }, 'Equip'));
+      }
+    } else {
+      card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: async () => {
+        const ok = await confirmDialog({
+          emoji: u.icon,
+          title: `Unlock ${u.name}?`,
+          message: `Spend ${u.cost.toLocaleString()} XP.`,
+          confirmText: `Buy — ${u.cost.toLocaleString()} XP`,
+          cancelText: 'Not yet'
+        });
+        if (!ok || state.points < u.cost) {
+          if (ok) toast('Not enough XP yet.', '💸');
+          return;
+        }
+        state.points -= u.cost;
+        state.upgrades.owned.push(u.id);
+        state.upgrades.equipped = u.id;
+        saveState(); closeModal(); openSkillTree();
+        toast(`${u.name} unlocked & equipped!`, u.icon);
+      } }, `Unlock — ${u.cost.toLocaleString()} XP`));
+    }
+      grid.appendChild(card);
+    }
+    wrap.appendChild(grid);
+  }
+  const foot = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
+  foot.appendChild(el('button', { class: 'btn ghost', onclick: closeModal }, 'Close'));
+  wrap.appendChild(foot);
+  const modal = $('#modal');
+  if (modal) modal.classList.add('wide');
+  openModal(wrap);
+}
+
 // Kick off a preload of the equipped ship sprite so it's ready by arcade-time.
 getShipSprite(state.ships.equipped);
+const _fireBtnPreload = new Image();
+_fireBtnPreload.src = 'ui/fire_btn.png';
+// Backfill permanent streak rewards for returning players (silent).
+syncStreakUnlocks(true);
 function awardBadge(id) {
   if (!state.badges.includes(id)) {
     state.badges.push(id);
@@ -4766,6 +5046,7 @@ function topbar() {
       el('button', { class: 'icon-btn stories-btn', 'data-tip': 'My stories', onclick: renderGallery },
         el('img', { src: 'ui/writing_hand.png', alt: 'My stories' })
       ),
+      el('button', { class: 'icon-btn skills-btn', 'data-tip': 'Skill Tree', onclick: openSkillTree }, '⚡'),
       el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
       ),
@@ -4805,7 +5086,11 @@ function renderHome(app) {
   app.appendChild(topbar());
   const hero = el('section', { class: 'hero' });
   const left = el('div', { class: 'panel' });
-  left.appendChild(el('h1', {}, `Welcome back, ${state.name}.`));
+  const welcomeTitle = el('h1', {}, `Welcome back, ${state.name}.`);
+  if (hasStreakUnlock('veteran')) {
+    welcomeTitle.appendChild(el('span', { class: 'veteran-tag' }, 'Backyard Veteran'));
+  }
+  left.appendChild(welcomeTitle);
   left.appendChild(el('p', {}, 'Choose a theme then a story below. Pick the best word in every container, then type the sentence out. Forge a full paragraph to unlock a 60-second reward game.'));
   // Topic tabs
   const tabs = el('div', { class: 'topic-tabs' });
@@ -4835,6 +5120,11 @@ function renderHome(app) {
   stats.appendChild(stat('Streak', state.streak + ' 🔥'));
   stats.appendChild(stat('Forge Invaders High Score', state.bestArcadeScore || 0));
   right.appendChild(stats);
+  right.appendChild(buildStreakLadderEl());
+  const skillRow = el('div', { class: 'row-wrap', style: { marginTop: '12px', justifyContent: 'center' } });
+  skillRow.appendChild(el('button', { class: 'btn primary', onclick: openSkillTree },
+    '⚡ Skill Tree'));
+  right.appendChild(skillRow);
   hero.appendChild(right);
   app.appendChild(hero);
 
@@ -5303,6 +5593,7 @@ function finishStory() {
   // Paragraph bonus
   earnedBase += 200;
   if (allPerfect) earnedBase += 150;
+  if (hasStreakUnlock('golden_forge')) earnedBase = Math.round(earnedBase * 1.1);
   earnedBase = Math.round(earnedBase * mult);
 
   // Replay discount: first time you forge a story you get the full payout;
@@ -5323,19 +5614,24 @@ function finishStory() {
   // per day so replays of the same story later don't keep doubling.
   let dailyBonus = 0;
   if (isDailyClaim) {
-    dailyBonus = earned;
+    dailyBonus = hasStreakUnlock('daily_boost') ? Math.round(earned * 1.5) : earned;
     state.points += dailyBonus;
     state.dailyQuest.claimed = true;
+    state.dailyQuestClaims = (state.dailyQuestClaims || 0) + 1;
     if (!Array.isArray(state.dailyQuest.history)) state.dailyQuest.history = [];
   }
+  state.totalXpEarned = (state.totalXpEarned || 0) + earned + dailyBonus;
   state.completed[story.id] = {
     perfect: allPerfect || (state.completed[story.id] && state.completed[story.id].perfect),
     attempts: prevAttempts + 1,
     score: earned,
   };
-  state.streak = (state.lastSession === todayStr() || !state.lastSession) ? state.streak + 1 : 1;
-  state.lastSession = todayStr();
+  bumpDailyStreak();
   checkStreakUnlocks();
+  if (allPerfect && ownsUpgrade('paragon_overdrive')) {
+    state.arcadeFireBoost = true;
+    toast('Paragon Overdrive armed for your next arcade run!', '💎');
+  }
 
   // Save the forged paragraph
   const paragraphText = correctParagraph(story);
@@ -5778,7 +6074,7 @@ function startArcade(opts = {}) {
   }
   // Streak-of-5 reward: arcade rounds become 90 seconds instead of 60.
   // (Granny rounds get the same bonus — no reason to penalise her.)
-  const streakBonus = state.streak >= 5;
+  const streakBonus = hasStreakUnlock('extended_round');
   const duration = streakBonus ? 90000 : 60000;
   // For a Granny round we override the ship for the run only — we don't
   // touch state.ships.equipped, so the player's real ship is restored
@@ -5805,6 +6101,7 @@ function startArcade(opts = {}) {
     grannyRound, streakBonus,
     shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
   };
+  initArcadeUpgrades(arcade);
   renderArcade();
   document.addEventListener('keydown', arcKeyDown);
   document.addEventListener('keyup', arcKeyUp);
@@ -6185,30 +6482,51 @@ function updateArcade(dt) {
   // curving projectile that explodes in a wide AOE on contact. Different
   // cooldown to balance the AOE.
   const isGranny = a.shipDef && a.shipDef.special === 'granny';
-  const fireGate = isGranny ? 600 : a.fireCooldown;
+  let fireGate = isGranny ? 600 : a.fireCooldown;
+  if (!isGranny && a.upgradeId === 'focus_burst' && a.focusBurstUntil > performance.now()) {
+    fireGate = Math.round(fireGate * 0.5);
+  }
   if (ARC_KEYS.fire && performance.now() - a.lastFire > fireGate) {
     const def = a.shipDef || SHIPS[0];
     const sw = a.shipW || a.player.w;
     const sh = a.shipH || a.player.h;
     if (isGranny) {
-      // Single cupcake nuke from the bazooka muzzle. Initial velocity is
-      // slightly right + up so it visibly comes out of the barrel; the
-      // per-frame steering below curves it left and skyward as it climbs.
       const bar = def.barrels[0];
       const bx = a.player.x + (bar.fx - 0.5) * sw;
       const by = a.player.y + (bar.fy - 0.5) * sh;
-      a.bullets.push({
-        x: bx, y: by, w: 38, h: 60,
-        vx: 0.16, vy: -0.32,
-        type: 'cupcake',
-        targetVx: -0.14, targetVy: -0.34,
-        angle: 0, smokeTimer: 0,
-      });
+      const pushCupcake = (ox, oy) => {
+        a.bullets.push({
+          x: bx + ox, y: by + oy, w: 38, h: 60,
+          vx: 0.16, vy: -0.32,
+          type: 'cupcake',
+          targetVx: -0.14, targetVy: -0.34,
+          angle: 0, smokeTimer: 0,
+        });
+      };
+      pushCupcake(0, 0);
+      if (a.upgradeId === 'granny_recipe') pushCupcake(14, 4);
     } else {
-      for (const bar of def.barrels) {
-        const bx = a.player.x + (bar.fx - 0.5) * sw;
-        const by = a.player.y + (bar.fy - 0.5) * sh;
-        a.bullets.push({ x: bx, y: by, w: 4, h: 12, vx: bar.vx || 0, vy: -0.9 });
+      a.shotCounter = (a.shotCounter || 0) + 1;
+      const pierce = a.upgradeId === 'piercing_round' && a.shotCounter % 4 === 0;
+      const spawnBullet = (bx, by, vx) => {
+        a.bullets.push({ x: bx, y: by, w: 4, h: 12, vx: vx || 0, vy: -0.9, pierce: !!pierce, pierceHits: 0 });
+      };
+      if (a.upgradeId === 'wide_spread') {
+        const bx = a.player.x;
+        const by = a.player.y - sh * 0.45;
+        for (const vx of [-0.16, 0, 0.16]) spawnBullet(bx, by, vx);
+      } else {
+        for (const bar of def.barrels) {
+          spawnBullet(
+            a.player.x + (bar.fx - 0.5) * sw,
+            a.player.y + (bar.fy - 0.5) * sh,
+            bar.vx || 0
+          );
+        }
+        if (hasStreakUnlock('twin_tap') && a.shotCounter % 3 === 0) {
+          spawnBullet(a.player.x - 14, a.player.y - sh * 0.4, -0.22);
+          spawnBullet(a.player.x + 14, a.player.y - sh * 0.4, 0.22);
+        }
       }
     }
     a.lastFire = performance.now();
@@ -6249,6 +6567,14 @@ function updateArcade(dt) {
     } else {
       b.y += b.vy * dt;
       if (b.vx) b.x += b.vx * dt;
+      if (hasStreakUnlock('spark_trail') && Math.random() < 0.22) {
+        a.particles.push({
+          type: 'blob', x: b.x, y: b.y + 6,
+          vx: (Math.random() - 0.5) * 0.04, vy: 0.06,
+          r: 4 + Math.random() * 3, life: 280, maxLife: 280,
+          color: 'rgba(255,209,102,0.75)'
+        });
+      }
     }
   }
   a.bullets = a.bullets.filter(b => b.y > -40 && b.x > -40 && b.x < ARC_W + 40);
@@ -6258,8 +6584,10 @@ function updateArcade(dt) {
   // HYPER MODE: once the Grand-Daddy is down, every subsequent rack is on
   // overdrive — half the step interval, half the fire interval, double the
   // bullet speed, double the on-screen cap, and a 2-shot volley each fire.
+  const slowMo = a.slowMoUntil && performance.now() < a.slowMoUntil;
   const hyperMul = a.bossDefeated ? 0.5 : 1;
-  a.enemyStepEvery = Math.max(120, 700 - killCount * 18) * hyperMul;
+  const slowMul = slowMo ? 2 : 1;
+  a.enemyStepEvery = Math.max(120, 700 - killCount * 18) * hyperMul * slowMul;
   if (a.enemyStepTimer >= a.enemyStepEvery && alive.length > 0) {
     a.enemyStepTimer = 0;
     if (a.enemyDropPending) { for (const e of alive) e.y += 22; a.enemyDir *= -1; a.enemyDropPending = false; }
@@ -6272,7 +6600,7 @@ function updateArcade(dt) {
     }
   }
   a.enemyFireTimer += dt;
-  a.enemyFireEvery = Math.max(180, 700 - killCount * 12) * hyperMul;
+  a.enemyFireEvery = Math.max(180, 700 - killCount * 12) * hyperMul * slowMul;
   const bulletCap = a.bossDefeated ? 8 : 4;
   const bulletVy = a.bossDefeated ? 0.64 : 0.32;
   const shotsPerVolley = a.bossDefeated ? 2 : 1;
@@ -6293,9 +6621,15 @@ function updateArcade(dt) {
     for (const e of alive) {
       if (!e.alive) continue;
       if (Math.abs(b.x - e.x) < e.w/2 + b.w/2 && Math.abs(b.y - e.y) < e.h/2 + b.h/2) {
-        e.alive = false; b.y = -100; a.score += 10;
+        e.alive = false;
+        if (!b.pierce) b.y = -100;
+        let pts = 10;
+        if (a.upgradeId === 'score_magnet') pts += 2;
+        a.score += pts;
         spawnParticles(e.x, e.y, '#ff8a3d');
-        break;
+        if (!b.pierce) break;
+        b.pierceHits = (b.pierceHits || 0) + 1;
+        if (b.pierceHits >= 2) { b.y = -100; break; }
       }
     }
   }
@@ -6324,7 +6658,15 @@ function updateArcade(dt) {
   if (a.player.invuln <= 0) {
     for (const b of a.enemyBullets) {
       if (Math.abs(b.x - a.player.x) < a.player.w/2 + b.w/2 && Math.abs(b.y - a.player.y) < a.player.h/2 + b.h/2) {
-        a.lives--; a.livesLostThisGame++; a.livesLostInWave++; a.player.invuln = 1200; a.shake = 18; b.y = ARC_H + 100;
+        if (!a.streakShieldUsed && hasStreakUnlock('streak_shield')) {
+          a.streakShieldUsed = true;
+          a.player.invuln = 1400;
+          toast('Streak Shield saved you!', '🛡️');
+        } else {
+          a.lives--; a.livesLostThisGame++; a.livesLostInWave++;
+          a.player.invuln = 1200;
+        }
+        a.shake = 18; b.y = ARC_H + 100;
         spawnParticles(a.player.x, a.player.y, '#ff5a7a');
         break;
       }
@@ -6354,6 +6696,11 @@ function updateArcade(dt) {
     if (a.livesLostInWave === 0) waveBonus += 50;
     a.score += waveBonus;
     a.wavesCleared++;
+    if (a.upgradeId === 'focus_burst' && !a.focusBurstUsed) {
+      a.focusBurstUntil = performance.now() + 3000;
+      a.focusBurstUsed = true;
+      toast('Focus Burst!', '🔥');
+    }
     if (a.timeRemaining > 0) {
       a.bullets = [];
       a.enemyBullets = [];
@@ -6470,10 +6817,12 @@ function updateMother(dt) {
       if (b.type === 'cupcake') continue; // AOE handled in updateArcade
       if (Math.abs(b.x - m.x) < m.w / 2 + b.w / 2 && Math.abs(b.y - m.y) < m.h / 2 + b.h / 2) {
         b.y = -100;
-        arcade.score += 250;
+        const mPts = arcade.upgradeId === 'mother_buster' ? 500 : 250;
+        arcade.score += mPts;
+        state.motherDefeated = true;
         spawnBigExplosion(m.x, m.y, 1.0);
         arcade.shake = Math.max(arcade.shake, 18);
-        toast('Mother ship down! +250 XP', '💥');
+        toast(`Mother ship down! +${mPts} score`, '💥');
         arcade.mother = null;
         return;
       }
@@ -6484,6 +6833,12 @@ function updateMother(dt) {
 // HP, three independent firing groups (eyes / mouth / claws), and a big
 // fanfare on defeat.
 function spawnBoss() {
+  state.bossSeen = true;
+  if (arcade.upgradeId === 'slow_mo' && !arcade.slowMoUsed) {
+    arcade.slowMoUntil = performance.now() + 2000;
+    arcade.slowMoUsed = true;
+    toast('Slow-Mo Bubble!', '🫧');
+  }
   arcade.boss = {
     x: ARC_W / 2, y: -110,
     w: GRANDDADDY_W, h: GRANDDADDY_H,          // sprite dimensions
@@ -6559,7 +6914,8 @@ function updateBoss(dt) {
     if (bul.type === 'cupcake') continue; // AOE pass in updateArcade handles boss damage
     if (Math.abs(bul.x - b.x) < b.hitW / 2 + bul.w / 2 && Math.abs(bul.y - b.y) < b.hitH / 2 + bul.h / 2) {
       bul.y = -100;
-      b.hp -= 1;
+      const bossDmg = arcade.upgradeId === 'boss_chisel' ? 2 : 1;
+      b.hp -= bossDmg;
       arcade.score += 5;
       spawnParticles(bul.x, bul.y, '#ff8a3d');
       if (b.hp <= 0) { defeatBoss(b); return; }
@@ -7137,7 +7493,9 @@ function drawArcade() {
 }
 function showArcadeResult() {
   const a = arcade;
-  const score = a.score, livesLost = a.livesLostThisGame, waves = a.wavesCleared;
+  let score = a.score;
+  if (a.upgradeId === 'campaign_ace') score = Math.round(score * 1.25);
+  const livesLost = a.livesLostThisGame, waves = a.wavesCleared;
   const timeUp = a.timeUp || a.won; // a.won only fires on the buzzer-beater edge case
   const xpEarned = a.reward ? previewXp(score) : 0;
   if (a.reward && xpEarned > 0) state.points += xpEarned;
