@@ -1816,11 +1816,21 @@
      *word options* keep their serif (Georgia) because that's where
      legibility wins over personality. */
   .forge-head .crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
     font-weight: 400;
     letter-spacing: 1.6px;
     font-size: 16px;
     color: #ffd28a;
+  }
+  .forge-head .crumb-icon {
+    height: 26px;
+    width: 26px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: var(--icon-tint);
   }
   .forge-title-col h2 {
     font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
@@ -5579,7 +5589,7 @@ function openSkillTree() {
   const wrap = el('div', { class: 'skill-tree' });
   wrap.appendChild(el('h2', {}, 'Skill Tree'));
   wrap.appendChild(el('p', { class: 'skill-tree-sub' },
-    'Master writing to unlock nodes. Spend XP to buy — select one power at a time.'));
+    'Master writing to unlock skills. Spend XP to buy - use one power at a time.'));
   wrap.appendChild(el('p', { class: 'skill-tree-sub', style: { marginTop: '-8px' } },
     `Your XP: ${state.points.toLocaleString()}`));
   for (let t = 1; t <= 4; t++) {
@@ -6718,11 +6728,13 @@ function renderGallery() {
   const head = el('div', { class: 'panel' });
   head.appendChild(el('div', { class: 'forge-head' },
     el('button', { class: 'btn ghost', onclick: () => render() }, '← Home'),
-    el('div', { class: 'crumb' }, '📖 My Stories Gallery')
+    el('div', { class: 'crumb' },
+      el('img', { class: 'crumb-icon', src: 'topbar/stories.png', alt: '', draggable: 'false' }),
+      'My Stories Gallery')
   ));
   head.appendChild(el('h1', { style: { margin: '6px 0 4px', fontSize: '28px' } }, 'Your forged paragraphs'));
   head.appendChild(el('p', { style: { color: 'var(--muted)', margin: 0 } },
-    `${state.paragraphs.length} paragraph${state.paragraphs.length === 1 ? '' : 's'} forged so far. Tap Export to copy or download them all.`));
+    `${state.paragraphs.length} paragraph${state.paragraphs.length === 1 ? '' : 's'} forged so far. Tap Copy All to copy or download them all.`));
   const btns = el('div', { class: 'row-wrap', style: { marginTop: '12px' } });
   btns.appendChild(el('button', { class: 'btn primary', onclick: copyAllParagraphs }, '📋 Copy all'));
   btns.appendChild(el('button', { class: 'btn', onclick: downloadAllParagraphs }, '⬇ Download .txt'));
@@ -6808,7 +6820,9 @@ function renderProgress() {
   const head = el('div', { class: 'panel' });
   head.appendChild(el('div', { class: 'forge-head' },
     el('button', { class: 'btn ghost', onclick: () => render() }, '← Home'),
-    el('div', { class: 'crumb' }, '📊 Progress')
+    el('div', { class: 'crumb' },
+      el('img', { class: 'crumb-icon', src: 'topbar/progress.png', alt: '', draggable: 'false' }),
+      'Progress')
   ));
   head.appendChild(el('h1', { style: { margin: '6px 0 4px', fontSize: '28px' } }, `${state.name}'s Forge`));
 
