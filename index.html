@@ -1130,6 +1130,21 @@
     animation: pop .22s ease;
   }
   .confirm-emoji { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+  .confirm-art {
+    margin: 0 auto 10px;
+    line-height: 0;
+    filter:
+      drop-shadow(0 0 10px rgba(255, 200, 120, 0.95))
+      drop-shadow(0 0 22px rgba(255, 150, 60, 0.80))
+      drop-shadow(0 0 42px rgba(255, 110, 30, 0.50))
+      drop-shadow(0 4px 14px rgba(0,0,0,0.65));
+  }
+  .confirm-art img {
+    display: block;
+    width: 128px;
+    height: auto;
+    margin: 0 auto;
+  }
   .confirm-title {
     font-family: 'Bangers', 'Patrick Hand', system-ui, sans-serif;
     font-size: 28px; letter-spacing: 0.6px;
@@ -4690,7 +4705,7 @@ function openSkillTree() {
   const wrap = el('div', { class: 'skill-tree' });
   wrap.appendChild(el('h2', {}, 'Skill Tree'));
   wrap.appendChild(el('p', { class: 'skill-tree-sub' },
-    'Master writing to unlock nodes. Spend XP to buy — equip one power at a time.'));
+    'Master writing to unlock nodes. Spend XP to buy — select one power at a time.'));
   wrap.appendChild(el('p', { class: 'skill-tree-sub', style: { marginTop: '-8px' } },
     `Your XP: ${state.points.toLocaleString()}`));
   for (let t = 1; t <= 4; t++) {
@@ -4714,13 +4729,14 @@ function openSkillTree() {
       card.appendChild(el('div', { class: 'hangar-cta cta-locked' }, el('div', {}, 'Locked')));
     } else if (owned) {
       if (equipped) {
-        card.appendChild(el('button', { class: 'btn ghost hangar-btn-cta', onclick: () => {
+        card.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ SELECTED'));
+        card.appendChild(el('button', { class: 'btn ghost hangar-btn-cta', style: { marginTop: '6px' }, onclick: () => {
           state.upgrades.equipped = null; saveState(); closeModal(); openSkillTree();
-        } }, 'Unequip'));
+        } }, 'Unselect'));
       } else {
         card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
           state.upgrades.equipped = u.id; saveState(); closeModal(); openSkillTree();
-        } }, 'Equip'));
+        } }, 'Select'));
       }
     } else {
       card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: async () => {
@@ -4739,7 +4755,7 @@ function openSkillTree() {
         state.upgrades.owned.push(u.id);
         state.upgrades.equipped = u.id;
         saveState(); closeModal(); openSkillTree();
-        toast(`${u.name} unlocked & equipped!`, u.icon);
+        toast(`${u.name} unlocked & selected!`, u.icon);
       } }, `Unlock — ${u.cost.toLocaleString()} XP`));
     }
       grid.appendChild(card);
@@ -5006,7 +5022,16 @@ function confirmDialog(opts) {
     back.className = 'confirm-back';
     const dlg = document.createElement('div');
     dlg.className = 'confirm-dlg';
-    if (opts.emoji) {
+    if (opts.image) {
+      const art = document.createElement('div');
+      art.className = 'confirm-art';
+      const img = document.createElement('img');
+      img.src = opts.image;
+      img.alt = opts.imageAlt || '';
+      img.draggable = false;
+      art.appendChild(img);
+      dlg.appendChild(art);
+    } else if (opts.emoji) {
       const em = document.createElement('div');
       em.className = 'confirm-emoji';
       em.textContent = opts.emoji;
@@ -5385,7 +5410,8 @@ function renderForge() {
   const headRow = el('div', { class: 'forge-head' },
     el('button', { class: 'btn ghost', onclick: async () => {
       const ok = await confirmDialog({
-        emoji: '✍️',
+        image: 'ui/forge_dialog.png?v=2',
+        imageAlt: 'Forging your story',
         title: 'Leave this forge?',
         message: 'Your work on this story will be lost.',
         confirmText: 'Leave',
@@ -6015,7 +6041,7 @@ function openHangar() {
   m.appendChild(el('div', { style: { fontSize: '40px', textAlign: 'center' } }, '🛸'));
   m.appendChild(el('h2', { style: { textAlign: 'center', margin: '4px 0 2px' } }, 'Hangar'));
   m.appendChild(el('p', { class: 'hangar-sub' },
-    `Equip a starfighter for the arcade. You have `,
+    `Select a starfighter for the arcade. You have `,
     el('strong', {}, state.points.toLocaleString() + ' XP'),
     ` to spend.`
   ));
@@ -6070,12 +6096,12 @@ function buildShipCard(s) {
   card.appendChild(el('h3', { class: 'hangar-name' }, s.name));
   card.appendChild(el('p', { class: 'hangar-blurb' }, s.blurb));
   if (equipped) {
-    card.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ EQUIPPED'));
+    card.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ SELECTED'));
   } else if (owned) {
     card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
       state.ships.equipped = s.id; saveState(); closeModal(); openHangar();
-      toast(`${s.name} equipped — ready to fly!`, '🛸');
-    } }, 'Equip'));
+      toast(`${s.name} selected — ready to fly!`, '🛸');
+    } }, 'Select'));
   } else if (isStreakReward) {
     // Streak-gated unlock. We never show a Buy button — she's earned, not
     // bought. If the streak isn't there yet we show the progress meter.
@@ -6085,7 +6111,7 @@ function buildShipCard(s) {
         state.ships.equipped = s.id;
         getShipSprite(s.id);
         saveState(); closeModal(); openHangar();
-        toast(`${s.name} unlocked & equipped!`, '🔥');
+        toast(`${s.name} unlocked & selected!`, '🔥');
       } }, '🔥 Claim streak reward'));
     } else {
       const need = s.unlock.value - state.streak;
@@ -6110,7 +6136,7 @@ function buildShipCard(s) {
       state.ships.equipped = s.id;
       getShipSprite(s.id); // preload
       saveState(); closeModal(); openHangar();
-      toast(`${s.name} unlocked & equipped!`, '🛸');
+      toast(`${s.name} unlocked & selected!`, '🛸');
     } }, `Unlock — ${s.cost.toLocaleString()} XP`));
   } else {
     const need = s.cost - state.points;
