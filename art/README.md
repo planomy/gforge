@@ -42,6 +42,22 @@ If a file is missing, the card falls back to a topic-colored gradient with the t
 - `first-contact.jpg`  — First Contact
 - `reactor.jpg`        — The Reactor
 
+### Fantasy (purple/pink accent)
+- `dragon-hatch.jpg`       — The Dragon Egg
+- `spellbook-shop.jpg`     — The Spellbook Shop
+- `enchanted-bridge.jpg`   — The Enchanted Bridge
+- `wizard-trial.jpg`       — The Wizard's Trial
+- `crown-of-stars.jpg`     — The Crown of Stars
+- `dragon-oath.jpg`        — The Dragon's Oath
+
+### Horror (crimson/dark red accent)
+- `attic-whisper.jpg`      — The Attic Whisper
+- `bus-stop-shadow.jpg`    — The Bus Stop Shadow
+- `mirror-hall.jpg`        — The Mirror Hall
+- `basement-steps.jpg`     — The Basement Steps
+- `last-lantern.jpg`       — The Last Lantern
+- `locked-graveyard.jpg`   — The Locked Graveyard
+
 ## Recommended specs
 
 - **Aspect ratio**: Any! The card adapts to the image's natural aspect ratio on load — 1:1, 4:3, 16:9, etc. all display in full with no cropping. For visual consistency within a topic, try to keep all six stories in that topic at the same aspect.

@@ -19,7 +19,9 @@ const TOPICS = [
   { id: 'sport',     name: 'Sport',     emoji: '⚽' },
   { id: 'adventure', name: 'Adventure', emoji: '🗺️' },
   { id: 'mystery',   name: 'Mystery',   emoji: '🔍' },
-  { id: 'scifi',     name: 'Sci-Fi',    emoji: '🚀' }
+  { id: 'scifi',     name: 'Sci-Fi',    emoji: '🚀' },
+  { id: 'fantasy',   name: 'Fantasy',   emoji: '🐉' },
+  { id: 'horror',    name: 'Horror',    emoji: '🦇' }
 ];
 
 const STORIES = [

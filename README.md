@@ -6,7 +6,7 @@ A guided writing tool for 8–12 year-old native English speakers who need help 
 
 ## How it works
 
-- Pick a topic (**Sport, Adventure, Mystery, Sci-Fi**) and a story.
+- Pick a topic (**Sport, Adventure, Mystery, Sci-Fi, Fantasy, Horror**) and a story.
 - Each story is a **5-sentence narrative paragraph**.
 - For each sentence, you're shown a fixed opener and a few containers of word/phrase choices.
 - Pick the **best option** in each container — distractors are designed to teach against vague nouns, basic verbs, filter words and tell-not-show writing.
@@ -26,7 +26,7 @@ A retro space-shooter you earn the right to play. Features:
 
 ## Stories
 
-24 stories total — 6 per topic, split across 3 difficulty levels (L1, L2, L3).
+36 stories total — 6 per topic across six themes, split across 3 difficulty levels (L1, L2, L3). New stories can be dripped into a theme over time; theme-complete eggs unlock when every story in that theme is forged.
 
 ## Run locally
 

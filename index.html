@@ -821,14 +821,21 @@
   }
   .name-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.25); }
 
-  /* Topic tabs — illustrated banner buttons */
-  .topic-tabs { display: flex; gap: 14px; flex-wrap: wrap; margin: 14px 0 18px; }
+  /* Topic tabs — 2×3 grid of illustrated banner buttons */
+  .topic-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 10px;
+    margin: 12px 0 14px;
+    width: 100%;
+  }
   .topic-tab {
     position: relative;
     background: transparent; border: none; padding: 0; cursor: pointer;
     transition: transform .15s ease, filter .25s ease;
     filter: brightness(0.55) saturate(0.55) drop-shadow(0 4px 12px rgba(0,0,0,0.45));
-    display: inline-flex; align-items: center; line-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; min-width: 0; line-height: 0;
   }
   .topic-tab:hover {
     filter: brightness(0.85) saturate(0.85) drop-shadow(0 6px 18px rgba(0,0,0,0.5));
@@ -844,20 +851,24 @@
   .topic-tab[data-topic="adventure"] { --tab-glow: rgba(255,194,74,0.6); }
   .topic-tab[data-topic="mystery"]   { --tab-glow: rgba(167,139,250,0.65); }
   .topic-tab[data-topic="scifi"]     { --tab-glow: rgba(107,227,255,0.6); }
+  .topic-tab[data-topic="fantasy"]   { --tab-glow: rgba(192,132,252,0.65); }
+  .topic-tab[data-topic="horror"]    { --tab-glow: rgba(239,68,68,0.6); }
   .topic-tab img {
-    height: 56px; width: auto; display: block; pointer-events: none;
+    height: 46px; width: 100%; max-width: 100%;
+    object-fit: contain; display: block; pointer-events: none;
   }
   .topic-tab .progress {
-    position: absolute; top: 4px; right: 8px; z-index: 2;
-    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    position: absolute; top: 2px; right: 5px; z-index: 2;
+    font-size: 10px; padding: 1px 6px; border-radius: 999px;
     background: rgba(10,7,16,0.85); color: #fff4e8; font-weight: 900;
     border: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(4px);
     line-height: 1.5;
   }
   @media (max-width: 520px) {
-    .topic-tab img { height: 42px; }
-    .topic-tabs { gap: 8px; }
+    .topic-tab img { height: 38px; }
+    .topic-tabs { gap: 6px 8px; margin: 10px 0 12px; }
+    .topic-tab .progress { font-size: 9px; padding: 1px 5px; top: 1px; right: 3px; }
   }
 
   /* Daily Quest hero tile — sits above the stories grid on home. Pure
@@ -1136,10 +1147,16 @@
   .story-card[data-topic="adventure"] { --t1: #ff8a3d; --t2: #ffc24a; }
   .story-card[data-topic="mystery"]   { --t1: #a78bfa; --t2: #ec4899; }
   .story-card[data-topic="scifi"]     { --t1: #6be3ff; --t2: #8b5cf6; }
+  .story-card[data-topic="fantasy"]   { --t1: #c084fc; --t2: #f472b6; }
+  .story-card[data-topic="horror"]    { --t1: #f87171; --t2: #991b1b; }
   /* Sci-fi PNGs are edge-to-edge; adventure art has a baked-in black matte.
      Shrink the image slightly so the art well shows a dark frame like adventure. */
   .story-card[data-topic="scifi"] .art { background: #08060c; }
   .story-card[data-topic="scifi"] .art img { transform: scale(0.92); }
+  /* Fantasy PNGs keep a thin transparent matte; zoom slightly so the
+     topic gradient frame doesn't peek around the artwork. */
+  .story-card[data-topic="fantasy"] .art img { transform: scale(1.06); }
+  .story-card[data-topic="fantasy"]:hover .art img { transform: scale(1.12); }
   .story-card:hover {
     transform: translateY(-4px);
     border-color: color-mix(in srgb, var(--t1) 55%, transparent);
@@ -1919,6 +1936,7 @@
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
 <script src="js/stories-data.js"></script>
+<script src="js/stories-extra.js"></script>
 <script>
 /* ============================================================
    Granny Boom — Slay aliens while you sharpen your writing (v1.0)
@@ -1974,7 +1992,7 @@ function defaultState() {
     arcadeFireBoost: false,  // Paragon Overdrive — next arcade only
     pendingShipUnlockId: null,  // set when a tier unlocks; cleared after celebration
     // Critter eggs: one per completed theme (see CRITTER_DEFS).
-    critters: { sport: null, adventure: null, mystery: null, scifi: null },
+    critters: { sport: null, adventure: null, mystery: null, scifi: null, fantasy: null, horror: null },
     pendingCritterDeliveries: [],  // [{ topic }] — one birth per arcade run
     themesCritterQueued: [],       // topics that already earned an egg slot
     equippedCritterTopic: null     // hatched sidekick shown in arcade
@@ -2037,10 +2055,10 @@ function loadState() {
     if (typeof merged.arcadeFireBoost !== 'boolean') merged.arcadeFireBoost = false;
     if (merged.pendingShipUnlockId === undefined) merged.pendingShipUnlockId = null;
     if (!merged.critters || typeof merged.critters !== 'object') {
-      merged.critters = { sport: null, adventure: null, mystery: null, scifi: null };
+      merged.critters = { sport: null, adventure: null, mystery: null, scifi: null, fantasy: null, horror: null };
     }
-    for (const tid of ['sport', 'adventure', 'mystery', 'scifi']) {
-      if (!(tid in merged.critters)) merged.critters[tid] = null;
+    for (const t of TOPICS) {
+      if (!(t.id in merged.critters)) merged.critters[t.id] = null;
     }
     if (!Array.isArray(merged.pendingCritterDeliveries)) merged.pendingCritterDeliveries = [];
     if (!Array.isArray(merged.themesCritterQueued)) merged.themesCritterQueued = [];
@@ -2061,7 +2079,7 @@ if (!Array.isArray(state.paragraphs)) state.paragraphs = [];
 const BADGES = {
   apprentice: { name: 'Forge Apprentice', icon: '🔨', desc: 'Forge your first paragraph.' },
   smith:      { name: 'Sentence Smith',   icon: '⚒️', desc: 'Forge 5 paragraphs.' },
-  master:     { name: 'Master Smith',     icon: '🏆', desc: 'Forge all 24 paragraphs.' },
+  master:     { name: 'Master Smith',     icon: '🏆', desc: 'Forge every story in the library.' },
   perfect:    { name: 'Flawless Forge',   icon: '✨', desc: 'Build a sentence with no wrong picks.' },
   paragon:    { name: 'Paragon',          icon: '💎', desc: 'Forge a paragraph with zero wrong picks.' },
   l3:         { name: 'Three-Level Forge', icon: '🥇', desc: 'Complete a Level 3 story.' },
@@ -2346,13 +2364,15 @@ for (const id of state.ships.owned) {
 syncShipUnlocks(true);
 
 /* --------------------- CRITTER EGGS & SIDEKICKS --------------------- */
-// Complete all 6 stories in a theme → next arcade run the birth ship
+// Forge every story in a theme → next arcade run the birth ship
 // delivers an egg. Egg sits in the topbar nest; hatches in 2–5 days.
 const CRITTER_DEFS = {
   sport:     { label: 'Sport',     phEgg: '🥚', phCritter: '🏃', phShip: '🛸' },
   adventure: { label: 'Adventure', phEgg: '🥚', phCritter: '🗺️', phShip: '🛸' },
   mystery:   { label: 'Mystery',   phEgg: '🥚', phCritter: '👻', phShip: '🛸' },
-  scifi:     { label: 'Sci-Fi',    phEgg: '🥚', phCritter: '👽', phShip: '🛸' }
+  scifi:     { label: 'Sci-Fi',    phEgg: '🥚', phCritter: '👽', phShip: '🛸' },
+  fantasy:   { label: 'Fantasy',   phEgg: '🥚', phCritter: '🐉', phShip: '🛸' },
+  horror:    { label: 'Horror',    phEgg: '🥚', phCritter: '🦇', phShip: '🛸' }
 };
 const CRITTER_TOPICS = Object.keys(CRITTER_DEFS);
 const CRITTER_IMGS = {};
@@ -2398,8 +2418,18 @@ function getCritterRecord(topic) {
 function countTopicForged(topic) {
   return STORIES.filter(s => s.topic === topic && state.completed[s.id]).length;
 }
+function storiesPerTopic(topic) {
+  return STORIES.filter(s => s.topic === topic).length;
+}
+function totalStoryCount() {
+  return STORIES.length;
+}
+function campaignAceGate() {
+  return Math.ceil(totalStoryCount() * 0.75);
+}
 function isThemeComplete(topic) {
-  return countTopicForged(topic) >= 6;
+  const need = storiesPerTopic(topic);
+  return need > 0 && countTopicForged(topic) >= need;
 }
 function daysUntilHatch(c) {
   if (!c || c.hatched || !c.hatchDate) return null;
@@ -2901,8 +2931,8 @@ const UPGRADES = [
     desc: 'After a Paragon forge, next arcade +20% fire rate.', gate: '5 Paragons',
     check: () => countParagons() >= 5 },
   { id: 'campaign_ace', tier: 4, name: 'Campaign Ace', icon: '🏆', cost: 3000,
-    desc: '+25% arcade score.', gate: 'Forge 18 / 24 stories',
-    check: () => countStoriesCompleted() >= 18 }
+    desc: '+25% arcade score.', gate: 'Forge 75% of all stories',
+    check: () => countStoriesCompleted() >= campaignAceGate() }
 ];
 function getEquippedUpgrade() {
   const id = state.upgrades && state.upgrades.equipped;
@@ -3015,10 +3045,10 @@ function awardBadge(id) {
   return false;
 }
 function checkBadges() {
-  const total = state.paragraphs.length;
-  if (total >= 1)  awardBadge('apprentice');
-  if (total >= 5)  awardBadge('smith');
-  if (total >= 24) awardBadge('master');
+  const forged = countStoriesCompleted();
+  if (forged >= 1)  awardBadge('apprentice');
+  if (forged >= 5)  awardBadge('smith');
+  if (forged >= totalStoryCount()) awardBadge('master');
   if (state.streak >= 5) awardBadge('streak5');
 }
 
@@ -3468,7 +3498,7 @@ function renderHome(app) {
       onclick: () => { state.selectedTopic = t.id; saveState(); render(); }
     },
       el('img', { src: `topics/${t.id}.png`, alt: t.name }),
-      el('span', { class: 'progress' }, `${cnt}/6`)
+      el('span', { class: 'progress' }, `${cnt}/${storiesPerTopic(t.id)}`)
     );
     tabs.appendChild(tab);
   }
@@ -3480,7 +3510,7 @@ function renderHome(app) {
   right.appendChild(el('div', { class: 'section-title' }, 'Your forge'));
   const stats = el('div', { class: 'stat-row' });
   stats.appendChild(stat('XP', state.points));
-  stats.appendChild(stat('Stories', `${state.paragraphs.length} / 24`));
+  stats.appendChild(stat('Stories', `${countStoriesCompleted()} / ${totalStoryCount()}`));
   stats.appendChild(stat('Badges', `${(state.badges || []).length} / ${Object.keys(BADGES).length}`));
   stats.appendChild(stat('Streak', state.streak + ' 🔥'));
   stats.appendChild(stat('Forge Invaders High Score', state.bestArcadeScore || 0));
@@ -4178,7 +4208,7 @@ function renderProgress() {
     el('div', { class: 'k' }, 'XP'), el('div', { class: 'v' }, String(state.points)),
     el('div', { class: 'sub' }, `Streak ${state.streak} 🔥`)));
   hero.appendChild(el('div', { class: 'ph-stat accent' },
-    el('div', { class: 'k' }, 'Stories forged'), el('div', { class: 'v' }, `${totalDone} / 24`),
+    el('div', { class: 'k' }, 'Stories forged'), el('div', { class: 'v' }, `${countStoriesCompleted()} / ${totalStoryCount()}`),
     el('div', { class: 'sub' }, `${totalPerfect} paragon 💎`)));
   hero.appendChild(el('div', { class: 'ph-stat' },
     el('div', { class: 'k' }, 'Badges'), el('div', { class: 'v' }, `${state.badges.length} / ${Object.keys(BADGES).length}`),
@@ -4194,7 +4224,7 @@ function renderProgress() {
     const tStories = STORIES.filter(s => s.topic === topic.id);
     const tBox = el('div', { class: 'panel topic-matrix' });
     const done = tStories.filter(s => state.completed[s.id]).length;
-    tBox.appendChild(el('h3', {}, `${topic.emoji} ${topic.name}  —  ${done} / 6 forged`));
+    tBox.appendChild(el('h3', {}, `${topic.emoji} ${topic.name}  —  ${done} / ${tStories.length} forged`));
     for (const lvl of [1, 2, 3]) {
       const row = el('div', { class: 'matrix-row' });
       row.appendChild(el('div', { class: 'lbl' }, 'L' + lvl));
@@ -6096,7 +6126,7 @@ if (typeof STORIES === 'undefined' || !Array.isArray(STORIES) || !STORIES.length
     app.innerHTML = '';
     app.appendChild(el('div', { class: 'panel', style: { margin: '24px' } },
       el('h2', {}, 'Story data missing'),
-      el('p', {}, 'Could not load js/stories-data.js. If you opened this file from disk, run it from your web host instead.')));
+      el('p', {}, 'Could not load story data (js/stories-data.js and js/stories-extra.js). If you opened this file from disk, run it from your web host instead.')));
   }
 } else {
   runSplash();
