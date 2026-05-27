@@ -646,6 +646,31 @@
     font-size: 16px; color: #f5e9ff; opacity: 0.9;
     line-height: 1.25; margin: 0;
   }
+  /* Trailer-style preview of the story's sentence openers — a few
+     beats so the kid can taste what they're about to forge. */
+  .daily-quest .dq-stems {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex; flex-direction: column; gap: 2px;
+    font-family: 'Patrick Hand', system-ui, sans-serif;
+    font-size: 14.5px; line-height: 1.25;
+    color: #f5e9ff; opacity: 0.78;
+  }
+  .daily-quest .dq-stem {
+    position: relative;
+    padding-left: 16px;
+  }
+  .daily-quest .dq-stem::before {
+    content: "›";
+    position: absolute; left: 2px; top: -1px;
+    color: #ffd166; font-weight: 900;
+    font-family: 'Bangers', system-ui, sans-serif;
+  }
+  .daily-quest .dq-stem em {
+    font-style: italic;
+    color: #ffd9a8; opacity: 0.92;
+  }
   .daily-quest .dq-cta {
     flex-shrink: 0;
     background: linear-gradient(135deg, #ffd166, #ffaa00);
@@ -4440,6 +4465,24 @@ function buildDailyQuestTile() {
   txt.appendChild(el('p', { class: 'dq-sub' }, claimed
     ? 'Nice work! Come back tomorrow for a fresh challenge.'
     : `${topic.name || 'Story'} · Level ${story.level} — forge it today for double XP!`));
+  // Trailer beats: show the first few sentence openers so the kid can
+  // taste what they're about to write. Only shown pre-claim; the
+  // claimed state already has its own friendly closer copy.
+  if (!claimed && story.sentences && story.sentences.length) {
+    const stems = el('ul', { class: 'dq-stems' });
+    const previewCount = Math.min(3, story.sentences.length);
+    for (let i = 0; i < previewCount; i++) {
+      const opener = (story.sentences[i] && story.sentences[i].opener) || '';
+      if (!opener) continue;
+      // Trim trailing comma so the "…" reads more naturally as an unfinished beat.
+      const clean = opener.replace(/,\s*$/, '').trim();
+      const li = el('li', { class: 'dq-stem' });
+      li.appendChild(el('em', {}, clean));
+      li.appendChild(document.createTextNode(' …'));
+      stems.appendChild(li);
+    }
+    if (stems.childElementCount > 0) txt.appendChild(stems);
+  }
   wrap.appendChild(txt);
   if (!claimed) {
     wrap.appendChild(el('button', { class: 'dq-cta', onclick: (e) => {
