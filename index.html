@@ -4095,7 +4095,8 @@ function defaultState() {
     // Daily Quest: one rotating "Today's Special" story per local day.
     // Forging it grants 2× XP exactly once per day. `date` is YYYY-M-D
     // (see todayStr()); when it doesn't match today we re-pick.
-    dailyQuest: { date: null, storyId: null, claimed: false }
+    // `history` logs past picks { date, storyId } for the 7-day cooldown.
+    dailyQuest: { date: null, storyId: null, claimed: false, history: [] }
   };
 }
 function pushHistory(entry) {
@@ -4140,8 +4141,9 @@ function loadState() {
     // Daily Quest shape — older saves won't have it. ensureDailyQuest()
     // will fill in date/storyId on the next home render.
     if (!merged.dailyQuest || typeof merged.dailyQuest !== 'object') {
-      merged.dailyQuest = { date: null, storyId: null, claimed: false };
+      merged.dailyQuest = { date: null, storyId: null, claimed: false, history: [] };
     }
+    if (!Array.isArray(merged.dailyQuest.history)) merged.dailyQuest.history = [];
     return merged;
   } catch (e) { return defaultState(); }
 }
@@ -4408,26 +4410,58 @@ function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
+// Days between two todayStr() values (YYYY-M-D). Used for the daily-quest
+// 7-day cooldown so the same story isn't featured twice in one week.
+function daysBetweenDateStr(a, b) {
+  const parse = (s) => {
+    const p = s.split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2]);
+  };
+  const da = parse(a), db = parse(b);
+  return Math.round(Math.abs(da - db) / 86400000);
+}
+function storyHasParagon(storyId) {
+  const c = state.completed[storyId];
+  return !!(c && c.perfect);
+}
+const DAILY_QUEST_COOLDOWN_DAYS = 7;
 
 // Daily Quest picker. Deterministic per local day: same kid opening the
-// app five times today sees the same featured story. Prefers stories
-// they haven't completed yet; falls back to any story so the feature
-// keeps working once the campaign is fully forged.
+// app five times today sees the same featured story.
+//
+// Pick priority (each tier skips stories featured in the last 7 days):
+//   1. Not forged yet
+//   2. Forged but no Paragon yet (writing mastery chase)
+//   3. Everything else (Paragon replays allowed — daily grants full XP + 2×)
 function ensureDailyQuest() {
   const today = todayStr();
   // Already chosen for today AND the story still exists in STORIES.
   if (state.dailyQuest && state.dailyQuest.date === today && state.dailyQuest.storyId) {
     if (STORIES.some(s => s.id === state.dailyQuest.storyId)) return state.dailyQuest;
   }
-  const todo = STORIES.filter(s => !state.completed[s.id]);
-  const pool = todo.length > 0 ? todo : STORIES;
+  const history = (state.dailyQuest && state.dailyQuest.history) || [];
+  const offCooldown = (s) => {
+    const last = history.find(h => h.storyId === s.id);
+    if (!last || !last.date) return true;
+    return daysBetweenDateStr(last.date, today) >= DAILY_QUEST_COOLDOWN_DAYS;
+  };
+  const tier1 = STORIES.filter(s => !state.completed[s.id] && offCooldown(s));
+  const tier2 = STORIES.filter(s => state.completed[s.id] && !storyHasParagon(s.id) && offCooldown(s));
+  const tier3 = STORIES.filter(s => offCooldown(s));
+  let pool = tier1.length ? tier1 : (tier2.length ? tier2 : (tier3.length ? tier3 : STORIES));
   if (pool.length === 0) return state.dailyQuest;
-  // Simple date-string hash — good enough to vary the pick day to day
-  // while staying stable within a single day.
   let seed = 0;
   for (let i = 0; i < today.length; i++) seed = (seed * 31 + today.charCodeAt(i)) >>> 0;
   const pick = pool[seed % pool.length];
-  state.dailyQuest = { date: today, storyId: pick.id, claimed: false };
+  const nextHistory = history.filter(h => h.storyId !== pick.id);
+  nextHistory.push({ date: today, storyId: pick.id });
+  if (nextHistory.length > 21) nextHistory.splice(0, nextHistory.length - 21);
+  state.dailyQuest = {
+    date: today,
+    storyId: pick.id,
+    claimed: false,
+    history: nextHistory
+  };
   saveState();
   return state.dailyQuest;
 }
@@ -4475,9 +4509,19 @@ function buildDailyQuestTile() {
   wrap.appendChild(thumb);
   const txt = el('div', { class: 'dq-text' });
   txt.appendChild(el('h3', { class: 'dq-title' }, story.title));
-  txt.appendChild(el('p', { class: 'dq-sub' }, claimed
-    ? 'Nice work! Come back tomorrow for a fresh challenge.'
-    : `${topic.name || 'Story'} · Level ${story.level} — forge it today for double XP!`));
+  const done = !!state.completed[story.id];
+  const hasParagon = storyHasParagon(story.id);
+  let dqSub;
+  if (claimed) {
+    dqSub = 'Nice work! Come back tomorrow for a fresh challenge.';
+  } else if (done && !hasParagon) {
+    dqSub = `${topic.name || 'Story'} · Level ${story.level} — Chase the Paragon! Full XP + 2× today!`;
+  } else if (done && hasParagon) {
+    dqSub = `${topic.name || 'Story'} · Level ${story.level} — Replay today's special for full XP + 2×!`;
+  } else {
+    dqSub = `${topic.name || 'Story'} · Level ${story.level} — forge it today for double XP!`;
+  }
+  txt.appendChild(el('p', { class: 'dq-sub' }, dqSub));
   wrap.appendChild(txt);
   // Trailer beats live in the middle band (between title block and CTA),
   // not under the subtitle — fills the empty space in the banner.
@@ -5236,20 +5280,24 @@ function finishStory() {
   // every subsequent attempt is worth 25% so grinding for ship XP still
   // works but doesn't trivialise the campaign economy.
   const firstTime = !state.completed[story.id];
-  const replayMul = firstTime ? 1 : 0.25;
+  const _todayDQ = todayStr();
+  const isDailyClaim = !!(state.dailyQuest && state.dailyQuest.storyId === story.id
+    && state.dailyQuest.date === _todayDQ && !state.dailyQuest.claimed);
+  // Today's Special overrides the replay penalty — a replay daily still
+  // pays full base XP + the 2× bonus (200% of first-time), not 50%.
+  let replayMul = firstTime ? 1 : 0.25;
+  if (isDailyClaim && !firstTime) replayMul = 1;
   const earned = Math.round(earnedBase * replayMul);
   const prevAttempts = (state.completed[story.id] && state.completed[story.id].attempts) || 0;
   state.points += earned;
-  // Daily Quest bonus: if this story is today's featured pick AND we
-  // haven't already claimed it today, grant +earned again (i.e. 2× XP).
-  // Claim is one-shot per day so replays don't keep doubling it.
+  // Daily Quest bonus: grant +earned again (i.e. 2× XP total). One-shot
+  // per day so replays of the same story later don't keep doubling.
   let dailyBonus = 0;
-  const _todayDQ = todayStr();
-  if (state.dailyQuest && state.dailyQuest.storyId === story.id
-      && state.dailyQuest.date === _todayDQ && !state.dailyQuest.claimed) {
+  if (isDailyClaim) {
     dailyBonus = earned;
     state.points += dailyBonus;
     state.dailyQuest.claimed = true;
+    if (!Array.isArray(state.dailyQuest.history)) state.dailyQuest.history = [];
   }
   state.completed[story.id] = {
     perfect: allPerfect || (state.completed[story.id] && state.completed[story.id].perfect),
@@ -5284,8 +5332,13 @@ function finishStory() {
     ? `${state.name}, every sentence built clean. This one is a keeper.`
     : `${state.name}, you forged the full paragraph for "${story.title}".`));
   if (!firstTime) {
-    m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', marginTop: '-4px' } },
-      `↻ Replay #${prevAttempts + 1} — XP reduced to 25% of first-time payout (${earnedBase} → ${earned}).`));
+    if (isDailyClaim) {
+      m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', marginTop: '-4px' } },
+        `✨ Today's Special — full XP + 2× bonus (${earnedBase} + ${dailyBonus} = ${earned + dailyBonus} total).`));
+    } else {
+      m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', marginTop: '-4px' } },
+        `↻ Replay #${prevAttempts + 1} — XP reduced to 25% of first-time payout (${earnedBase} → ${earned}).`));
+    }
   }
   m.appendChild(el('div', { class: 'paragraph-reveal' }, paragraphText));
   // Daily Quest bonus banner — shown only when this completion just
