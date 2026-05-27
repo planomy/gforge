@@ -276,70 +276,59 @@
   }
   .topbar .spacer { flex: 1; min-width: 8px; }
 
-  /* Critter nest in topbar gap: base nest art with 6 overlaid slots. */
+  /* Critter nests in topbar gap: one mini nest per slot. */
   .critter-nest {
-    position: relative;
     flex: 1; min-width: 0;
-    display: flex; justify-content: center; align-items: center;
-    height: 62px;
-    padding: 0 6px;
-  }
-  .critter-nest-base {
-    height: 62px; width: auto; max-width: 100%;
-    object-fit: contain; pointer-events: none; user-select: none;
-    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+    display: flex; justify-content: center; align-items: center; gap: 6px;
+    padding: 0 4px;
   }
   .critter-slot {
-    position: absolute;
-    width: 24px; height: 24px;
+    position: relative;
+    width: 66px; height: 48px;
     padding: 0; border: none; background: none;
-    transform: translate(-50%, -50%);
     display: grid; place-items: center;
     cursor: pointer;
-    transition: transform .15s ease, filter .2s ease;
+    transition: transform .15s ease;
     z-index: 2;
   }
-  .critter-slot:hover { transform: translate(-50%, calc(-50% - 2px)); }
+  .critter-slot:hover { transform: translateY(-2px); }
   .critter-slot.empty { cursor: default; pointer-events: none; }
-  .critter-slot img {
-    width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+  .critter-slot-base {
+    position: absolute; left: 50%; top: 50%;
+    width: 66px; height: 48px; transform: translate(-50%, -50%);
+    object-fit: contain; pointer-events: none; user-select: none;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+    z-index: 1;
+  }
+  .critter-slot .critter-occupant {
+    position: relative;
+    width: 18px; height: 18px; object-fit: contain; pointer-events: none;
     filter: drop-shadow(0 2px 6px rgba(0,0,0,0.58));
+    z-index: 3;
   }
-  .critter-slot.egg { z-index: 4; }
-  .critter-slot.hatched { z-index: 3; }
-  .critter-slot.hatched img { width: 30px; height: 30px; }
-  .critter-slot.empty img {
-    opacity: 0.38;
-    filter:
-      saturate(0.35)
-      brightness(0.88)
-      drop-shadow(0 2px 6px rgba(0,0,0,0.58));
-  }
-  .critter-slot.equipped img {
+  .critter-slot.egg .critter-occupant { width: 18px; height: 18px; transform: translateY(-1px); }
+  .critter-slot.hatched .critter-occupant { width: 25px; height: 25px; transform: translateY(-2px); }
+  .critter-slot.equipped .critter-occupant {
     filter:
       drop-shadow(0 0 0 rgba(0,0,0,0))
       drop-shadow(0 0 10px rgba(255, 194, 74, 0.75))
       drop-shadow(0 3px 6px rgba(0,0,0,0.58));
   }
   .critter-slot .slot-days {
-    position: absolute; bottom: -7px; right: -7px;
+    position: absolute; bottom: 0; right: 2px;
     font-size: 9px; font-weight: 900; letter-spacing: 0.02em;
     background: rgba(0,0,0,0.78); color: var(--gold);
     padding: 1px 5px; border-radius: 999px; border: 1px solid rgba(255,194,74,0.35);
     pointer-events: none;
+    z-index: 4;
   }
-  .critter-slot.slot-0 { left: 50%; top: 23%; }
-  .critter-slot.slot-1 { left: 27%; top: 44%; }
-  .critter-slot.slot-2 { left: 73%; top: 44%; }
-  .critter-slot.slot-3 { left: 50%; top: 53%; }
-  .critter-slot.slot-4 { left: 36%; top: 70%; }
-  .critter-slot.slot-5 { left: 64%; top: 70%; }
   @media (max-width: 720px) {
-    .critter-nest { height: 54px; padding: 0 2px; }
-    .critter-nest-base { height: 54px; }
-    .critter-slot { width: 20px; height: 20px; }
-    .critter-slot.hatched img { width: 24px; height: 24px; }
-    .critter-slot .slot-days { font-size: 8px; bottom: -6px; right: -6px; padding: 0 4px; }
+    .critter-nest { gap: 4px; }
+    .critter-slot { width: 48px; height: 36px; }
+    .critter-slot-base { width: 48px; height: 36px; }
+    .critter-slot.egg .critter-occupant { width: 14px; height: 14px; }
+    .critter-slot.hatched .critter-occupant { width: 18px; height: 18px; }
+    .critter-slot .slot-days { font-size: 8px; bottom: -2px; right: -1px; padding: 0 4px; }
   }
 
   /* Critter reveal card (post birth-ship, pre-arcade) */
@@ -4889,12 +4878,6 @@ function getActiveSidekickTopic() {
 function buildCritterNest() {
   const slotCount = 6;
   const nest = el('div', { class: 'critter-nest', title: 'Critter nest' });
-  const base = document.createElement('img');
-  base.className = 'critter-nest-base';
-  base.src = 'pets/shared/nest.png';
-  base.alt = 'Critter nest';
-  base.draggable = false;
-  nest.appendChild(base);
   for (let i = 0; i < slotCount; i++) {
     const topic = CRITTER_TOPICS[i] || null;
     const c = getCritterRecord(topic);
@@ -4906,14 +4889,15 @@ function buildCritterNest() {
       title: def ? def.label : 'Future critter slot',
       onclick: (topic && c) ? () => openCritterNestModal(topic) : undefined
     });
-    if (!c) {
+    const slotBase = document.createElement('img');
+    slotBase.className = 'critter-slot-base';
+    slotBase.src = 'pets/shared/nest_single.png';
+    slotBase.alt = '';
+    slotBase.draggable = false;
+    slot.appendChild(slotBase);
+    if (c && !c.hatched) {
       const img = document.createElement('img');
-      img.alt = 'Empty egg slot';
-      img.src = critterPath(topic, 'egg');
-      img.onerror = () => { img.remove(); };
-      slot.appendChild(img);
-    } else if (!c.hatched) {
-      const img = document.createElement('img');
+      img.className = 'critter-occupant';
       img.alt = 'Egg';
       img.src = critterPath(topic, 'egg');
       img.onerror = () => { img.remove(); };
@@ -4922,6 +4906,7 @@ function buildCritterNest() {
       if (left != null) slot.appendChild(el('span', { class: 'slot-days' }, left === 0 ? '!' : left + 'd'));
     } else if (c && c.hatched) {
       const img = document.createElement('img');
+      img.className = 'critter-occupant';
       img.alt = c.name || def.label;
       img.src = critterPath(topic, 'critter');
       img.onerror = () => { img.remove(); };
