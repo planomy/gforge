@@ -784,14 +784,6 @@
   }
   .skill-card .sk-desc { font-size: 12px; color: var(--muted); line-height: 1.35; margin: 0 0 8px; }
   .skill-card .sk-gate { font-size: 11px; color: #ffd28a; margin-bottom: 8px; }
-  .icon-btn.skills-btn {
-    font-family: 'Bangers', system-ui, sans-serif;
-    font-size: 13px; letter-spacing: 0.8px;
-    color: #ffd28a; padding: 4px 10px; line-height: 1.2;
-    border: 1px solid rgba(255, 209, 102, 0.35);
-    border-radius: 10px; min-width: 52px; height: 40px;
-  }
-  .icon-btn.skills-btn:hover { color: #fff4e8; border-color: #ffd166; }
 
   /* Story cards */
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
@@ -5036,7 +5028,9 @@ function topbar() {
       el('button', { class: 'icon-btn', 'data-tip': 'My stories', onclick: renderGallery },
         el('img', { src: 'topbar/stories.png', alt: 'My stories' })
       ),
-      el('button', { class: 'icon-btn skills-btn', 'data-tip': 'Skill Tree', onclick: openSkillTree }, '⚡'),
+      el('button', { class: 'icon-btn', 'data-tip': 'Skill Tree', onclick: openSkillTree },
+        el('img', { src: 'topbar/skills.png', alt: 'Skill Tree' })
+      ),
       el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
       ),
