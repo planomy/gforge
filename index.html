@@ -33,9 +33,40 @@
     --gold: #ffd166;
     --info: #6be3ff;
     --shadow: 0 10px 30px rgba(0,0,0,0.55);
+    --scrollbar-track: var(--bg-1);
+    --scrollbar-thumb: rgba(255, 138, 61, 0.72);
+    --scrollbar-thumb-hover: rgba(255, 209, 102, 0.92);
   }
 
-  * { box-sizing: border-box; }
+  /* Themed scrollbars — Firefox + WebKit (modals, splash, page overflow). */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  * {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent-2), var(--accent));
+    border-radius: 999px;
+    border: 2px solid var(--scrollbar-track);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--gold), var(--accent-3));
+  }
+  *::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+  }
   html, body { height: 100%; }
   body {
     margin: 0; color: var(--text);
@@ -287,6 +318,7 @@
     width: 66px; height: 48px;
     padding: 0; border: none; background: none;
     display: grid; place-items: center;
+    overflow: visible;
     cursor: pointer;
     transition: transform .15s ease;
     z-index: 2;
@@ -306,29 +338,133 @@
     filter: drop-shadow(0 2px 6px rgba(0,0,0,0.58));
     z-index: 3;
   }
-  .critter-slot.egg .critter-occupant { width: 18px; height: 18px; transform: translateY(-1px); }
-  .critter-slot.hatched .critter-occupant { width: 25px; height: 25px; transform: translateY(-2px); }
+  .critter-slot.egg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 72px;
+    height: auto;
+    min-height: 48px;
+  }
+  .critter-slot.egg .critter-slot-base {
+    position: relative;
+    left: auto; top: auto;
+    transform: none;
+    width: 72px; height: 54px;
+  }
+  /* 1 day left — golden glow on the upper egg (nest_full composite). */
+  .critter-slot.egg.hatch-1d .critter-slot-base {
+    filter:
+      drop-shadow(0 3px 6px rgba(0,0,0,0.5))
+      drop-shadow(0 -6px 20px rgba(255, 209, 102, 0.95))
+      drop-shadow(0 -12px 36px rgba(255, 170, 60, 0.75));
+  }
+  .critter-slot.egg.hatch-1d::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    width: 54px;
+    height: 34px;
+    transform: translateX(-50%);
+    border-radius: 50% 50% 42% 42%;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(ellipse at 50% 35%,
+      rgba(255, 232, 160, 0.92) 0%,
+      rgba(255, 194, 74, 0.55) 42%,
+      rgba(255, 138, 61, 0.12) 68%,
+      transparent 78%);
+    box-shadow:
+      0 0 16px rgba(255, 209, 102, 0.95),
+      0 0 32px rgba(255, 170, 60, 0.65);
+    animation: eggHatchGlow 1.35s ease-in-out infinite alternate;
+  }
+  @keyframes eggHatchGlow {
+    from { opacity: 0.72; transform: translateX(-50%) scale(0.94); }
+    to   { opacity: 1; transform: translateX(-50%) scale(1.08); }
+  }
+  .critter-slot.hatched .critter-occupant { width: 28px; height: 28px; transform: translateY(-3px); }
   .critter-slot.equipped .critter-occupant {
     filter:
       drop-shadow(0 0 0 rgba(0,0,0,0))
       drop-shadow(0 0 10px rgba(255, 194, 74, 0.75))
       drop-shadow(0 3px 6px rgba(0,0,0,0.58));
   }
-  .critter-slot .slot-days {
-    position: absolute; bottom: 0; right: 2px;
-    font-size: 9px; font-weight: 900; letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.78); color: var(--gold);
-    padding: 1px 5px; border-radius: 999px; border: 1px solid rgba(255,194,74,0.35);
+  .slot-hatch-label {
+    display: flex; flex-direction: column; align-items: center;
+    margin-top: 1px;
     pointer-events: none;
-    z-index: 4;
+    text-align: center;
+    line-height: 1;
+    gap: 0;
+  }
+  .slot-hatch-label .line1,
+  .slot-hatch-label .line2 {
+    display: block;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.05;
+    color: #ffd28a;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+  }
+  .slot-hatch-label .line2 { color: var(--gold); font-weight: 900; }
+  .critter-slot.hatched {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 72px;
+    height: auto;
+    min-height: 48px;
+  }
+  .critter-slot.hatched .critter-slot-base {
+    position: relative;
+    left: auto; top: auto;
+    transform: none;
+    width: 72px; height: 54px;
+  }
+  .slot-name-label {
+    font-size: 7px; font-weight: 800; letter-spacing: 0.02em;
+    color: #ffd28a; text-align: center; line-height: 1.05;
+    margin-top: 1px; pointer-events: none;
+  }
+  .slot-name-input {
+    width: 100%; max-width: 68px; margin-top: 2px;
+    padding: 3px 5px; font-size: 9px; line-height: 1.2;
+    border-radius: 6px; border: 1px solid rgba(255, 194, 74, 0.45);
+    background: rgba(0, 0, 0, 0.55); color: var(--text);
+    text-align: center; outline: none;
+  }
+  .slot-name-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(255, 138, 61, 0.25);
+  }
+  .slot-name-display {
+    font-size: 8px; font-weight: 800; color: var(--gold);
+    text-align: center; margin-top: 2px; max-width: 68px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    line-height: 1.1;
   }
   @media (max-width: 720px) {
     .critter-nest { gap: 4px; }
     .critter-slot { width: 48px; height: 36px; }
     .critter-slot-base { width: 48px; height: 36px; }
-    .critter-slot.egg .critter-occupant { width: 14px; height: 14px; }
-    .critter-slot.hatched .critter-occupant { width: 18px; height: 18px; }
-    .critter-slot .slot-days { font-size: 8px; bottom: -2px; right: -1px; padding: 0 4px; }
+    .critter-slot.egg { width: 54px; }
+    .critter-slot.egg .critter-slot-base { width: 54px; height: 40px; }
+    .critter-slot.egg.hatch-1d::before {
+      width: 40px; height: 26px; top: 2px;
+    }
+    .slot-hatch-label .line1,
+    .slot-hatch-label .line2 { font-size: 7px; line-height: 1.02; }
+    .critter-slot.hatched .critter-occupant { width: 20px; height: 20px; }
+    .critter-slot.hatched { width: 54px; }
+    .critter-slot.hatched .critter-slot-base { width: 54px; height: 40px; }
+    .slot-name-input { max-width: 52px; font-size: 8px; padding: 2px 4px; }
+    .slot-name-label { font-size: 6px; }
+    .slot-name-display { max-width: 52px; font-size: 7px; }
   }
 
   /* Critter reveal card (post birth-ship, pre-arcade) */
@@ -949,8 +1085,14 @@
     margin: 14px 0 8px;
   }
   .skill-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px; margin-bottom: 8px;
+  }
+  @media (max-width: 720px) {
+    .skill-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .skill-grid { grid-template-columns: 1fr; }
   }
   .skill-card {
     background: rgba(0,0,0,0.35); border: 1px solid var(--border);
@@ -969,6 +1111,12 @@
   }
   .skill-card .sk-desc { font-size: 12px; color: var(--muted); line-height: 1.35; margin: 0 0 8px; }
   .skill-card .sk-gate { font-size: 11px; color: #ffd28a; margin-bottom: 8px; }
+  .skill-card .hangar-btn-cta {
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 8px 6px;
+    letter-spacing: 0;
+  }
 
   /* Story cards */
   .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 14px; }
@@ -1342,7 +1490,11 @@
   }
 
   /* Progress overview */
-  .progress-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+  .progress-page {
+    display: flex; flex-direction: column; gap: 12px;
+    max-width: 100%; min-width: 0;
+  }
+  .progress-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
   .ph-stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
   .ph-stat .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
   .ph-stat .v { font-size: 26px; font-weight: 900; margin-top: 4px; line-height: 1; }
@@ -1350,16 +1502,32 @@
   .ph-stat.accent .v { color: var(--accent); }
   .ph-stat.gold .v { color: var(--gold); }
 
-  .topic-matrix { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-top: 12px; }
-  .topic-matrix h3 { margin: 0 0 10px; font-size: 16px; }
-  .matrix-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
-  .matrix-row .lbl { width: 30px; color: var(--muted); font-size: 12px; font-weight: 800; }
+  .panel.topic-matrix { padding: 16px 18px; }
+  .panel.topic-matrix h3 { margin: 0 0 10px; font-size: 16px; }
+  .matrix-row {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 8px;
+    align-items: stretch;
+    margin: 6px 0;
+  }
+  .matrix-row .lbl {
+    width: auto; color: var(--muted); font-size: 11px; font-weight: 800;
+    display: flex; align-items: center;
+  }
   .matrix-cell {
-    flex: 0 0 auto; min-width: 100px; padding: 6px 10px; border-radius: 8px;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border); font-size: 12px; color: var(--muted);
+    min-width: 0;
+    padding: 6px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    font-size: 11px; line-height: 1.25; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .matrix-cell.done { background: linear-gradient(135deg, rgba(255,138,61,0.25), rgba(255,194,74,0.10)); border-color: rgba(255,138,61,0.5); color: #fff; }
   .matrix-cell.perfect { background: linear-gradient(135deg, rgba(255,209,102,0.35), rgba(255,138,61,0.20)); border-color: rgba(255,209,102,0.6); color: #fff; box-shadow: 0 0 12px rgba(255,209,102,0.25); }
+  @media (max-width: 520px) {
+    .matrix-row { grid-template-columns: 22px minmax(0, 1fr); }
+    .matrix-row .matrix-cell:nth-child(3) { grid-column: 2; }
+  }
 
   /* Arcade */
   .arcade-frame { background: linear-gradient(180deg, #1a0a1c 0%, #2c0e1a 100%); border: 1px solid var(--border); border-radius: 16px; padding: 14px; box-shadow: var(--shadow); }
@@ -1466,6 +1634,74 @@
     aspect-ratio: 21 / 9;
   }
   .arc-cinematic.birth-ship .arc-cinematic-img { object-fit: contain; }
+  /* Critter egg delivery: mothership descends, egg drops, then reveal modal. */
+  .arcade-overlay.birth-delivery {
+    display: block;
+    background: radial-gradient(ellipse at 50% 30%, rgba(30, 12, 40, 0.92), rgba(4, 2, 12, 0.98) 72%);
+    overflow: hidden;
+  }
+  .arc-birth-scene { position: absolute; inset: 0; overflow: hidden; }
+  .arc-birth-whiz {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(107, 227, 255, 0.45), transparent 42%),
+      radial-gradient(circle at 42% 22%, rgba(255, 209, 102, 0.35), transparent 35%);
+    opacity: 0;
+    animation: arcBirthWhiz 0.65s ease-out 0.15s both;
+  }
+  @keyframes arcBirthWhiz {
+    0% { opacity: 0; transform: scale(0.6); }
+    35% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+  .arc-birth-ship {
+    position: absolute; left: 50%; top: -42%;
+    width: min(82%, 540px); height: auto;
+    transform: translateX(-50%);
+    object-fit: contain; pointer-events: none; user-select: none;
+    filter: drop-shadow(0 0 28px rgba(107, 227, 255, 0.55))
+            drop-shadow(0 10px 24px rgba(0, 0, 0, 0.65));
+    z-index: 2;
+    animation: arcBirthShipDescend 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes arcBirthShipDescend {
+    0% { top: -45%; opacity: 0; transform: translateX(-50%) scale(0.82); }
+    12% { opacity: 1; }
+    100% { top: 10%; transform: translateX(-50%) scale(1); }
+  }
+  .arc-birth-egg {
+    position: absolute; left: 50%; top: 18%;
+    width: clamp(52px, 12vw, 72px); height: auto;
+    transform: translateX(-50%);
+    object-fit: contain; pointer-events: none; user-select: none;
+    opacity: 0;
+    z-index: 4;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+    /* 3s drop: accelerates mid-fall, decelerates into a soft landing. */
+    animation: arcBirthEggDrop 3s cubic-bezier(0.42, 0, 0.12, 1) 0.95s forwards;
+  }
+  @keyframes arcBirthEggDrop {
+    0% { top: 18%; opacity: 0; transform: translateX(-50%) scale(0.58); }
+    4% { opacity: 1; }
+    88% { top: 86%; transform: translateX(-50%) scale(1.04); }
+    95% { top: 87.5%; transform: translateX(-50%) scale(0.96); }
+    100% { top: 86%; opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+  .arc-birth-impact {
+    position: absolute; left: 50%; top: 84%;
+    width: 160px; height: 52px;
+    transform: translateX(-50%) scale(0);
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255, 220, 140, 0.75), rgba(255, 138, 61, 0.15) 55%, transparent 72%);
+    opacity: 0;
+    z-index: 3;
+    animation: arcBirthImpact 0.45s ease-out 3.82s both;
+  }
+  @keyframes arcBirthImpact {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.2); }
+    40% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1.5); }
+  }
   @keyframes arcCinematicIn {
     from { transform: scale(0.92); opacity: 0; }
     to   { transform: scale(1);    opacity: 1; }
@@ -4705,13 +4941,13 @@ function celebrateShipUnlock(ship, onDone) {
   m.appendChild(el('p', { class: 'ship-unlock-power' },
     `× ${ship.barrels.length} cannons — ${ship.blurb}`));
   m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', margin: '0 0 14px' } },
-    'Your hangar just got stronger. Equip it and dominate the arcade.'));
+    'Your hangar just got stronger. Use it in your next reward game.'));
 
   const finish = (equip) => {
     if (equip) {
       state.ships.equipped = ship.id;
       saveState();
-      toast(`${ship.name} selected — ready to fly!`, '🛸');
+      toast(`${ship.name} is your ship now!`, '🛸');
     }
     closeModal();
     if (onDone) onDone();
@@ -4720,11 +4956,11 @@ function celebrateShipUnlock(ship, onDone) {
   btns.appendChild(el('button', {
     class: 'btn primary lg',
     onclick: () => finish(true)
-  }, '🚀 Equip & fly!'));
+  }, '🚀 Use this ship'));
   btns.appendChild(el('button', {
     class: 'btn',
     onclick: () => finish(false)
-  }, 'Awesome!'));
+  }, 'Keep my old ship'));
   m.appendChild(btns);
 
   const back = $('#modalBack');
@@ -4781,6 +5017,8 @@ function pickNextCritterBaby() {
   return CRITTER_BABY_POOL[Math.floor(Math.random() * CRITTER_BABY_POOL.length)];
 }
 function critterPath(topic, kind) {
+  if (kind === 'nest_empty') return 'pets/shared/nest_single.png';
+  if (kind === 'nest_full') return 'pets/shared/nest_full.png';
   if (kind === 'egg' || kind === 'card') return 'pets/shared/egg.png';
   if (kind === 'birth_ship') return 'pets/shared/birth_ship.png';
   if (kind === 'critter') {
@@ -4858,16 +5096,27 @@ function processCritterHatches(interactive) {
     const c = getCritterRecord(topic);
     if (!c || c.hatched || !c.hatchDate || today < c.hatchDate) continue;
     c.hatched = true;
-    if (!c.name) c.name = CRITTER_DEFS[topic].label + ' Buddy';
     if (!state.equippedCritterTopic) state.equippedCritterTopic = topic;
     hatchedAny = true;
     if (interactive) {
       confetti(3500, 120);
-      toast(`${c.name} hatched!`, '🐣');
+      toast('A critter hatched! Name them in the nest.', '🐣');
     }
   }
   if (hatchedAny) saveState();
   return hatchedAny;
+}
+function critterNeedsName(c) {
+  return !!(c && c.hatched && !(c.name && String(c.name).trim()));
+}
+function saveCritterName(topic, rawName) {
+  const c = getCritterRecord(topic);
+  if (!c || !c.hatched) return false;
+  const n = (rawName || '').trim().slice(0, 20);
+  if (!n) return false;
+  c.name = n;
+  saveState();
+  return true;
 }
 function getActiveSidekickTopic() {
   const t = state.equippedCritterTopic;
@@ -4882,28 +5131,28 @@ function buildCritterNest() {
     const topic = CRITTER_TOPICS[i] || null;
     const c = getCritterRecord(topic);
     const def = topic ? CRITTER_DEFS[topic] : null;
-    const slot = el('button', {
-      type: 'button',
+    const needsName = critterNeedsName(c);
+    const slot = el(needsName ? 'div' : 'button', {
+      type: needsName ? undefined : 'button',
       class: 'critter-slot slot-' + i + (!c ? ' empty' : c.hatched ? ' hatched' : ' egg')
+        + (c && !c.hatched && daysUntilHatch(c) === 1 ? ' hatch-1d' : '')
         + (state.equippedCritterTopic === topic && c && c.hatched ? ' equipped' : ''),
       title: def ? def.label : 'Future critter slot',
-      onclick: (topic && c) ? () => openCritterNestModal(topic) : undefined
+      onclick: (!needsName && topic && c) ? () => openCritterNestModal(topic) : undefined
     });
     const slotBase = document.createElement('img');
     slotBase.className = 'critter-slot-base';
-    slotBase.src = 'pets/shared/nest_single.png';
+    slotBase.src = (c && !c.hatched) ? critterPath(topic, 'nest_full') : critterPath(topic, 'nest_empty');
     slotBase.alt = '';
     slotBase.draggable = false;
     slot.appendChild(slotBase);
     if (c && !c.hatched) {
-      const img = document.createElement('img');
-      img.className = 'critter-occupant';
-      img.alt = 'Egg';
-      img.src = critterPath(topic, 'egg');
-      img.onerror = () => { img.remove(); };
-      slot.appendChild(img);
       const left = daysUntilHatch(c);
-      if (left != null) slot.appendChild(el('span', { class: 'slot-days' }, left === 0 ? '!' : left + 'd'));
+      const daysLine = left === 0 ? 'soon!' : (left === 1 ? '1 day' : left + ' days');
+      const label = el('div', { class: 'slot-hatch-label' });
+      label.appendChild(el('span', { class: 'line1' }, 'Hatching in'));
+      label.appendChild(el('span', { class: 'line2' }, daysLine));
+      slot.appendChild(label);
     } else if (c && c.hatched) {
       const img = document.createElement('img');
       img.className = 'critter-occupant';
@@ -4911,6 +5160,31 @@ function buildCritterNest() {
       img.src = critterPath(topic, 'critter');
       img.onerror = () => { img.remove(); };
       slot.appendChild(img);
+      if (needsName) {
+        slot.appendChild(el('div', { class: 'slot-name-label' }, 'Name this cutey'));
+        const input = el('input', {
+          type: 'text',
+          class: 'slot-name-input',
+          placeholder: 'Type a name…',
+          maxlength: '20',
+          'aria-label': 'Name this critter'
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+        input.addEventListener('keydown', (e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        });
+        input.addEventListener('blur', () => {
+          if (saveCritterName(topic, input.value)) {
+            render();
+            toast(`${getCritterRecord(topic).name} is ready!`, '✨');
+          }
+        });
+        slot.appendChild(input);
+        setTimeout(() => input.focus(), 80);
+      } else {
+        slot.appendChild(el('div', { class: 'slot-name-display', title: c.name }, c.name));
+      }
     }
     nest.appendChild(slot);
   }
@@ -4929,20 +5203,46 @@ function openCritterNestModal(topic) {
       left === 0 ? 'Something is wiggling… check back soon!' : `Hatches in about ${left} day${left === 1 ? '' : 's'}.`));
   } else {
     m.appendChild(el('div', { class: 'critter-reveal-kicker' }, '🐣 Sidekick'));
-    m.appendChild(el('h2', {}, c.name || def.label));
-    m.appendChild(el('p', {}, 'Cosmetic only — flies beside your ship in the arcade.'));
-    const equipped = state.equippedCritterTopic === topic;
-    const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '14px' } });
-    if (!equipped) {
-      btns.appendChild(el('button', { class: 'btn primary', onclick: () => {
-        state.equippedCritterTopic = topic; saveState(); closeModal(); render();
-        toast(`${c.name} will fly with you!`, '✨');
-      } }, 'Fly with me'));
+    if (critterNeedsName(c)) {
+      m.appendChild(el('h2', {}, 'Name this cutey'));
+      const input = el('input', {
+        type: 'text',
+        class: 'slot-name-input',
+        style: { maxWidth: '220px', margin: '10px auto 6px', fontSize: '14px', padding: '8px 10px' },
+        placeholder: 'Type a name…',
+        maxlength: '20',
+        'aria-label': 'Name this critter'
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      });
+      input.addEventListener('blur', () => {
+        if (saveCritterName(topic, input.value)) {
+          closeModal();
+          render();
+          toast(`${getCritterRecord(topic).name} is ready!`, '✨');
+        }
+      });
+      m.appendChild(input);
+      m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px' } },
+        'Cosmetic only — flies beside your ship in the arcade.'));
+      setTimeout(() => input.focus(), 80);
     } else {
-      btns.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ FLYING WITH YOU'));
+      m.appendChild(el('h2', {}, c.name || def.label));
+      m.appendChild(el('p', {}, 'Cosmetic only — flies beside your ship in the arcade.'));
+      const equipped = state.equippedCritterTopic === topic;
+      const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '14px' } });
+      if (!equipped) {
+        btns.appendChild(el('button', { class: 'btn primary', onclick: () => {
+          state.equippedCritterTopic = topic; saveState(); closeModal(); render();
+          toast(`${c.name} will fly with you!`, '✨');
+        } }, 'Fly with me'));
+      } else {
+        btns.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ FLYING WITH YOU'));
+      }
+      btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
+      m.appendChild(btns);
     }
-    btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
-    m.appendChild(btns);
   }
   openModal(m);
 }
@@ -4981,32 +5281,95 @@ function showCritterRevealCard(topic, onDone) {
   m.appendChild(btns);
   openModal(m);
 }
+function playCritterDeliveryAnimation(topic, onDone) {
+  const o = $('#arcOverlay');
+  if (!o) { if (onDone) onDone(); return; }
+  const birthSrc = critterPath(topic, 'birth_ship');
+  const eggSrc = critterPath(topic, 'egg');
+  o.classList.remove('granny', 'show');
+  const stale = o.querySelector('.arc-cinematic, .arc-granny, .arc-birth-scene');
+  if (stale) stale.remove();
+  o.classList.add('cinematic', 'birth-delivery');
+  const titleEl = $('#arcOverlayTitle');
+  const bodyEl = $('#arcOverlayBody');
+  if (titleEl) titleEl.style.display = 'none';
+  if (bodyEl) bodyEl.style.display = 'none';
+
+  const scene = document.createElement('div');
+  scene.className = 'arc-birth-scene';
+  scene.appendChild(el('div', { class: 'arc-birth-whiz', 'aria-hidden': 'true' }));
+  const ship = document.createElement('img');
+  ship.className = 'arc-birth-ship';
+  ship.src = birthSrc;
+  ship.alt = '';
+  ship.draggable = false;
+  scene.appendChild(ship);
+  const egg = document.createElement('img');
+  egg.className = 'arc-birth-egg';
+  egg.src = eggSrc;
+  egg.alt = '';
+  egg.draggable = false;
+  scene.appendChild(egg);
+  scene.appendChild(el('div', { class: 'arc-birth-impact', 'aria-hidden': 'true' }));
+  o.appendChild(scene);
+  void o.offsetWidth;
+  o.classList.add('show');
+
+  const DELIVERY_MS = 4300;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    document.removeEventListener('keydown', skipHandler, true);
+    o.removeEventListener('click', skipHandler);
+    o.removeEventListener('touchstart', skipHandler);
+    o.classList.remove('cinematic', 'birth-delivery', 'show');
+    scene.remove();
+    if (titleEl) titleEl.style.display = '';
+    if (bodyEl) bodyEl.style.display = '';
+    if (onDone) onDone();
+  };
+  const skipHandler = (ev) => {
+    if (ev && ev.type === 'keydown' && (ev.key || '').toLowerCase() === 'p') return;
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    if (ev && ev.preventDefault) ev.preventDefault();
+    finish();
+  };
+  setTimeout(() => {
+    if (done) return;
+    document.addEventListener('keydown', skipHandler, true);
+    o.addEventListener('click', skipHandler);
+    o.addEventListener('touchstart', skipHandler, { passive: false });
+  }, 350);
+  setTimeout(finish, DELIVERY_MS);
+}
 function runCritterBirthSequence(topic, onDone) {
   if (!arcade) { if (onDone) onDone(); return; }
   arcade.paused = true;
-  const birthSrc = critterPath(topic, 'birth_ship');
   preloadCritterImg(topic, 'birth_ship');
   preloadCritterImg(topic, 'card');
   preloadCritterImg(topic, 'egg');
-  const afterBirth = () => {
+  const afterLanding = () => {
     receiveCritterEgg(topic);
     showCritterRevealCard(topic, () => {
       if (onDone) onDone();
     });
   };
-  // Birth ship cinematic — falls back to text overlay if art missing.
   const img = CRITTER_IMGS[`${topic}/birth_ship`];
+  const startAnim = () => playCritterDeliveryAnimation(topic, afterLanding);
   if (img && img.complete && img.naturalHeight > 0) {
-    showArcadeCinematicCard(birthSrc, 2400, afterBirth, { handoff: true, cardClass: 'birth-ship' });
-  } else {
-    img.onload = () => showArcadeCinematicCard(birthSrc, 2400, afterBirth, { handoff: true, cardClass: 'birth-ship' });
+    startAnim();
+  } else if (img) {
+    img.onload = startAnim;
     img.onerror = () => {
       showArcOverlay('The Nursery Ship arrives!', 'Something precious is being delivered…');
       setTimeout(() => {
         hideArcOverlay();
-        afterBirth();
+        afterLanding();
       }, 2200);
     };
+  } else {
+    startAnim();
   }
 }
 
@@ -5247,7 +5610,7 @@ function openSkillTree() {
       } else {
         card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
           state.upgrades.equipped = u.id; saveState(); closeModal(); openSkillTree();
-        } }, 'Select'));
+        } }, 'Use this skill'));
       }
     } else {
       card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: async () => {
@@ -6441,6 +6804,7 @@ function renderProgress() {
   const app = $('#app');
   app.innerHTML = '';
   app.appendChild(topbar());
+  const page = el('div', { class: 'progress-page' });
   const head = el('div', { class: 'panel' });
   head.appendChild(el('div', { class: 'forge-head' },
     el('button', { class: 'btn ghost', onclick: () => render() }, '← Home'),
@@ -6464,12 +6828,12 @@ function renderProgress() {
     el('div', { class: 'k' }, 'Last session'), el('div', { class: 'v', style: { fontSize: '18px' } }, state.lastSession || '—'),
     el('div', { class: 'sub' }, `${(state.history || []).length} recent activities`)));
   head.appendChild(hero);
-  app.appendChild(head);
+  page.appendChild(head);
 
   // Per-topic matrices
   for (const topic of TOPICS) {
     const tStories = STORIES.filter(s => s.topic === topic.id);
-    const tBox = el('div', { class: 'topic-matrix' });
+    const tBox = el('div', { class: 'panel topic-matrix' });
     const done = tStories.filter(s => state.completed[s.id]).length;
     tBox.appendChild(el('h3', {}, `${topic.emoji} ${topic.name}  —  ${done} / 6 forged`));
     for (const lvl of [1, 2, 3]) {
@@ -6484,11 +6848,11 @@ function renderProgress() {
       });
       tBox.appendChild(row);
     }
-    app.appendChild(tBox);
+    page.appendChild(tBox);
   }
 
   // Recent activity
-  const recent = el('div', { class: 'panel', style: { marginTop: '16px' } });
+  const recent = el('div', { class: 'panel' });
   recent.appendChild(el('div', { class: 'section-title', style: { margin: '0 0 6px' } }, 'Recent activity'));
   const hist = (state.history || []).slice(0, 15);
   if (!hist.length) {
@@ -6498,13 +6862,14 @@ function renderProgress() {
       const topic = TOPICS.find(t => t.id === h.topic);
       recent.appendChild(el('div', { style: { display: 'flex', gap: '10px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '13px' } },
         el('span', { style: { fontSize: '18px' } }, topic ? topic.emoji : '•'),
-        el('div', { style: { flex: 1 } }, h.title || h.storyId, ' · L', String(h.level), h.perfect ? ' 💎' : ''),
-        el('span', { style: { color: 'var(--muted)' } }, formatDate(h.ts)),
-        el('span', { style: { color: 'var(--gold)', fontWeight: 800 } }, '+' + (h.xp || 0))
+        el('div', { style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, h.title || h.storyId, ' · L', String(h.level), h.perfect ? ' 💎' : ''),
+        el('span', { style: { color: 'var(--muted)', flexShrink: 0 } }, formatDate(h.ts)),
+        el('span', { style: { color: 'var(--gold)', fontWeight: 800, flexShrink: 0 } }, '+' + (h.xp || 0))
       ));
     });
   }
-  app.appendChild(recent);
+  page.appendChild(recent);
+  app.appendChild(page);
 }
 
 /* --------------------- TROPHY MODAL --------------------- */
@@ -6902,6 +7267,9 @@ function hideArcOverlay() {
     if (gp) gp.remove();
     const cin = o.querySelector('.arc-cinematic');
     if (cin) cin.remove();
+    const birth = o.querySelector('.arc-birth-scene');
+    if (birth) birth.remove();
+    o.classList.remove('birth-delivery');
     const titleEl = $('#arcOverlayTitle');
     const bodyEl = $('#arcOverlayBody');
     if (titleEl) titleEl.style.display = '';
