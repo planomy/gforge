@@ -1942,7 +1942,8 @@
    Granny Boom — Slay aliens while you sharpen your writing (v1.0)
    Game logic in this file; story templates in js/stories-data.js.
    ============================================================ */
-const APP_VERSION = 'v1.0';
+const APP_VERSION = 'v1.0.1';
+const ASSET_VERSION = '2'; // bump when topic/story art changes (cache-bust)
 
 /* --------------------- STATE / STORAGE --------------------- */
 // Dev mode is opt-in via "?dev" on the URL. It exposes the Test Fly button
@@ -3497,7 +3498,7 @@ function renderHome(app) {
       title: t.name,
       onclick: () => { state.selectedTopic = t.id; saveState(); render(); }
     },
-      el('img', { src: `topics/${t.id}.png`, alt: t.name }),
+      el('img', { src: `topics/${t.id}.png?v=${ASSET_VERSION}`, alt: t.name }),
       el('span', { class: 'progress' }, `${cnt}/${storiesPerTopic(t.id)}`)
     );
     tabs.appendChild(tab);
