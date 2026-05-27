@@ -274,7 +274,95 @@
     65%  { transform: scale(1.0); opacity: 1; }
     100% { transform: scale(1.6); opacity: 0; }
   }
-  .topbar .spacer { flex: 1; }
+  .topbar .spacer { flex: 1; min-width: 8px; }
+
+  /* Critter nest in topbar gap: base nest art with 6 overlaid slots. */
+  .critter-nest {
+    position: relative;
+    flex: 1; min-width: 0;
+    display: flex; justify-content: center; align-items: center;
+    height: 62px;
+    padding: 0 6px;
+  }
+  .critter-nest-base {
+    height: 62px; width: auto; max-width: 100%;
+    object-fit: contain; pointer-events: none; user-select: none;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+  }
+  .critter-slot {
+    position: absolute;
+    width: 24px; height: 24px;
+    padding: 0; border: none; background: none;
+    transform: translate(-50%, -50%);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: transform .15s ease, filter .2s ease;
+    z-index: 2;
+  }
+  .critter-slot:hover { transform: translate(-50%, calc(-50% - 2px)); }
+  .critter-slot.empty { cursor: default; pointer-events: none; }
+  .critter-slot img {
+    width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.58));
+  }
+  .critter-slot.egg { z-index: 4; }
+  .critter-slot.hatched { z-index: 3; }
+  .critter-slot.hatched img { width: 30px; height: 30px; }
+  .critter-slot.empty img {
+    opacity: 0.38;
+    filter:
+      saturate(0.35)
+      brightness(0.88)
+      drop-shadow(0 2px 6px rgba(0,0,0,0.58));
+  }
+  .critter-slot.equipped img {
+    filter:
+      drop-shadow(0 0 0 rgba(0,0,0,0))
+      drop-shadow(0 0 10px rgba(255, 194, 74, 0.75))
+      drop-shadow(0 3px 6px rgba(0,0,0,0.58));
+  }
+  .critter-slot .slot-days {
+    position: absolute; bottom: -7px; right: -7px;
+    font-size: 9px; font-weight: 900; letter-spacing: 0.02em;
+    background: rgba(0,0,0,0.78); color: var(--gold);
+    padding: 1px 5px; border-radius: 999px; border: 1px solid rgba(255,194,74,0.35);
+    pointer-events: none;
+  }
+  .critter-slot.slot-0 { left: 50%; top: 23%; }
+  .critter-slot.slot-1 { left: 27%; top: 44%; }
+  .critter-slot.slot-2 { left: 73%; top: 44%; }
+  .critter-slot.slot-3 { left: 50%; top: 53%; }
+  .critter-slot.slot-4 { left: 36%; top: 70%; }
+  .critter-slot.slot-5 { left: 64%; top: 70%; }
+  @media (max-width: 720px) {
+    .critter-nest { height: 54px; padding: 0 2px; }
+    .critter-nest-base { height: 54px; }
+    .critter-slot { width: 20px; height: 20px; }
+    .critter-slot.hatched img { width: 24px; height: 24px; }
+    .critter-slot .slot-days { font-size: 8px; bottom: -6px; right: -6px; padding: 0 4px; }
+  }
+
+  /* Critter reveal card (post birth-ship, pre-arcade) */
+  .critter-reveal {
+    text-align: center; max-width: 420px; margin: 0 auto;
+  }
+  .critter-reveal-kicker {
+    font-size: 12px; font-weight: 900; letter-spacing: 0.18em;
+    color: #6be3ff; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .critter-reveal-art {
+    margin: 8px auto 12px; max-height: 220px; width: auto; max-width: 100%;
+    border-radius: 16px;
+    filter: drop-shadow(0 0 28px rgba(107, 227, 255, 0.45));
+    animation: shipUnlockPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .critter-reveal-ph {
+    width: 180px; height: 180px; margin: 8px auto 12px; border-radius: 20px;
+    display: grid; place-items: center; font-size: 72px;
+    background: radial-gradient(circle at 50% 40%, rgba(107,227,255,0.25), rgba(0,0,0,0.5));
+    border: 2px solid rgba(255,255,255,0.12);
+    animation: shipUnlockPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
   .chip {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 6px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border);
@@ -475,6 +563,68 @@
   .hangar-cta.cta-equipped { color: #4ad6ff; letter-spacing: 1px; }
   .hangar-cta.cta-locked { color: var(--muted); font-size: 13px; line-height: 1.4; }
   .hangar-need { font-size: 11px; color: var(--gold); margin-top: 2px; font-weight: 700; }
+
+  /* Ship unlock celebration — full-screen thrill beat before forge results */
+  .modal.ship-unlock-modal {
+    max-width: 520px;
+    border-color: rgba(107, 227, 255, 0.45);
+    box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.25) inset,
+                0 0 60px rgba(74, 214, 255, 0.35),
+                0 30px 90px rgba(0, 0, 0, 0.75);
+    animation: shipUnlockModalIn 0.45s cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  }
+  @keyframes shipUnlockModalIn {
+    from { transform: scale(0.82) translateY(24px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .ship-unlock-celebration { text-align: center; }
+  .ship-unlock-kicker {
+    font-size: 12px; font-weight: 900; letter-spacing: 0.22em;
+    color: #6be3ff; text-transform: uppercase; margin-bottom: 4px;
+    animation: shipUnlockKicker 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes shipUnlockKicker {
+    from { opacity: 0.75; text-shadow: 0 0 8px rgba(107, 227, 255, 0.4); }
+    to { opacity: 1; text-shadow: 0 0 18px rgba(255, 209, 102, 0.9); }
+  }
+  .ship-unlock-title {
+    margin: 0 0 8px; font-size: clamp(30px, 6vw, 42px); font-weight: 900;
+    letter-spacing: 0.06em; line-height: 1.05;
+    background: linear-gradient(135deg, #e8fbff 0%, #6be3ff 35%, #ffd166 70%, #ff8a3d 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 20px rgba(107, 227, 255, 0.55));
+  }
+  .ship-unlock-hero-wrap {
+    margin: 10px auto 6px; padding: 12px;
+    background: radial-gradient(circle at 50% 55%, rgba(74, 214, 255, 0.28), transparent 68%);
+    border-radius: 16px;
+  }
+  .ship-unlock-hero {
+    display: block; margin: 0 auto; max-height: 150px; width: auto;
+    animation: shipUnlockPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+    filter: drop-shadow(0 0 22px rgba(74, 214, 255, 0.7))
+            drop-shadow(0 0 40px rgba(255, 138, 61, 0.45));
+  }
+  @keyframes shipUnlockPop {
+    0% { transform: scale(0.25) rotate(-8deg); opacity: 0; filter: brightness(2.5); }
+    65% { transform: scale(1.1) rotate(2deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .ship-unlock-name { margin: 0; font-size: 22px; color: #e6f3ff; font-weight: 900; }
+  .ship-unlock-power {
+    margin: 6px 0 10px; font-size: 15px; font-weight: 900; color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+  .ship-unlock-flash {
+    position: fixed; inset: 0; pointer-events: none; z-index: 98;
+    background: radial-gradient(circle at 50% 40%, rgba(107, 227, 255, 0.35), transparent 55%);
+    animation: shipUnlockFlash 0.55s ease-out forwards;
+  }
+  @keyframes shipUnlockFlash {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 
   /* Buttons */
   .btn {
@@ -849,6 +999,10 @@
   .story-card[data-topic="adventure"] { --t1: #ff8a3d; --t2: #ffc24a; }
   .story-card[data-topic="mystery"]   { --t1: #a78bfa; --t2: #ec4899; }
   .story-card[data-topic="scifi"]     { --t1: #6be3ff; --t2: #8b5cf6; }
+  /* Sci-fi PNGs are edge-to-edge; adventure art has a baked-in black matte.
+     Shrink the image slightly so the art well shows a dark frame like adventure. */
+  .story-card[data-topic="scifi"] .art { background: #08060c; }
+  .story-card[data-topic="scifi"] .art img { transform: scale(0.92); }
   .story-card:hover {
     transform: translateY(-4px);
     border-color: color-mix(in srgb, var(--t1) 55%, transparent);
@@ -871,6 +1025,7 @@
     transition: transform .5s ease, filter .25s;
   }
   .story-card:hover .art img { transform: scale(1.07); }
+  .story-card[data-topic="scifi"]:hover .art img { transform: scale(0.97); }
   .story-card .art-fallback {
     position: absolute; inset: 0; display: grid; place-items: center;
     font-size: 72px; pointer-events: none;
@@ -1316,6 +1471,12 @@
     object-fit: cover;
     user-select: none; -webkit-user-drag: none;
   }
+  .arc-cinematic.birth-ship {
+    width: 96%;
+    max-width: 1020px;
+    aspect-ratio: 21 / 9;
+  }
+  .arc-cinematic.birth-ship .arc-cinematic-img { object-fit: contain; }
   @keyframes arcCinematicIn {
     from { transform: scale(0.92); opacity: 0; }
     to   { transform: scale(1);    opacity: 1; }
@@ -4230,7 +4391,13 @@ function defaultState() {
     dailyQuestClaims: 0,
     motherDefeated: false,
     bossSeen: false,
-    arcadeFireBoost: false   // Paragon Overdrive — next arcade only
+    arcadeFireBoost: false,  // Paragon Overdrive — next arcade only
+    pendingShipUnlockId: null,  // set when a tier unlocks; cleared after celebration
+    // Critter eggs: one per completed theme (see CRITTER_DEFS).
+    critters: { sport: null, adventure: null, mystery: null, scifi: null },
+    pendingCritterDeliveries: [],  // [{ topic }] — one birth per arcade run
+    themesCritterQueued: [],       // topics that already earned an egg slot
+    equippedCritterTopic: null     // hatched sidekick shown in arcade
   };
 }
 function pushHistory(entry) {
@@ -4288,6 +4455,16 @@ function loadState() {
     if (typeof merged.motherDefeated !== 'boolean') merged.motherDefeated = false;
     if (typeof merged.bossSeen !== 'boolean') merged.bossSeen = false;
     if (typeof merged.arcadeFireBoost !== 'boolean') merged.arcadeFireBoost = false;
+    if (merged.pendingShipUnlockId === undefined) merged.pendingShipUnlockId = null;
+    if (!merged.critters || typeof merged.critters !== 'object') {
+      merged.critters = { sport: null, adventure: null, mystery: null, scifi: null };
+    }
+    for (const tid of ['sport', 'adventure', 'mystery', 'scifi']) {
+      if (!(tid in merged.critters)) merged.critters[tid] = null;
+    }
+    if (!Array.isArray(merged.pendingCritterDeliveries)) merged.pendingCritterDeliveries = [];
+    if (!Array.isArray(merged.themesCritterQueued)) merged.themesCritterQueued = [];
+    if (merged.equippedCritterTopic === undefined) merged.equippedCritterTopic = null;
     if (!Array.isArray(merged.badges)) merged.badges = [];
     if (!Array.isArray(merged.paragraphs)) merged.paragraphs = [];
     if (!merged.completed || typeof merged.completed !== 'object') merged.completed = {};
@@ -4319,6 +4496,9 @@ const BADGES = {
 // Each barrel is a position on the ship sprite expressed as a fraction of the
 // cropped sprite's width/height (0,0 = top-left, 1,1 = bottom-right). Optional
 // vx adds a horizontal velocity component for angled wingtip shots.
+// `cost` on each ship is a lifetime-XP unlock threshold (totalXpEarned), not
+// a price — ships auto-unlock when earned XP crosses the line; XP is never
+// deducted. Skill-tree purchases only spend current `state.points`.
 const SHIPS = [
   {
     id: 'mk1', name: 'Cadet Mk I', cost: 0,
@@ -4488,21 +4668,367 @@ function getShipSprite(id) {
 function getEquippedShip() {
   return SHIPS.find(s => s.id === state.ships.equipped) || SHIPS[0];
 }
-// Hook for streak-gated unlocks. Today no ship uses `unlock`, but we keep
-// the call site (in finishStory) so future streak rewards can plug in here.
-// The 5-day streak time bonus (90s arcade rounds) is applied directly in
-// startArcade rather than as an unlock, and Granny is now a random drop-in
-// rather than a streak reward.
-function checkStreakUnlocks() {
+function shipUnlockXp() {
+  return state.totalXpEarned || 0;
+}
+function syncShipUnlocks(silent) {
+  const xp = shipUnlockXp();
+  let newest = null;
   for (const s of SHIPS) {
-    if (!s.unlock || s.unlock.type !== 'streak') continue;
-    if (state.streak >= s.unlock.value && !state.ships.owned.includes(s.id)) {
+    if (s.hidden || s.unlock) continue;
+    if (!state.ships.owned.includes(s.id) && xp >= s.cost) {
       state.ships.owned.push(s.id);
       getShipSprite(s.id);
-      toast(`${s.name} unlocked — ${s.unlock.value}-day streak reward! Check the Hangar.`, '🔥');
+      newest = s;
     }
   }
+  if (!state.ships.owned.includes('mk1')) state.ships.owned.unshift('mk1');
+  if (!silent && newest) {
+    state.pendingShipUnlockId = newest.id;
+    saveState();
+  }
+}
+function drainPendingShipUnlock() {
+  const id = state.pendingShipUnlockId;
+  state.pendingShipUnlockId = null;
+  if (id) saveState();
+  return id ? (SHIPS.find(s => s.id === id) || null) : null;
+}
+function celebrateShipUnlock(ship, onDone) {
+  if (!ship) { if (onDone) onDone(); return; }
+  confetti(4500, 150);
+  const flash = el('div', { class: 'ship-unlock-flash', 'aria-hidden': 'true' });
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 600);
+
+  const m = el('div', { class: 'ship-unlock-celebration' });
+  m.appendChild(el('div', { class: 'ship-unlock-kicker' }, '⚡ NEW FIGHTER UNLOCKED ⚡'));
+  m.appendChild(el('h2', { class: 'ship-unlock-title' }, 'SHIP UPGRADED!'));
+  const heroWrap = el('div', { class: 'ship-unlock-hero-wrap' });
+  const img = document.createElement('img');
+  img.className = 'ship-unlock-hero';
+  img.src = ship.src;
+  img.alt = ship.name;
+  img.draggable = false;
+  heroWrap.appendChild(img);
+  m.appendChild(heroWrap);
+  m.appendChild(el('p', { class: 'ship-unlock-name' }, ship.name));
+  m.appendChild(el('p', { class: 'ship-unlock-power' },
+    `× ${ship.barrels.length} cannons — ${ship.blurb}`));
+  m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px', margin: '0 0 14px' } },
+    'Your hangar just got stronger. Equip it and dominate the arcade.'));
+
+  const finish = (equip) => {
+    if (equip) {
+      state.ships.equipped = ship.id;
+      saveState();
+      toast(`${ship.name} selected — ready to fly!`, '🛸');
+    }
+    closeModal();
+    if (onDone) onDone();
+  };
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', gap: '10px' } });
+  btns.appendChild(el('button', {
+    class: 'btn primary lg',
+    onclick: () => finish(true)
+  }, '🚀 Equip & fly!'));
+  btns.appendChild(el('button', {
+    class: 'btn',
+    onclick: () => finish(false)
+  }, 'Awesome!'));
+  m.appendChild(btns);
+
+  const back = $('#modalBack');
+  const modal = $('#modal');
+  modal.innerHTML = '';
+  modal.className = 'modal ship-unlock-modal';
+  modal.appendChild(m);
+  back.classList.add('show');
+  back.onclick = (e) => { if (e.target === back) finish(false); };
+}
+function nextShipUnlock() {
+  const xp = shipUnlockXp();
+  let next = null;
+  for (const s of SHIPS) {
+    if (s.hidden || s.unlock || s.cost <= 0) continue;
+    if (state.ships.owned.includes(s.id)) continue;
+    next = s;
+    break;
+  }
+  if (!next) return null;
+  return { ship: next, xp, need: Math.max(0, next.cost - xp), cost: next.cost };
+}
+// Old shop saves: ships already in `owned` count toward the lifetime XP ladder.
+for (const id of state.ships.owned) {
+  const leg = SHIPS.find(s => s.id === id);
+  if (leg && leg.cost) state.totalXpEarned = Math.max(state.totalXpEarned || 0, leg.cost);
+}
+syncShipUnlocks(true);
+
+/* --------------------- CRITTER EGGS & SIDEKICKS --------------------- */
+// Complete all 6 stories in a theme → next arcade run the birth ship
+// delivers an egg. Egg sits in the topbar nest; hatches in 2–5 days.
+const CRITTER_DEFS = {
+  sport:     { label: 'Sport',     phEgg: '🥚', phCritter: '🏃', phShip: '🛸' },
+  adventure: { label: 'Adventure', phEgg: '🥚', phCritter: '🗺️', phShip: '🛸' },
+  mystery:   { label: 'Mystery',   phEgg: '🥚', phCritter: '👻', phShip: '🛸' },
+  scifi:     { label: 'Sci-Fi',    phEgg: '🥚', phCritter: '👽', phShip: '🛸' }
+};
+const CRITTER_TOPICS = Object.keys(CRITTER_DEFS);
+const CRITTER_IMGS = {};
+const CRITTER_BABY_POOL = ['baby1', 'baby2', 'baby3', 'baby4', 'baby5', 'baby6'];
+function defaultBabyForTopic(topic) {
+  const i = Math.max(0, CRITTER_TOPICS.indexOf(topic));
+  return CRITTER_BABY_POOL[i % CRITTER_BABY_POOL.length];
+}
+function pickNextCritterBaby() {
+  const used = new Set();
+  for (const topic of CRITTER_TOPICS) {
+    const c = getCritterRecord(topic);
+    if (c && c.babyId) used.add(c.babyId);
+  }
+  const available = CRITTER_BABY_POOL.filter(id => !used.has(id));
+  if (available.length) return available[Math.floor(Math.random() * available.length)];
+  return CRITTER_BABY_POOL[Math.floor(Math.random() * CRITTER_BABY_POOL.length)];
+}
+function critterPath(topic, kind) {
+  if (kind === 'egg' || kind === 'card') return 'pets/shared/egg.png';
+  if (kind === 'birth_ship') return 'pets/shared/birth_ship.png';
+  if (kind === 'critter') {
+    const c = getCritterRecord(topic);
+    const babyId = (c && c.babyId) ? c.babyId : defaultBabyForTopic(topic);
+    return `pets/shared/${babyId}.png`;
+  }
+  return `pets/shared/${kind}.png`;
+}
+function preloadCritterImg(topic, kind) {
+  const key = `${topic}/${kind}`;
+  if (CRITTER_IMGS[key]) return CRITTER_IMGS[key];
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = critterPath(topic, kind);
+  CRITTER_IMGS[key] = img;
+  return img;
+}
+function getCritterRecord(topic) {
+  return state.critters && state.critters[topic] ? state.critters[topic] : null;
+}
+function countTopicForged(topic) {
+  return STORIES.filter(s => s.topic === topic && state.completed[s.id]).length;
+}
+function isThemeComplete(topic) {
+  return countTopicForged(topic) >= 6;
+}
+function daysUntilHatch(c) {
+  if (!c || c.hatched || !c.hatchDate) return null;
+  const today = todayStr();
+  if (today >= c.hatchDate) return 0;
+  const p0 = today.split('-').map(Number);
+  const p1 = c.hatchDate.split('-').map(Number);
+  const d0 = new Date(p0[0], p0[1] - 1, p0[2]);
+  const d1 = new Date(p1[0], p1[1] - 1, p1[2]);
+  return Math.max(1, Math.round((d1 - d0) / 86400000));
+}
+function randomHatchDays() {
+  return 2 + Math.floor(Math.random() * 4); // 2, 3, 4, or 5
+}
+function receiveCritterEgg(topic) {
+  const days = randomHatchDays();
+  const today = todayStr();
+  state.critters[topic] = {
+    eggDate: today,
+    hatchDate: addDaysToDateStr(today, days),
+    hatched: false,
+    name: null,
+    babyId: pickNextCritterBaby()
+  };
+  saveState();
+}
+function queueCritterForTheme(topic) {
+  if (!CRITTER_DEFS[topic]) return;
+  if (!Array.isArray(state.themesCritterQueued)) state.themesCritterQueued = [];
+  if (!Array.isArray(state.pendingCritterDeliveries)) state.pendingCritterDeliveries = [];
+  if (state.themesCritterQueued.includes(topic)) return;
+  if (getCritterRecord(topic)) return;
+  if (!isThemeComplete(topic)) return;
+  state.themesCritterQueued.push(topic);
+  state.pendingCritterDeliveries.push({ topic });
+  saveState();
+  toast(`${CRITTER_DEFS[topic].label} theme complete! An egg arrives on your next arcade run.`, '🥚');
+}
+function retroactiveCritterQueue() {
+  for (const topic of CRITTER_TOPICS) {
+    if (getCritterRecord(topic) || state.themesCritterQueued.includes(topic)) continue;
+    if (isThemeComplete(topic)) queueCritterForTheme(topic);
+  }
+}
+function processCritterHatches(interactive) {
+  const today = todayStr();
+  let hatchedAny = false;
+  for (const topic of CRITTER_TOPICS) {
+    const c = getCritterRecord(topic);
+    if (!c || c.hatched || !c.hatchDate || today < c.hatchDate) continue;
+    c.hatched = true;
+    if (!c.name) c.name = CRITTER_DEFS[topic].label + ' Buddy';
+    if (!state.equippedCritterTopic) state.equippedCritterTopic = topic;
+    hatchedAny = true;
+    if (interactive) {
+      confetti(3500, 120);
+      toast(`${c.name} hatched!`, '🐣');
+    }
+  }
+  if (hatchedAny) saveState();
+  return hatchedAny;
+}
+function getActiveSidekickTopic() {
+  const t = state.equippedCritterTopic;
+  if (!t) return null;
+  const c = getCritterRecord(t);
+  return (c && c.hatched) ? t : null;
+}
+function buildCritterNest() {
+  const slotCount = 6;
+  const nest = el('div', { class: 'critter-nest', title: 'Critter nest' });
+  const base = document.createElement('img');
+  base.className = 'critter-nest-base';
+  base.src = 'pets/shared/nest.png';
+  base.alt = 'Critter nest';
+  base.draggable = false;
+  nest.appendChild(base);
+  for (let i = 0; i < slotCount; i++) {
+    const topic = CRITTER_TOPICS[i] || null;
+    const c = getCritterRecord(topic);
+    const def = topic ? CRITTER_DEFS[topic] : null;
+    const slot = el('button', {
+      type: 'button',
+      class: 'critter-slot slot-' + i + (!c ? ' empty' : c.hatched ? ' hatched' : ' egg')
+        + (state.equippedCritterTopic === topic && c && c.hatched ? ' equipped' : ''),
+      title: def ? def.label : 'Future critter slot',
+      onclick: (topic && c) ? () => openCritterNestModal(topic) : undefined
+    });
+    if (!c) {
+      const img = document.createElement('img');
+      img.alt = 'Empty egg slot';
+      img.src = critterPath(topic, 'egg');
+      img.onerror = () => { img.remove(); };
+      slot.appendChild(img);
+    } else if (!c.hatched) {
+      const img = document.createElement('img');
+      img.alt = 'Egg';
+      img.src = critterPath(topic, 'egg');
+      img.onerror = () => { img.remove(); };
+      slot.appendChild(img);
+      const left = daysUntilHatch(c);
+      if (left != null) slot.appendChild(el('span', { class: 'slot-days' }, left === 0 ? '!' : left + 'd'));
+    } else if (c && c.hatched) {
+      const img = document.createElement('img');
+      img.alt = c.name || def.label;
+      img.src = critterPath(topic, 'critter');
+      img.onerror = () => { img.remove(); };
+      slot.appendChild(img);
+    }
+    nest.appendChild(slot);
+  }
+  return nest;
+}
+function openCritterNestModal(topic) {
+  const c = getCritterRecord(topic);
+  const def = CRITTER_DEFS[topic];
+  if (!c) return;
+  const m = el('div', { class: 'critter-reveal' });
+  if (!c.hatched) {
+    const left = daysUntilHatch(c);
+    m.appendChild(el('div', { class: 'critter-reveal-kicker' }, '🥚 Incubating'));
+    m.appendChild(el('h2', {}, `${def.label} egg`));
+    m.appendChild(el('p', {},
+      left === 0 ? 'Something is wiggling… check back soon!' : `Hatches in about ${left} day${left === 1 ? '' : 's'}.`));
+  } else {
+    m.appendChild(el('div', { class: 'critter-reveal-kicker' }, '🐣 Sidekick'));
+    m.appendChild(el('h2', {}, c.name || def.label));
+    m.appendChild(el('p', {}, 'Cosmetic only — flies beside your ship in the arcade.'));
+    const equipped = state.equippedCritterTopic === topic;
+    const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '14px' } });
+    if (!equipped) {
+      btns.appendChild(el('button', { class: 'btn primary', onclick: () => {
+        state.equippedCritterTopic = topic; saveState(); closeModal(); render();
+        toast(`${c.name} will fly with you!`, '✨');
+      } }, 'Fly with me'));
+    } else {
+      btns.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, '✓ FLYING WITH YOU'));
+    }
+    btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
+    m.appendChild(btns);
+  }
+  openModal(m);
+}
+function showCritterRevealCard(topic, onDone) {
+  const def = CRITTER_DEFS[topic];
+  const topicName = (TOPICS.find(t => t.id === topic) || {}).name || def.label;
+  confetti(4000, 130);
+  const flash = el('div', { class: 'ship-unlock-flash', 'aria-hidden': 'true' });
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 600);
+
+  const m = el('div', { class: 'critter-reveal' });
+  m.appendChild(el('div', { class: 'critter-reveal-kicker' }, '✨ EGG DELIVERED ✨'));
+  m.appendChild(el('h2', { class: 'ship-unlock-title', style: { fontSize: 'clamp(24px, 5vw, 34px)' } },
+    `A ${topicName} critter egg!`));
+  const artWrap = el('div', {});
+  const img = document.createElement('img');
+  img.className = 'critter-reveal-art';
+  img.alt = 'Critter card';
+  img.src = critterPath(topic, 'card');
+  img.onerror = () => {
+    img.remove();
+    artWrap.appendChild(el('div', { class: 'critter-reveal-ph' }, def.phCritter));
+  };
+  artWrap.appendChild(img);
+  m.appendChild(artWrap);
+  const days = daysUntilHatch(getCritterRecord(topic));
+  m.appendChild(el('p', {},
+    `Your egg is in the nest up top. It will hatch in ${days} day${days === 1 ? '' : 's'}.`));
+  m.appendChild(el('p', { style: { color: 'var(--muted)', fontSize: '13px' } },
+    'Keep forging — when it hatches, it becomes your arcade sidekick.'));
+
+  const finish = () => { closeModal(); if (onDone) onDone(); };
+  const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '14px' } });
+  btns.appendChild(el('button', { class: 'btn primary lg', onclick: finish }, '🚀 Let\'s fly!'));
+  m.appendChild(btns);
+  openModal(m);
+}
+function runCritterBirthSequence(topic, onDone) {
+  if (!arcade) { if (onDone) onDone(); return; }
+  arcade.paused = true;
+  const birthSrc = critterPath(topic, 'birth_ship');
+  preloadCritterImg(topic, 'birth_ship');
+  preloadCritterImg(topic, 'card');
+  preloadCritterImg(topic, 'egg');
+  const afterBirth = () => {
+    receiveCritterEgg(topic);
+    showCritterRevealCard(topic, () => {
+      if (onDone) onDone();
+    });
+  };
+  // Birth ship cinematic — falls back to text overlay if art missing.
+  const img = CRITTER_IMGS[`${topic}/birth_ship`];
+  if (img && img.complete && img.naturalHeight > 0) {
+    showArcadeCinematicCard(birthSrc, 2400, afterBirth, { handoff: true, cardClass: 'birth-ship' });
+  } else {
+    img.onload = () => showArcadeCinematicCard(birthSrc, 2400, afterBirth, { handoff: true, cardClass: 'birth-ship' });
+    img.onerror = () => {
+      showArcOverlay('The Nursery Ship arrives!', 'Something precious is being delivered…');
+      setTimeout(() => {
+        hideArcOverlay();
+        afterBirth();
+      }, 2200);
+    };
+  }
+}
+
+// Streak milestones + ship thresholds after each forge session.
+function checkStreakUnlocks() {
   syncStreakUnlocks();
+  syncShipUnlocks();
 }
 
 /* --------------------- STREAK LADDER --------------------- */
@@ -4996,11 +5522,16 @@ function toast(text, emoji = '⚡') {
 function openModal(content) {
   const back = $('#modalBack'); const modal = $('#modal');
   modal.innerHTML = '';
+  modal.className = 'modal';
   if (typeof content === 'string') modal.innerHTML = content; else modal.appendChild(content);
   back.classList.add('show');
   back.onclick = (e) => { if (e.target === back) closeModal(); };
 }
-function closeModal() { $('#modalBack').classList.remove('show'); const m = $('#modal'); if (m) m.classList.remove('wide'); }
+function closeModal() {
+  $('#modalBack').classList.remove('show');
+  const m = $('#modal');
+  if (m) m.className = 'modal';
+}
 
 // Themed promise-based confirm. Use instead of window.confirm() so we
 // don't get a Win-95-looking OS popup floating at the top of the page.
@@ -5165,12 +5696,8 @@ function topbar() {
         draggable: false
       })
     ),
-    el('div', { class: 'spacer' }),
+    buildCritterNest(),
     el('div', { class: 'row-wrap' },
-      el('span', { class: 'top-chip player' },
-        el('img', { src: 'topbar/player.png', alt: 'Player' }),
-        el('span', { class: 'name' }, state.name || 'Player')
-      ),
       el('span', { class: 'top-chip xp' },
         el('img', { src: 'topbar/xp.png', alt: 'XP' }),
         el('span', { class: 'pts' }, String(state.points))
@@ -5189,7 +5716,7 @@ function topbar() {
       ),
       // Hangar sits at the right edge — anchor its tooltip on the right
       // so the bubble doesn't get clipped against the viewport edge.
-      el('button', { class: 'icon-btn hangar-btn', 'data-tip': 'Hangar — upgrade your ship', 'data-tip-pos': 'left', onclick: openHangar },
+      el('button', { class: 'icon-btn hangar-btn', 'data-tip': 'Hangar — choose your ship', 'data-tip-pos': 'left', onclick: openHangar },
         el('img', { src: getEquippedShip().src, alt: 'Hangar' })
       )
     )
@@ -5729,8 +6256,8 @@ function finishStory() {
   earnedBase = Math.round(earnedBase * mult);
 
   // Replay discount: first time you forge a story you get the full payout;
-  // every subsequent attempt is worth 25% so grinding for ship XP still
-  // works but doesn't trivialise the campaign economy.
+  // every subsequent attempt is worth 25% so lifetime XP still climbs but
+  // doesn't trivialise the campaign economy.
   const firstTime = !state.completed[story.id];
   const _todayDQ = todayStr();
   const isDailyClaim = !!(state.dailyQuest && state.dailyQuest.storyId === story.id
@@ -5758,6 +6285,7 @@ function finishStory() {
     attempts: prevAttempts + 1,
     score: earned,
   };
+  queueCritterForTheme(story.topic);
   bumpDailyStreak();
   checkStreakUnlocks();
   if (allPerfect && ownsUpgrade('paragon_overdrive')) {
@@ -5779,6 +6307,8 @@ function finishStory() {
   saveState();
   checkBadges();
 
+  const pendingShip = drainPendingShipUnlock();
+  const showForgeResultModal = () => {
   // Modal: paragraph reveal
   confetti();
   if (dailyBonus > 0) toast(`Daily Special! +${dailyBonus} bonus XP`, '✨');
@@ -5827,6 +6357,9 @@ function finishStory() {
   btns.appendChild(el('button', { class: 'btn ghost', onclick: () => { closeModal(); forge = null; render(); } }, 'Home'));
   m.appendChild(btns);
   openModal(m);
+  };
+  if (pendingShip) celebrateShipUnlock(pendingShip, showForgeResultModal);
+  else showForgeResultModal();
 }
 
 /* --------------------- MY STORIES GALLERY --------------------- */
@@ -6041,10 +6574,21 @@ function openHangar() {
   m.appendChild(el('div', { style: { fontSize: '40px', textAlign: 'center' } }, '🛸'));
   m.appendChild(el('h2', { style: { textAlign: 'center', margin: '4px 0 2px' } }, 'Hangar'));
   m.appendChild(el('p', { class: 'hangar-sub' },
-    `Select a starfighter for the arcade. You have `,
-    el('strong', {}, state.points.toLocaleString() + ' XP'),
-    ` to spend.`
+    'Ships unlock automatically as you earn XP. Select one for the arcade.'
   ));
+  m.appendChild(el('p', { class: 'hangar-sub', style: { marginTop: '-6px' } },
+  `Lifetime XP: `,
+    el('strong', {}, shipUnlockXp().toLocaleString()),
+    ` · Balance: `,
+    el('strong', {}, state.points.toLocaleString())
+  ));
+  const nxt = nextShipUnlock();
+  if (nxt) {
+    const pct = Math.min(100, Math.round((nxt.xp / nxt.cost) * 100));
+    m.appendChild(el('p', { class: 'hangar-sub', style: { marginTop: '-4px', color: 'var(--gold)' } },
+      `Next unlock: ${nxt.ship.name} at ${nxt.cost.toLocaleString()} XP (${pct}% — ${nxt.need.toLocaleString()} to go)`
+    ));
+  }
   const grid = el('div', { class: 'hangar-grid' });
   // `hidden` ships (e.g. Granny — she's a random drop-in, not an equippable
   // ship) live in the SHIPS list for runtime use only, never as a card.
@@ -6078,11 +6622,8 @@ function openHangar() {
 function buildShipCard(s) {
   const owned = state.ships.owned.includes(s.id);
   const equipped = state.ships.equipped === s.id;
-  const isStreakReward = s.unlock && s.unlock.type === 'streak';
-  const streakOk = !isStreakReward || state.streak >= s.unlock.value;
-  const canBuy = !owned && !isStreakReward && state.points >= s.cost;
-  const cardCls = 'hangar-card' + (equipped ? ' equipped' : owned ? ' owned' : ' locked')
-    + (isStreakReward ? ' streak' : '');
+  const xp = shipUnlockXp();
+  const cardCls = 'hangar-card' + (equipped ? ' equipped' : owned ? ' owned' : ' locked');
   const card = el('div', { class: cardCls });
   const badgeLabel = s.special === 'granny' ? '💥' : `× ${s.barrels.length}`;
   const shotsBadge = el('div', { class: 'hangar-shots' }, badgeLabel);
@@ -6102,48 +6643,18 @@ function buildShipCard(s) {
       state.ships.equipped = s.id; saveState(); closeModal(); openHangar();
       toast(`${s.name} selected — ready to fly!`, '🛸');
     } }, 'Select'));
-  } else if (isStreakReward) {
-    // Streak-gated unlock. We never show a Buy button — she's earned, not
-    // bought. If the streak isn't there yet we show the progress meter.
-    if (streakOk) {
-      card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: () => {
-        state.ships.owned.push(s.id);
-        state.ships.equipped = s.id;
-        getShipSprite(s.id);
-        saveState(); closeModal(); openHangar();
-        toast(`${s.name} unlocked & selected!`, '🔥');
-      } }, '🔥 Claim streak reward'));
-    } else {
-      const need = s.unlock.value - state.streak;
-      card.appendChild(el('div', { class: 'hangar-cta cta-locked' },
-        el('div', { style: { fontSize: '22px' } }, '🔥'),
-        el('div', {}, `${s.unlock.value}-day streak`),
-        el('div', { class: 'hangar-need' }, `${state.streak}/${s.unlock.value} days — ${need} to go`)
-      ));
-    }
-  } else if (canBuy) {
-    card.appendChild(el('button', { class: 'btn primary hangar-btn-cta', onclick: async () => {
-      const ok = await confirmDialog({
-        emoji: '🛸',
-        title: `Unlock ${s.name}?`,
-        message: `Spend ${s.cost.toLocaleString()} XP to add this ship to your hangar. You'll have ${(state.points - s.cost).toLocaleString()} XP left.`,
-        confirmText: `Unlock — ${s.cost.toLocaleString()} XP`,
-        cancelText: 'Not yet'
-      });
-      if (!ok) return;
-      state.points -= s.cost;
-      state.ships.owned.push(s.id);
-      state.ships.equipped = s.id;
-      getShipSprite(s.id); // preload
-      saveState(); closeModal(); openHangar();
-      toast(`${s.name} unlocked & selected!`, '🛸');
-    } }, `Unlock — ${s.cost.toLocaleString()} XP`));
+  } else if (s.cost <= 0) {
+    card.appendChild(el('div', { class: 'hangar-cta cta-equipped' }, 'Starter ship'));
   } else {
-    const need = s.cost - state.points;
+    const need = Math.max(0, s.cost - xp);
+    const pct = Math.min(100, Math.round((xp / s.cost) * 100));
     card.appendChild(el('div', { class: 'hangar-cta cta-locked' },
       el('div', { style: { fontSize: '20px' } }, '🔒'),
-      el('div', {}, `${s.cost.toLocaleString()} XP`),
-      el('div', { class: 'hangar-need' }, `${need.toLocaleString()} more to go`)
+      el('div', {}, `Unlocks at ${s.cost.toLocaleString()} XP`),
+      el('div', { class: 'hangar-need' },
+        need > 0
+          ? `${xp.toLocaleString()} / ${s.cost.toLocaleString()} (${pct}%) — ${need.toLocaleString()} to go`
+          : 'Unlocking…')
     ));
   }
   return card;
@@ -6214,6 +6725,8 @@ function startArcade(opts = {}) {
   const equipped = getEquippedShip();
   const grannyDef = SHIPS.find(s => s.id === 'granny');
   const shipDef = (grannyRound && grannyDef) ? grannyDef : equipped;
+  const sidekickTopic = getActiveSidekickTopic();
+  const sidekickImg = sidekickTopic ? preloadCritterImg(sidekickTopic, 'critter') : null;
   if (grannyRound) getShipSprite('granny'); // ensure her sprite is hot
   arcade = {
     active: true, paused: false, over: false, won: false, timeUp: false, resultShown: false,
@@ -6231,7 +6744,8 @@ function startArcade(opts = {}) {
     postBossUntil: 0, hyperToastShown: false,
     deathCinematic: false, deathStartTs: 0, deathPhase: 0,
     grannyRound, streakBonus,
-    shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
+    shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0,
+    sidekickTopic, sidekickImg, sidekickW: 0, sidekickH: 0
   };
   initArcadeUpgrades(arcade);
   renderArcade();
@@ -6265,30 +6779,42 @@ function startArcade(opts = {}) {
   // grace + 200ms fade-in, players still get ~1s of full-opacity view to
   // read the "SAVE US!" speech bubble before the fade-out begins.
   const SOS_HOLD_MS = 1600;
-  if (grannyRound) {
-    arcade.paused = true;
-    if (reward) {
-      // handoff: true → Get-Ready / Granny pregame takes over the overlay
-      // synchronously, so no gameplay flashes between SAVE US and the
-      // next beat.
+  const runBaseIntro = () => {
+    if (!arcade) return;
+    if (grannyRound) {
+      arcade.paused = true;
+      if (reward) {
+        // handoff: true → Get-Ready / Granny pregame takes over the overlay
+        // synchronously, so no gameplay flashes between SAVE US and the
+        // next beat.
+        showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
+          if (!arcade) return;
+          showGrannyIntro();
+        }, { handoff: true });
+      } else {
+        showGrannyIntro();
+      }
+    } else if (reward) {
+      // Pause while SAVE US holds, then unpause and show the usual Get Ready
+      // text over the now-running round (matches original Get-Ready behaviour).
+      arcade.paused = true;
       showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
         if (!arcade) return;
-        showGrannyIntro();
+        arcade.paused = false;
+        showGetReady();
       }, { handoff: true });
     } else {
-      showGrannyIntro();
-    }
-  } else if (reward) {
-    // Pause while SAVE US holds, then unpause and show the usual Get Ready
-    // text over the now-running round (matches original Get-Ready behaviour).
-    arcade.paused = true;
-    showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
-      if (!arcade) return;
-      arcade.paused = false;
       showGetReady();
-    }, { handoff: true });
+    }
+  };
+  const pendingDelivery = Array.isArray(state.pendingCritterDeliveries) && state.pendingCritterDeliveries.length
+    ? state.pendingCritterDeliveries.shift()
+    : null;
+  if (pendingDelivery && pendingDelivery.topic) {
+    saveState();
+    runCritterBirthSequence(pendingDelivery.topic, runBaseIntro);
   } else {
-    showGetReady();
+    runBaseIntro();
   }
   arcade.raf = requestAnimationFrame(arcadeLoop);
 }
@@ -6425,6 +6951,7 @@ for (const key of Object.keys(ARC_CINEMATIC_SRC)) {
 function showArcadeCinematicCard(src, holdMs, onDone, opts) {
   opts = opts || {};
   const handoff = !!opts.handoff;
+  const cardClass = (opts.cardClass || '').trim();
   const o = $('#arcOverlay');
   if (!o) {
     if (DEV_MODE) console.warn('[cinematic] no #arcOverlay element — skipping', src);
@@ -6445,7 +6972,7 @@ function showArcadeCinematicCard(src, holdMs, onDone, opts) {
   if (titleEl) titleEl.style.display = 'none';
   if (bodyEl)  bodyEl.style.display = 'none';
   const card = document.createElement('div');
-  card.className = 'arc-cinematic';
+  card.className = 'arc-cinematic' + (cardClass ? ` ${cardClass}` : '');
   const img = document.createElement('img');
   img.src = src;
   img.alt = '';
@@ -7396,6 +7923,7 @@ function drawArcade() {
   const p = arcade.player;
   const blink = p.invuln > 0 && Math.floor(performance.now() / 80) % 2 === 0;
   const ship = arcade.shipImg;
+  const sidekick = arcade.sidekickImg;
   if (ship && ship.complete && ship.naturalHeight > 0) {
     // Lazy-compute display dimensions the first time the sprite is ready.
     if (!arcade.shipH) {
@@ -7404,12 +7932,22 @@ function drawArcade() {
       arcade.shipW = ship.naturalWidth * (targetH / ship.naturalHeight);
     }
   }
+  if (sidekick && sidekick.complete && sidekick.naturalHeight > 0 && !arcade.sidekickH) {
+    const targetH = 40;
+    arcade.sidekickH = targetH;
+    arcade.sidekickW = sidekick.naturalWidth * (targetH / sidekick.naturalHeight);
+  }
   // Hide the player while the death cinematic is playing — the third ship
   // was just vaporised so it shouldn't sit on screen during the skull bit.
   if (!blink && !arcade.deathCinematic) {
     if (arcade.shipH) {
       const sw = arcade.shipW, sh = arcade.shipH;
       ctx.drawImage(ship, p.x - sw/2, p.y - sh/2, sw, sh);
+      if (arcade.sidekickH) {
+        const cw = arcade.sidekickW, ch = arcade.sidekickH;
+        const bob = Math.sin(performance.now() / 220) * 3;
+        ctx.drawImage(sidekick, p.x + sw * 0.52, p.y - sh * 0.05 + bob, cw, ch);
+      }
     } else {
       // Fallback triangle while the sprite is still loading.
       ctx.fillStyle = '#ff8a3d';
@@ -7822,8 +8360,21 @@ function hideSplash(immediate) {
   setTimeout(() => splash.remove(), 600);
 }
 function boot() {
+  let migrated = false;
+  for (const topic of CRITTER_TOPICS) {
+    const c = getCritterRecord(topic);
+    if (!c || c.babyId) continue;
+    c.babyId = defaultBabyForTopic(topic);
+    migrated = true;
+  }
+  retroactiveCritterQueue();
+  if (processCritterHatches(false)) migrated = true;
+  if (migrated) saveState();
   syncStreakUnlocks(true);
-  render();
+  syncShipUnlocks(true);
+  const pending = drainPendingShipUnlock();
+  if (pending) celebrateShipUnlock(pending, () => render());
+  else render();
 }
 
 /* --------------------- BOOT --------------------- */
