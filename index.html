@@ -634,7 +634,16 @@
     font-size: 48px; line-height: 1;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
   }
-  .daily-quest .dq-text { flex: 1; min-width: 0; }
+  /* Title + subtitle only — stays compact on the left. */
+  .daily-quest .dq-text { flex: 0 1 auto; min-width: 0; max-width: 38%; }
+  /* Middle band: sentence-stem preview fills the gap before the CTA. */
+  .daily-quest .dq-stems-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 4px;
+  }
   .daily-quest .dq-title {
     font-family: 'Bangers', 'Black Ops One', Impact, sans-serif;
     font-size: 28px; letter-spacing: 1.1px; line-height: 1.05;
@@ -650,12 +659,13 @@
      beats so the kid can taste what they're about to forge. */
   .daily-quest .dq-stems {
     list-style: none;
-    margin: 8px 0 0;
+    margin: 0;
     padding: 0;
-    display: flex; flex-direction: column; gap: 2px;
+    width: 100%;
+    display: flex; flex-direction: column; gap: 3px;
     font-family: 'Patrick Hand', system-ui, sans-serif;
-    font-size: 14.5px; line-height: 1.25;
-    color: #f5e9ff; opacity: 0.78;
+    font-size: 14px; line-height: 1.2;
+    color: #f5e9ff; opacity: 0.82;
   }
   .daily-quest .dq-stem {
     position: relative;
@@ -708,6 +718,9 @@
   @media (max-width: 560px) {
     .daily-quest { flex-direction: column; align-items: stretch; text-align: center; padding-top: 38px; gap: 10px; }
     .daily-quest .dq-thumb { width: 108px; height: 108px; margin: 0 auto; }
+    .daily-quest .dq-text { max-width: none; }
+    .daily-quest .dq-stems-col { padding: 0 4px; }
+    .daily-quest .dq-stems { text-align: left; max-width: 320px; margin: 0 auto; }
     .daily-quest .dq-cta { width: 100%; }
   }
   /* Gold banner shown inside the forge result modal when the player
@@ -4465,25 +4478,27 @@ function buildDailyQuestTile() {
   txt.appendChild(el('p', { class: 'dq-sub' }, claimed
     ? 'Nice work! Come back tomorrow for a fresh challenge.'
     : `${topic.name || 'Story'} · Level ${story.level} — forge it today for double XP!`));
-  // Trailer beats: show the first few sentence openers so the kid can
-  // taste what they're about to write. Only shown pre-claim; the
-  // claimed state already has its own friendly closer copy.
+  wrap.appendChild(txt);
+  // Trailer beats live in the middle band (between title block and CTA),
+  // not under the subtitle — fills the empty space in the banner.
   if (!claimed && story.sentences && story.sentences.length) {
+    const stemsCol = el('div', { class: 'dq-stems-col' });
     const stems = el('ul', { class: 'dq-stems' });
     const previewCount = Math.min(3, story.sentences.length);
     for (let i = 0; i < previewCount; i++) {
       const opener = (story.sentences[i] && story.sentences[i].opener) || '';
       if (!opener) continue;
-      // Trim trailing comma so the "…" reads more naturally as an unfinished beat.
       const clean = opener.replace(/,\s*$/, '').trim();
       const li = el('li', { class: 'dq-stem' });
       li.appendChild(el('em', {}, clean));
       li.appendChild(document.createTextNode(' …'));
       stems.appendChild(li);
     }
-    if (stems.childElementCount > 0) txt.appendChild(stems);
+    if (stems.childElementCount > 0) {
+      stemsCol.appendChild(stems);
+      wrap.appendChild(stemsCol);
+    }
   }
-  wrap.appendChild(txt);
   if (!claimed) {
     wrap.appendChild(el('button', { class: 'dq-cta', onclick: (e) => {
       if (e && e.stopPropagation) e.stopPropagation();
