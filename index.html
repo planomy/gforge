@@ -79,6 +79,15 @@
     backdrop-filter: blur(8px); box-shadow: var(--shadow);
     /* Granny's portrait pokes out of the bar on both sides — allow it. */
     overflow: visible;
+    /* Lift topbar into its own stacking context so the [data-tip] tooltips
+       (which hang below the icons via ::after) render OVER the panels that
+       follow it in .app. Without this they get covered by later siblings. */
+    position: relative;
+    z-index: 50;
+    /* Granny's portrait extends ~28px below the topbar via her negative
+       bottom margin. Reserve that much space below so the next panel
+       doesn't overlap her lower half. */
+    margin-bottom: 32px;
   }
   .brand {
     display: flex; align-items: center; gap: 10px;
@@ -327,11 +336,65 @@
     background: transparent; border: none; padding: 0; cursor: pointer;
     line-height: 0;
     transition: transform .15s ease;
+    position: relative; /* anchor for [data-tip] tooltips */
   }
   .icon-btn img { display: block; height: 40px; width: 40px; object-fit: contain; filter: var(--icon-tint); transition: filter .25s ease; }
   .icon-btn:hover { transform: translateY(-2px) scale(1.06); }
   .icon-btn:hover img { filter: var(--icon-tint-hover); }
   .icon-btn:active { transform: translateY(0) scale(1); }
+
+  /* Themed tooltips: replace OS-rendered title= popups with a Granny Boom
+     styled bubble. Any element with [data-tip="..."] gets the bubble on
+     hover, with a small arrow pointing up to it. Bangers font + gold-on-dark
+     to match the topbar. */
+  [data-tip] { position: relative; }
+  [data-tip]:hover { z-index: 999; } /* lift the element so its tooltip wins z-order vs siblings */
+  [data-tip]::after,
+  [data-tip]::before {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 9999;
+  }
+  [data-tip]::after {
+    content: attr(data-tip);
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translate(-50%, -4px);
+    background: linear-gradient(180deg, #2a1320 0%, #170914 100%);
+    color: #ffd29a;
+    font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
+    font-weight: 400;
+    letter-spacing: 1.2px;
+    font-size: 15px;
+    line-height: 1.1;
+    padding: 7px 14px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 180, 90, 0.45);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.5),
+                0 0 18px rgba(255,140,60,0.18);
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  [data-tip]::before {
+    content: '';
+    top: 100%;
+    left: 50%;
+    transform: translate(-50%, -2px);
+    border: 7px solid transparent;
+    border-bottom-color: rgba(255, 180, 90, 0.45);
+    filter: drop-shadow(0 -1px 0 rgba(0,0,0,0.4));
+  }
+  [data-tip]:hover::after,
+  [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: .15s; }
+  [data-tip]:hover::before,
+  [data-tip]:focus-visible::before { opacity: 1; transform: translate(-50%, 4px); transition-delay: .15s; }
+  /* Tip-left / tip-right anchors when the element is near a screen edge */
+  [data-tip-pos="left"]::after { left: auto; right: 0; transform: translate(0, -4px); }
+  [data-tip-pos="left"]:hover::after { transform: translate(0, 0); }
+  [data-tip-pos="left"]::before { left: auto; right: 14px; transform: translate(0, -2px); }
+  [data-tip-pos="left"]:hover::before { transform: translate(0, 4px); }
   /* Hangar shows the equipped ship — keep its native blue/orange so it
      reads as the one "live" item in the row. Slightly bigger to anchor. */
   .icon-btn.hangar-btn img {
@@ -732,9 +795,24 @@
     border: 1px solid rgba(74,222,128,0.45); border-radius: 14px; padding: 16px;
   }
   .typing-card h3 { margin: 0 0 8px; color: var(--good); font-size: 16px; }
+  /* IMPORTANT: .ref (target sentence) and textarea (student's typing) share
+     identical font-family / font-size / line-height / padding / letter-spacing
+     so kids can compare letter-for-letter top vs bottom. Eye-tracking
+     suffers if even 1px of font-size differs between the two — so they're
+     bundled into one block and kept in lockstep. */
+  .typing-card .ref,
+  .typing-card textarea {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(0,0,0,0.3);
+  }
   .typing-card .ref {
-    background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px 14px; margin: 8px 0; font-family: Georgia, serif; font-size: 17px; line-height: 1.5; color: #fff4e8;
+    margin: 8px 0; color: #fff4e8;
     user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
     -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
     cursor: default;
@@ -742,8 +820,8 @@
   .typing-card .ref::selection { background: transparent; }
   .typing-card .ref::-moz-selection { background: transparent; }
   .typing-card textarea {
-    width: 100%; padding: 12px 14px; font-size: 16px; color: var(--text); background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border); border-radius: 10px; outline: none; font-family: Georgia, serif; line-height: 1.5;
+    width: 100%; color: var(--text);
+    outline: none;
     min-height: 70px; resize: vertical;
   }
   .typing-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,61,0.2); }
@@ -872,6 +950,74 @@
   .arcade-overlay.show { opacity: 1; pointer-events: auto; }
   .arcade-overlay h2 { margin: 0 0 6px; font-size: 30px; letter-spacing: 1px; }
   .arcade-overlay p { margin: 0; color: var(--muted); font-weight: 700; font-size: 14px; }
+  /* Granny pregame variant: bigger, brighter, with her portrait. */
+  .arcade-overlay.granny {
+    background: radial-gradient(ellipse at center, rgba(80,30,50,0.85), rgba(8,4,16,0.94) 70%);
+  }
+  .arc-granny {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    animation: arcGrannyIn .35s ease-out both;
+  }
+  .arc-granny-portrait {
+    width: clamp(140px, 28vw, 220px); height: auto;
+    filter: drop-shadow(0 0 22px rgba(255,160,80,0.55)) drop-shadow(0 6px 14px rgba(0,0,0,0.55));
+    animation: arcGrannyBob 1.4s ease-in-out infinite alternate;
+  }
+  .arc-granny-msg {
+    font-family: 'Bangers', 'Black Ops One', system-ui, sans-serif;
+    font-weight: 400; letter-spacing: 1.5px;
+    font-size: clamp(28px, 5vw, 46px);
+    line-height: 1.05;
+    color: #fff;
+    background: linear-gradient(180deg, #fff 0%, #ffd29a 60%, #ff7a45 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.55);
+    filter: drop-shadow(0 0 18px rgba(255,140,60,0.45));
+    transform: rotate(-1.5deg);
+    padding: 0 12px; max-width: 90%;
+  }
+  .arc-granny-bonus {
+    font-family: 'Patrick Hand', system-ui, sans-serif;
+    font-size: clamp(14px, 1.8vw, 18px);
+    color: #ffd86b; font-weight: 700; letter-spacing: 0.5px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  @keyframes arcGrannyIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  @keyframes arcGrannyBob {
+    from { transform: translateY(0) rotate(-1deg); }
+    to   { transform: translateY(-6px) rotate(1deg); }
+  }
+  /* Cinematic cards: rounded scene art on a dark backdrop. Used for the
+     pre-Granny SOS beat and the Grand-Daddy arrival flash. Same overall
+     vibe as the Granny pregame card — rounded, glowing, framed. */
+  .arcade-overlay.cinematic {
+    background: radial-gradient(ellipse at center, rgba(40,10,20,0.85), rgba(6,3,14,0.95) 72%);
+  }
+  .arc-cinematic {
+    width: 88%; max-width: 640px;
+    aspect-ratio: 16 / 9;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #050410;
+    box-shadow: 0 0 42px rgba(255,120,60,0.45),
+                0 12px 32px rgba(0,0,0,0.65),
+                inset 0 0 0 2px rgba(255,180,90,0.18);
+    animation: arcCinematicIn .35s ease-out both;
+  }
+  .arc-cinematic-img {
+    width: 100%; height: 100%;
+    display: block;
+    object-fit: cover;
+    user-select: none; -webkit-user-drag: none;
+  }
+  @keyframes arcCinematicIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
   .arcade-controls { display: flex; gap: 14px; justify-content: center; margin-top: 14px; }
   .arc-btn {
     width: 72px; height: 64px; border-radius: 14px;
@@ -919,6 +1065,12 @@
     font-size: clamp(18px, 2.2vw, 24px);
     color: #ffd28a;
     text-shadow: 0 2px 4px rgba(0,0,0,0.55);
+    /* Some leading emojis (e.g. ✍️ Writing Hand) have negative left-bearing
+       in Apple/Segoe emoji fonts — the glyph extends a few pixels past its
+       character cell on the left and gets visually clipped against the
+       container edge. A small left padding gives the emoji breathing room
+       without affecting alignment of the rest of the page. */
+    padding-left: 14px;
   }
   .stat .k {
     font-family: "Bangers", "Black Ops One", Impact, "Arial Black", sans-serif;
@@ -1015,7 +1167,7 @@
 
   /* small screens */
   @media (max-width: 520px) {
-    .topbar { padding: 8px 10px; }
+    .topbar { padding: 8px 10px; margin-bottom: 26px; }
     .brand { font-size: 16px; }
     .brand .brand-wordmark {
       height: 64px;
@@ -3739,7 +3891,13 @@ function defaultState() {
     lastSession: null,
     history: [],
     ships: { owned: ['mk1'], equipped: 'mk1' },
-    bestArcadeScore: 0
+    bestArcadeScore: 0,
+    // Granny is a surprise drop-in, not an equippable ship — these counters
+    // track when she should turn up for an arcade run (see GRANNY_BASE_CHANCE
+    // / GRANNY_PITY_THRESHOLD). `arcadeRunsSinceGranny` counts arcade games
+    // played without her so we can force a visit before it gets boring.
+    arcadeRunsSinceGranny: 0,
+    grannyVisits: 0
   };
 }
 function pushHistory(entry) {
@@ -3774,6 +3932,13 @@ function loadState() {
     if (!Array.isArray(merged.ships.owned) || merged.ships.owned.length === 0) merged.ships.owned = ['mk1'];
     if (!merged.ships.owned.includes('mk1')) merged.ships.owned.unshift('mk1');
     if (!merged.ships.equipped || !merged.ships.owned.includes(merged.ships.equipped)) merged.ships.equipped = 'mk1';
+    // Granny used to be a 7-day-streak unlock — she's now a random in-game
+    // drop-in instead, so eject her from any saved owned/equipped slot so
+    // the Hangar UI doesn't try to render or equip her.
+    merged.ships.owned = merged.ships.owned.filter(id => id !== 'granny');
+    if (merged.ships.equipped === 'granny') merged.ships.equipped = 'mk1';
+    if (typeof merged.arcadeRunsSinceGranny !== 'number') merged.arcadeRunsSinceGranny = 0;
+    if (typeof merged.grannyVisits !== 'number') merged.grannyVisits = 0;
     return merged;
   } catch (e) { return defaultState(); }
 }
@@ -3838,18 +4003,21 @@ const SHIPS = [
       { fx: 0.920, fy: 0.410, vx:  0.16 }
     ]
   },
-  // STREAK REWARD: Granny only unlocks at a 7-day login streak. She doesn't
-  // fire normal bullets — her bazooka lobs cupcake nukes that curve through
-  // the air and explode in a wide AOE blast. The 'special' flag tells the
-  // firing/collision code to use the cupcake codepath instead of barrels.
+  // RANDOM DROP-IN: Granny isn't sold or equipped from the Hangar — she
+  // turns up unannounced for a random arcade run (see startArcade). She
+  // doesn't fire normal bullets; her bazooka lobs cupcake nukes that curve
+  // through the air and explode in a wide AOE blast. `hidden: true` keeps
+  // her out of the Hangar grid, while the rest of the definition (sprite,
+  // barrel position, displayH, special flag) is still used at runtime when
+  // the random roll lands her in the seat.
   {
     id: 'granny', name: 'Granny Boom', cost: 0,
     src: 'ships/granny.png',
-    blurb: 'Streak unlock — nuke cupcakes detonate across multiple invaders. Don\'t cross Grandma.',
+    blurb: 'Surprise drop-in — nuke cupcakes detonate across multiple invaders.',
     barrels: [{ fx: 0.78, fy: 0.18 }],
     displayH: 96,
     special: 'granny',
-    unlock: { type: 'streak', value: 7 }
+    hidden: true
   }
 ];
 // Granny's projectile sprite — preloaded so the first cupcake doesn't pop in.
@@ -3857,6 +4025,61 @@ const CUPCAKE_SRC = 'projectiles/cupcake_nuke.png';
 const CUPCAKE_IMG = new Image();
 CUPCAKE_IMG.decoding = 'async';
 CUPCAKE_IMG.src = CUPCAKE_SRC;
+
+/* --------------------- GRANNY RANDOM EVENT --------------------- */
+// Granny isn't equipped — she just shows up, on a strict cadence rather
+// than a flat dice roll (so students never get her 5 times in a row, and
+// always get a stretch of normal arcade play between visits).
+//
+// Cycle, measured from the last Granny visit (or from a fresh save):
+//   • Runs 1..GRANNY_MIN_GAP        → never Granny (quiet zone)
+//   • Next GRANNY_WINDOW runs       → Granny appears EXACTLY ONCE, picked
+//                                     uniformly across the three slots
+//                                     (slot 0: 1/3, slot 1: 1/2, slot 2: 1/1)
+//   • As soon as she shows up the counter resets and the cycle restarts.
+//
+// With the defaults below: at least 4 granny-free games, then one of the
+// next 3 will be Granny — guaranteed, never two in a row, never a gap
+// longer than 7 runs.
+const GRANNY_MIN_GAP = 4;   // arcade runs that MUST be granny-free
+const GRANNY_WINDOW  = 3;   // size of the window in which she lands once
+const GRANNY_PREGAME_MESSAGES = [
+  "She's back!",
+  "Go get 'em, Granny!",
+  "Granny's locked and loaded.",
+  "Cupcakes are baked — incoming!",
+  "Surprise! It's Granny.",
+  "Knit. Aim. Fire.",
+  "Granny remembered her glasses today.",
+  "Today's special: nuke cupcakes.",
+  "Hold my knitting needles…",
+  "Don't tell Grandpa about this.",
+  "Aliens, meet your doom.",
+  "Granny's outta tea. Uh oh.",
+  "Sprinkles. And chaos.",
+  "She heard the aliens — they're toast.",
+  "Granny means business."
+];
+function rollGrannyRound() {
+  const runs = state.arcadeRunsSinceGranny || 0;
+  // Quiet zone: the first GRANNY_MIN_GAP arcade runs after a Granny visit
+  // (or from a fresh save) are guaranteed granny-free.
+  if (runs < GRANNY_MIN_GAP) return false;
+  // Window of GRANNY_WINDOW runs in which Granny lands EXACTLY ONCE.
+  // We pick the slot uniformly using per-slot conditional probability so
+  // we don't need to persist a pre-picked target. Each slot is equally
+  // likely overall (each 1/GRANNY_WINDOW):
+  //   slot 0 (first run in window): 1 / 3
+  //   slot 1 (second run in window): 1 / 2 of the remaining 2/3 = 1/3
+  //   slot 2 (third run in window):  1 / 1 of the remaining 1/3 = 1/3 (forced)
+  const slot = runs - GRANNY_MIN_GAP;
+  const remaining = GRANNY_WINDOW - slot;
+  if (remaining <= 1) return true; // last slot in the window (or overshoot)
+  return Math.floor(Math.random() * remaining) === 0;
+}
+function pickGrannyMessage() {
+  return GRANNY_PREGAME_MESSAGES[Math.floor(Math.random() * GRANNY_PREGAME_MESSAGES.length)];
+}
 // Alien rows for Forge Invaders, drawn from these 5 monster PNGs (row r uses
 // MONSTER_SRC[r % 5]). Sprites are pre-rasterised into 64×64 offscreen canvases
 // on boot so the arcade never has to text-render emojis (which was the iPad
@@ -3918,9 +4141,11 @@ function getShipSprite(id) {
 function getEquippedShip() {
   return SHIPS.find(s => s.id === state.ships.equipped) || SHIPS[0];
 }
-// Streak-gated ships unlock automatically the moment the threshold is crossed.
-// Granny (7-day streak) is the only one for now but this is structured so we
-// can drop in more streak rewards later.
+// Hook for streak-gated unlocks. Today no ship uses `unlock`, but we keep
+// the call site (in finishStory) so future streak rewards can plug in here.
+// The 5-day streak time bonus (90s arcade rounds) is applied directly in
+// startArcade rather than as an unlock, and Granny is now a random drop-in
+// rather than a streak reward.
 function checkStreakUnlocks() {
   for (const s of SHIPS) {
     if (!s.unlock || s.unlock.type !== 'streak') continue;
@@ -4061,7 +4286,7 @@ function render() {
 }
 function topbar() {
   return el('header', { class: 'topbar' },
-    el('div', { class: 'brand', title: 'Granny Boom' },
+    el('div', { class: 'brand' },
       el('img', {
         src: 'wordmark.png',
         alt: 'Granny Boom',
@@ -4085,16 +4310,18 @@ function topbar() {
         el('img', { src: 'topbar/xp.png', alt: 'XP' }),
         el('span', { class: 'pts' }, String(state.points))
       ),
-      el('button', { class: 'icon-btn', title: 'My stories', onclick: renderGallery },
+      el('button', { class: 'icon-btn', 'data-tip': 'My stories', onclick: renderGallery },
         el('img', { src: 'topbar/stories.png', alt: 'My stories' })
       ),
-      el('button', { class: 'icon-btn', title: 'Progress', onclick: renderProgress },
+      el('button', { class: 'icon-btn', 'data-tip': 'Progress', onclick: renderProgress },
         el('img', { src: 'topbar/progress.png', alt: 'Progress' })
       ),
-      el('button', { class: 'icon-btn', title: 'Trophies', onclick: openTrophyModal },
+      el('button', { class: 'icon-btn', 'data-tip': 'Trophies', onclick: openTrophyModal },
         el('img', { src: 'topbar/trophy.png', alt: 'Trophies' })
       ),
-      el('button', { class: 'icon-btn hangar-btn', title: 'Hangar — upgrade your ship', onclick: openHangar },
+      // Hangar sits at the right edge — anchor its tooltip on the right
+      // so the bubble doesn't get clipped against the viewport edge.
+      el('button', { class: 'icon-btn hangar-btn', 'data-tip': 'Hangar — upgrade your ship', 'data-tip-pos': 'left', onclick: openHangar },
         el('img', { src: getEquippedShip().src, alt: 'Hangar' })
       )
     )
@@ -4294,7 +4521,7 @@ function renderForge() {
   const sentState = f.sentencesState[i];
 
   const head = el('div', { class: 'panel forge' });
-  head.appendChild(el('div', { class: 'forge-head' },
+  const headRow = el('div', { class: 'forge-head' },
     el('button', { class: 'btn ghost', onclick: () => {
       if (confirm('Leave this forge? Your work on this story will be lost.')) { forge = null; render(); }
     } }, '← Stories'),
@@ -4307,7 +4534,19 @@ function renderForge() {
       });
       return d;
     })()
-  ));
+  );
+  // Dev-only shortcut: skip the typing flow entirely and jump straight to
+  // the "Play Reward Game" result screen. Handy for iterating on the arcade
+  // intro / cinematic / boss flow without typing out a paragraph each run.
+  if (DEV_MODE) {
+    headRow.appendChild(el('button', {
+      class: 'btn ghost',
+      title: 'Dev: skip typing + jump to the reward result screen',
+      style: { marginLeft: 'auto' },
+      onclick: () => devSkipToReward()
+    }, '⏭ Skip to Reward (dev)'));
+  }
+  head.appendChild(headRow);
 
   const titleRow = el('div', { class: 'forge-title-row' });
   const titleCol = el('div', { class: 'forge-title-col' },
@@ -4551,6 +4790,26 @@ function lockTyping() {
   }
 }
 
+// DEV: stub out the typing flow by pretending every sentence was solved
+// perfectly first-try and typed correctly, then jump to finishStory() so
+// we land on the result modal with the "Play Reward Game" button. Used to
+// iterate on the arcade intro / cinematic / boss flow without re-typing.
+function devSkipToReward() {
+  if (!DEV_MODE || !forge) return;
+  const f = forge;
+  for (let i = 0; i < f.sentencesState.length; i++) {
+    const sent = f.story.sentences[i];
+    f.picks[i] = sent.slots.map(slot => slot.options.findIndex(o => o.correct));
+    f.sentenceChecked[i] = true;
+    f.sentenceCorrect[i] = true;
+    f.sentenceWrongChecks[i] = 0;
+    f.sentencePerfect[i] = true;
+    f.typed[i] = correctSentenceText(sent);
+    f.typedComplete[i] = true;
+  }
+  f.index = f.sentencesState.length - 1;
+  finishStory();
+}
 function finishStory() {
   const f = forge;
   const story = f.story;
@@ -4851,7 +5110,12 @@ function openHangar() {
     ` to spend.`
   ));
   const grid = el('div', { class: 'hangar-grid' });
-  for (const s of SHIPS) grid.appendChild(buildShipCard(s));
+  // `hidden` ships (e.g. Granny — she's a random drop-in, not an equippable
+  // ship) live in the SHIPS list for runtime use only, never as a card.
+  for (const s of SHIPS) {
+    if (s.hidden) continue;
+    grid.appendChild(buildShipCard(s));
+  }
   m.appendChild(grid);
   const btns = el('div', { class: 'row-wrap', style: { justifyContent: 'center', marginTop: '16px' } });
   btns.appendChild(el('button', { class: 'btn', onclick: () => closeModal() }, 'Close'));
@@ -4860,7 +5124,7 @@ function openHangar() {
       class: 'btn ghost',
       title: 'Dev: unlock every ship for testing',
       onclick: () => {
-        state.ships.owned = SHIPS.map(s => s.id);
+        state.ships.owned = SHIPS.filter(s => !s.hidden).map(s => s.id);
         saveState(); closeModal(); openHangar();
         toast('All ships unlocked (dev)', '🔓');
       }
@@ -4960,8 +5224,13 @@ function arcKeyDown(e) {
     arcade.bossSpawnedThisGame = true;
     arcade.enemies = []; arcade.mother = null;
     arcade.bullets = []; arcade.enemyBullets = [];
-    spawnBoss();
-    toast('DEV: Grand-Daddy summoned', '😈');
+    arcade.paused = true;
+    showArcadeCinematicCard(ARC_CINEMATIC_SRC.grandDaddy, 2000, () => {
+      if (!arcade) return;
+      spawnBoss();
+      toast('DEV: Grand-Daddy summoned', '😈');
+      arcade.paused = false;
+    });
     return;
   }
   const m = ARC_KEYMAP[k];
@@ -4976,10 +5245,36 @@ function arcKeyUp(e) {
 function startArcade(opts = {}) {
   const reward = opts.reward !== false;
   const fromLevel = opts.level || 1;
-  const shipDef = getEquippedShip();
+  // Granny random event: opts.granny lets dev/test paths force her in/out;
+  // otherwise we roll based on the pity counter.
+  const grannyRound = (opts.granny === true) ? true
+    : (opts.granny === false) ? false
+    : (reward && rollGrannyRound());
+  // Update the pity counter immediately so the save reflects this run even
+  // if the player bails. Granny visit resets the streak-of-misses to 0.
+  if (reward) {
+    if (grannyRound) {
+      state.arcadeRunsSinceGranny = 0;
+      state.grannyVisits = (state.grannyVisits || 0) + 1;
+    } else {
+      state.arcadeRunsSinceGranny = (state.arcadeRunsSinceGranny || 0) + 1;
+    }
+    saveState();
+  }
+  // Streak-of-5 reward: arcade rounds become 90 seconds instead of 60.
+  // (Granny rounds get the same bonus — no reason to penalise her.)
+  const streakBonus = state.streak >= 5;
+  const duration = streakBonus ? 90000 : 60000;
+  // For a Granny round we override the ship for the run only — we don't
+  // touch state.ships.equipped, so the player's real ship is restored
+  // automatically next run.
+  const equipped = getEquippedShip();
+  const grannyDef = SHIPS.find(s => s.id === 'granny');
+  const shipDef = (grannyRound && grannyDef) ? grannyDef : equipped;
+  if (grannyRound) getShipSprite('granny'); // ensure her sprite is hot
   arcade = {
     active: true, paused: false, over: false, won: false, timeUp: false, resultShown: false,
-    reward, fromLevel, duration: 60000, timeRemaining: 60000,
+    reward, fromLevel, duration, timeRemaining: duration,
     startTs: 0, pausedAccum: 0, pausedSince: 0,
     player: { x: ARC_W / 2, y: ARC_H - 50, w: 44, h: 30, speed: 0.42, invuln: 0 },
     bullets: [], enemyBullets: [], enemies: createWave(), particles: [],
@@ -4992,11 +5287,62 @@ function startArcade(opts = {}) {
     boss: null, bossSpawnedThisGame: false, bossDefeated: false,
     postBossUntil: 0, hyperToastShown: false,
     deathCinematic: false, deathStartTs: 0, deathPhase: 0,
+    grannyRound, streakBonus,
     shipDef, shipImg: getShipSprite(shipDef.id), shipW: 0, shipH: 0
   };
   renderArcade();
   document.addEventListener('keydown', arcKeyDown);
   document.addEventListener('keyup', arcKeyUp);
+  // Entry flow:
+  //   Reward run  → SAVE US cinematic (~900ms) → Granny portrait OR Get Ready
+  //   Replay/dev  → no cinematic (would burn out fast on rapid replays);
+  //                 jumps straight into Get Ready / Granny portrait
+  // The player can skip the SAVE US cinematic with any key, click, or tap.
+  const showGetReady = () => {
+    const secs = Math.round(duration / 1000);
+    const sub = streakBonus
+      ? `${secs} seconds (streak bonus!) — score as much as you can!`
+      : `${secs} seconds — score as much as you can!`;
+    showArcOverlay('Get Ready!', sub);
+    // 2-second hold (up from 1s) gives players more time to read the
+    // duration / streak-bonus subtitle before the round really kicks in.
+    setTimeout(() => hideArcOverlay(), 2000);
+  };
+  const showGrannyIntro = () => {
+    if (!arcade) return;
+    showGrannyPregame(pickGrannyMessage(), streakBonus);
+    setTimeout(() => {
+      if (!arcade) return;
+      hideArcOverlay();
+      arcade.paused = false;
+    }, 1700);
+  };
+  // SOS cinematic hold (~1.6s) is sized so that, after the 350ms skip-arm
+  // grace + 200ms fade-in, players still get ~1s of full-opacity view to
+  // read the "SAVE US!" speech bubble before the fade-out begins.
+  const SOS_HOLD_MS = 1600;
+  if (grannyRound) {
+    arcade.paused = true;
+    if (reward) {
+      showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
+        if (!arcade) return;
+        showGrannyIntro();
+      });
+    } else {
+      showGrannyIntro();
+    }
+  } else if (reward) {
+    // Pause while SAVE US holds, then unpause and show the usual Get Ready
+    // text over the now-running round (matches original Get-Ready behaviour).
+    arcade.paused = true;
+    showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
+      if (!arcade) return;
+      arcade.paused = false;
+      showGetReady();
+    });
+  } else {
+    showGetReady();
+  }
   arcade.raf = requestAnimationFrame(arcadeLoop);
 }
 function endArcade() {
@@ -5036,8 +5382,10 @@ function renderArcade() {
   const wrap = el('div', { class: 'arcade-canvas-wrap' });
   wrap.appendChild(el('canvas', { id: 'arcCanvas', width: String(ARC_W), height: String(ARC_H) }));
   const overlay = el('div', { class: 'arcade-overlay', id: 'arcOverlay' });
-  overlay.appendChild(el('h2', { id: 'arcOverlayTitle' }, 'Get Ready!'));
-  overlay.appendChild(el('p', { id: 'arcOverlayBody' }, '60 seconds — score as much as you can!'));
+  // Empty placeholders — showArcOverlay() / cinematic helpers populate them.
+  // If we ship stale text here it can briefly leak through during transitions.
+  overlay.appendChild(el('h2', { id: 'arcOverlayTitle' }, ''));
+  overlay.appendChild(el('p', { id: 'arcOverlayBody' }, ''));
   wrap.appendChild(overlay);
   frame.appendChild(wrap);
   const controls = el('div', { class: 'arcade-controls' });
@@ -5055,15 +5403,181 @@ function renderArcade() {
   bindHold(btnL, 'left'); bindHold(btnR, 'right'); bindHold(btnF, 'fire');
   controls.appendChild(btnL); controls.appendChild(btnF); controls.appendChild(btnR);
   frame.appendChild(controls);
+  const helpSecs = Math.round((arcade && arcade.duration ? arcade.duration : 60000) / 1000);
   frame.appendChild(el('div', { class: 'arcade-help' },
-    '60 seconds. Desktop: ', el('kbd', {}, '◀'), ' ', el('kbd', {}, '▶'), ' move, ', el('kbd', {}, 'Space'), ' fire, ', el('kbd', {}, 'P'), ' pause.'));
+    `${helpSecs} seconds. Desktop: `, el('kbd', {}, '◀'), ' ', el('kbd', {}, '▶'), ' move, ', el('kbd', {}, 'Space'), ' fire, ', el('kbd', {}, 'P'), ' pause.'));
   head.appendChild(frame);
   app.appendChild(head);
-  showArcOverlay('Get Ready!', '60 seconds — score as much as you can!');
-  setTimeout(() => hideArcOverlay(), 1000);
+  // Note: the "Get Ready" / Granny pregame overlay is shown from
+  // startArcade() now — it varies by grannyRound + streak bonus, so we
+  // don't fire a generic one from here.
 }
-function showArcOverlay(t, b) { const o = $('#arcOverlay'); if (!o) return; $('#arcOverlayTitle').textContent = t; $('#arcOverlayBody').textContent = b || ''; o.classList.add('show'); }
-function hideArcOverlay() { const o = $('#arcOverlay'); if (o) o.classList.remove('show'); }
+function showArcOverlay(t, b) {
+  const o = $('#arcOverlay'); if (!o) return;
+  // Reset any granny / cinematic-card DOM so the generic overlay renders cleanly.
+  o.classList.remove('granny');
+  o.classList.remove('cinematic');
+  const gp = o.querySelector('.arc-granny');
+  if (gp) gp.remove();
+  const cin = o.querySelector('.arc-cinematic');
+  if (cin) cin.remove();
+  const titleEl = $('#arcOverlayTitle');
+  const bodyEl = $('#arcOverlayBody');
+  if (titleEl) { titleEl.textContent = t; titleEl.style.display = ''; }
+  if (bodyEl)  { bodyEl.textContent = b || ''; bodyEl.style.display = ''; }
+  o.classList.add('show');
+}
+function hideArcOverlay() {
+  const o = $('#arcOverlay'); if (!o) return;
+  o.classList.remove('show');
+  // Tidy up the granny / cinematic variant on its way out so the next show() is clean.
+  setTimeout(() => {
+    if (!o) return;
+    o.classList.remove('granny');
+    o.classList.remove('cinematic');
+    const gp = o.querySelector('.arc-granny');
+    if (gp) gp.remove();
+    const cin = o.querySelector('.arc-cinematic');
+    if (cin) cin.remove();
+    const titleEl = $('#arcOverlayTitle');
+    const bodyEl = $('#arcOverlayBody');
+    if (titleEl) titleEl.style.display = '';
+    if (bodyEl)  bodyEl.style.display = '';
+  }, 220);
+}
+// Preload cinematic card art so the first flash doesn't pop in cold.
+const ARC_CINEMATIC_SRC = {
+  sos:        'cinematics/sos.jpg',
+  grandDaddy: 'cinematics/grand_daddy.jpg'
+};
+const ARC_CINEMATIC_IMGS = {};
+for (const key of Object.keys(ARC_CINEMATIC_SRC)) {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = ARC_CINEMATIC_SRC[key];
+  ARC_CINEMATIC_IMGS[key] = img;
+}
+// Show a full-canvas cinematic card (rounded scene art on a dark backdrop)
+// for `holdMs`, then fade out and call `onDone`. Caller manages arcade
+// pause state so multiple cards can chain back-to-back without the timer
+// ticking between them. Player can skip early with any key / click / tap
+// (handy after they've seen the same beat a hundred times).
+function showArcadeCinematicCard(src, holdMs, onDone) {
+  const o = $('#arcOverlay');
+  if (!o) {
+    if (DEV_MODE) console.warn('[cinematic] no #arcOverlay element — skipping', src);
+    if (onDone) onDone();
+    return;
+  }
+  if (DEV_MODE) console.log('[cinematic] mount', src, 'holdMs=' + holdMs, 'overlay classes=' + o.className);
+  // Defensive full reset so a stale state from a previous run can't leak in.
+  o.classList.remove('granny');
+  o.classList.remove('show');     // force-clear any lingering show state
+  // Wipe any prior card / pregame markup so the new image renders alone.
+  const old = o.querySelector('.arc-cinematic, .arc-granny');
+  if (old) old.remove();
+  // Now apply the cinematic state.
+  o.classList.add('cinematic');
+  const titleEl = $('#arcOverlayTitle');
+  const bodyEl = $('#arcOverlayBody');
+  if (titleEl) titleEl.style.display = 'none';
+  if (bodyEl)  bodyEl.style.display = 'none';
+  const card = document.createElement('div');
+  card.className = 'arc-cinematic';
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = '';
+  img.className = 'arc-cinematic-img';
+  img.draggable = false;
+  img.onload = () => { if (DEV_MODE) console.log('[cinematic] img loaded', src, img.naturalWidth + 'x' + img.naturalHeight); };
+  img.onerror = () => { if (DEV_MODE) console.warn('[cinematic] img FAILED to load', src); };
+  card.appendChild(img);
+  o.appendChild(card);
+  // Force a reflow before adding .show so the opacity transition definitely
+  // runs from 0 → 1 even if the previous run left the overlay mid-transition.
+  void o.offsetWidth;
+  o.classList.add('show');
+  if (DEV_MODE) console.log('[cinematic] show class added, final overlay classes=' + o.className);
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    document.removeEventListener('keydown', skipHandler, true);
+    o.removeEventListener('click', skipHandler);
+    o.removeEventListener('touchstart', skipHandler);
+    o.classList.remove('show');
+    // Wait for the .2s opacity transition before cleaning up the markup.
+    setTimeout(() => {
+      o.classList.remove('cinematic');
+      const c = o.querySelector('.arc-cinematic');
+      if (c) c.remove();
+      if (titleEl) titleEl.style.display = '';
+      if (bodyEl)  bodyEl.style.display = '';
+      if (onDone) onDone();
+    }, 220);
+  };
+  // Skip-on-input: any key (except P, which toggles pause) or pointer event
+  // on the overlay ends the cinematic early. We capture the event so the
+  // arcade key handler doesn't receive the same press and start the player
+  // firing the moment the round begins.
+  //
+  // GRACE PERIOD (CINEMATIC_SKIP_GRACE_MS): we wait a beat before arming the
+  // skip listeners. Without this, the same click/tap/keypress that triggered
+  // the arcade (e.g. the "Play Reward Game" button click) was still in
+  // flight when the cinematic mounted, and would immediately dismiss it —
+  // which is why testers saw the image "flash briefly" rather than hold.
+  const skipHandler = (ev) => {
+    if (ev && ev.type === 'keydown') {
+      const k = (ev.key || '').toLowerCase();
+      if (k === 'p') return;
+    }
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    if (ev && ev.preventDefault) ev.preventDefault();
+    finish();
+  };
+  setTimeout(() => {
+    if (done) return;
+    document.addEventListener('keydown', skipHandler, true);
+    o.addEventListener('click', skipHandler);
+    o.addEventListener('touchstart', skipHandler, { passive: false });
+  }, 350);
+  // Hide the cinematic on completion of the hold. If skip listeners never
+  // armed (very short holdMs or instant finish) the removeEventListener
+  // calls inside finish() are no-ops, which is fine.
+  setTimeout(finish, holdMs);
+}
+// Granny pregame overlay: portrait + a big random catchphrase. Lives on
+// top of the canvas for ~2s before the arcade timer starts ticking.
+function showGrannyPregame(message, streakBonus) {
+  const o = $('#arcOverlay'); if (!o) return;
+  const titleEl = $('#arcOverlayTitle');
+  const bodyEl = $('#arcOverlayBody');
+  if (titleEl) titleEl.style.display = 'none';
+  if (bodyEl)  bodyEl.style.display = 'none';
+  const old = o.querySelector('.arc-granny');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'arc-granny';
+  const img = document.createElement('img');
+  img.src = 'granny_brand.png';
+  img.alt = 'Granny Boom';
+  img.className = 'arc-granny-portrait';
+  img.draggable = false;
+  const msg = document.createElement('div');
+  msg.className = 'arc-granny-msg';
+  msg.textContent = message;
+  wrap.appendChild(img);
+  wrap.appendChild(msg);
+  if (streakBonus) {
+    const bonus = document.createElement('div');
+    bonus.className = 'arc-granny-bonus';
+    bonus.textContent = '+30s streak bonus active';
+    wrap.appendChild(bonus);
+  }
+  o.appendChild(wrap);
+  o.classList.add('granny', 'show');
+}
 function arcadeLoop(ts) {
   if (!arcade || !arcade.active) return;
   if (!arcade.lastTs) { arcade.lastTs = ts; arcade.startTs = ts; }
@@ -5308,10 +5822,21 @@ function updateArcade(dt) {
         a.bossSpawnedThisGame = true;
         a.enemies = [];
         a.mother = null; // clear out the mother so the boss owns the spotlight
-        spawnBoss();
-        for (let i = 0; i < 12; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ff5a3d');
-        for (let i = 0; i < 8; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ffd166');
-        toast(`GRAND-DADDY incoming! +${waveBonus} XP`, '😈');
+        const bossBonus = waveBonus;
+        // Hold the "Oh Lord have mercy" cinematic card for 2s. Boss spawn
+        // interrupts active gameplay (unlike SAVE US which is a fresh
+        // round-start), so the player needs a beat to register the freeze
+        // and look at the card before it fades out. arcade.paused freezes
+        // the round clock + the player while it holds.
+        a.paused = true;
+        showArcadeCinematicCard(ARC_CINEMATIC_SRC.grandDaddy, 2000, () => {
+          if (!arcade) return;
+          spawnBoss();
+          for (let i = 0; i < 12; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ff5a3d');
+          for (let i = 0; i < 8; i++) spawnParticles(ARC_W / 2 + (Math.random() - 0.5) * 160, 60, '#ffd166');
+          toast(`GRAND-DADDY incoming! +${bossBonus} XP`, '😈');
+          arcade.paused = false;
+        });
       } else if (a.bossDefeated && !a.hyperToastShown) {
         // First wave after slaying the boss — announce HYPER MODE.
         a.hyperToastShown = true;
@@ -6039,8 +6564,26 @@ function drawArcade() {
   }
   ctx.globalAlpha = 1;
   ctx.restore();
-  if (arcade.paused) showArcOverlay('Paused', 'Press P to resume.');
-  else if (!arcade.over) hideArcOverlay();
+  // Pause indicator. drawArcade only owns the generic "Paused" overlay —
+  // it must NEVER auto-hide overlays it didn't put up (Get Ready, Granny
+  // pregame, cinematic cards, etc.) or it'll strip them on the very next
+  // frame after they mount.
+  //
+  //   • cinematic / granny card up  → leave it alone (those self-manage)
+  //   • showing "Paused" right now  → keep showing while paused, hide on unpause
+  //   • anything else (Get Ready)   → leave it alone, the caller's setTimeout
+  //                                   handles the eventual hide
+  const arcO = document.getElementById('arcOverlay');
+  const arcTitle = document.getElementById('arcOverlayTitle');
+  const arcCardUp = !!arcO && (arcO.classList.contains('cinematic') || arcO.classList.contains('granny'));
+  const arcPausedUp = !!arcTitle && arcTitle.textContent === 'Paused';
+  if (!arcCardUp) {
+    if (arcade.paused && !arcPausedUp) {
+      showArcOverlay('Paused', 'Press P to resume.');
+    } else if (!arcade.paused && arcPausedUp && !arcade.over) {
+      hideArcOverlay();
+    }
+  }
 }
 function showArcadeResult() {
   const a = arcade;
@@ -6073,6 +6616,7 @@ function showArcadeResult() {
         : timeUp
           ? (waves >= 1 ? (waves === 1 ? 'Wave Conquered!' : `${waves} Waves Conquered!`) : "Time's Up!")
           : 'Game Over';
+  const secs = Math.round((a.duration || 60000) / 1000);
   const sub = bossDef
     ? `Legendary, ${state.name}! You took down the Grand-Daddy and lived to tell the tale.`
     : bossSurvived
@@ -6082,11 +6626,20 @@ function showArcadeResult() {
         : timeUp
           ? (waves >= 1
               ? `Brilliant flying, ${state.name}! You cleared ${waves} wave${waves === 1 ? '' : 's'} before the buzzer.`
-              : `60 seconds is up, ${state.name}. Score locked in — back to the forge.`)
+              : `${secs} seconds is up, ${state.name}. Score locked in — back to the forge.`)
           : `Tough run, ${state.name}. The aliens got you on wave ${waves + 1}.`;
   m.appendChild(el('div', { style: { fontSize: '52px' } }, emoji));
   m.appendChild(el('h2', {}, title));
   m.appendChild(el('p', {}, sub));
+  // Granny / streak flavour notes — keep them short so they don't crowd the modal.
+  if (a.grannyRound) {
+    m.appendChild(el('p', { style: { marginTop: '-2px', color: '#ffd29a', fontWeight: '800' } },
+      '💥 Granny dropped by for this one!'));
+  }
+  if (a.streakBonus) {
+    m.appendChild(el('p', { style: { marginTop: '-2px', color: '#ffd86b', fontWeight: '700', fontSize: '13px' } },
+      `🔥 Streak bonus: ${secs}s round (5-day streak reward)`));
+  }
   if (newBest && score > 0) {
     m.appendChild(el('p', { style: { color: 'var(--accent)', fontWeight: '700', marginTop: '-4px' } },
       `★ NEW PERSONAL BEST! (was ${prevBest})`));
