@@ -6263,8 +6263,12 @@ function detonateCupcake(b) {
     const dx = bs.x - b.x, dy = bs.y - b.y;
     const reach = RADIUS + bs.hitW * 0.4;
     if (dx * dx + dy * dy <= reach * reach) {
-      bs.hp -= 8;
+      // Random 20–30 HP per cupcake — Granny's nukes hit chaotically hard.
+      // At 120 HP boss that's ~4–6 cupcakes to drop the Grand-Daddy.
+      const dmg = 20 + Math.floor(Math.random() * 11);
+      bs.hp -= dmg;
       arcade.score += 40;
+      spawnBonusText(b.x, b.y - 30, `-${dmg} HP!`, '#ffd166', 22);
       spawnParticles(b.x, b.y, '#ff8a3d');
       if (bs.hp <= 0) defeatBoss(bs);
     }
