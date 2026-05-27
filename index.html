@@ -5324,10 +5324,13 @@ function startArcade(opts = {}) {
   if (grannyRound) {
     arcade.paused = true;
     if (reward) {
+      // handoff: true → Get-Ready / Granny pregame takes over the overlay
+      // synchronously, so no gameplay flashes between SAVE US and the
+      // next beat.
       showArcadeCinematicCard(ARC_CINEMATIC_SRC.sos, SOS_HOLD_MS, () => {
         if (!arcade) return;
         showGrannyIntro();
-      });
+      }, { handoff: true });
     } else {
       showGrannyIntro();
     }
@@ -5339,7 +5342,7 @@ function startArcade(opts = {}) {
       if (!arcade) return;
       arcade.paused = false;
       showGetReady();
-    });
+    }, { handoff: true });
   } else {
     showGetReady();
   }
@@ -5462,7 +5465,17 @@ for (const key of Object.keys(ARC_CINEMATIC_SRC)) {
 // pause state so multiple cards can chain back-to-back without the timer
 // ticking between them. Player can skip early with any key / click / tap
 // (handy after they've seen the same beat a hundred times).
-function showArcadeCinematicCard(src, holdMs, onDone) {
+// opts.handoff: if true, when the cinematic ends we keep the overlay's
+// `.show` class on (so it stays opaque) and only strip the cinematic
+// markup before calling onDone. That lets the caller (e.g. showGetReady,
+// showGrannyPregame) repaint the same overlay node *under cover* of the
+// still-opaque backdrop — no frame of gameplay leaks through between the
+// cinematic and the next overlay state. Without this, the 220ms opacity
+// fade-out exposes the canvas (aliens, ship) until the next overlay
+// fades back in.
+function showArcadeCinematicCard(src, holdMs, onDone, opts) {
+  opts = opts || {};
+  const handoff = !!opts.handoff;
   const o = $('#arcOverlay');
   if (!o) {
     if (DEV_MODE) console.warn('[cinematic] no #arcOverlay element — skipping', src);
@@ -5506,6 +5519,19 @@ function showArcadeCinematicCard(src, holdMs, onDone) {
     document.removeEventListener('keydown', skipHandler, true);
     o.removeEventListener('click', skipHandler);
     o.removeEventListener('touchstart', skipHandler);
+    if (handoff) {
+      // Strip cinematic markup but keep `.show` on so the overlay stays
+      // opaque. The next overlay call (Get Ready / Granny pregame) runs
+      // synchronously inside onDone() and repaints under cover, so the
+      // player never sees the gameplay between the two beats.
+      o.classList.remove('cinematic');
+      const c = o.querySelector('.arc-cinematic');
+      if (c) c.remove();
+      if (titleEl) titleEl.style.display = '';
+      if (bodyEl)  bodyEl.style.display = '';
+      if (onDone) onDone();
+      return;
+    }
     o.classList.remove('show');
     // Wait for the .2s opacity transition before cleaning up the markup.
     setTimeout(() => {
