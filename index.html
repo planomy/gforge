@@ -871,8 +871,7 @@
     .topic-tab .progress { font-size: 9px; padding: 1px 5px; top: 1px; right: 3px; }
   }
 
-  /* Daily Quest hero tile — sits above the stories grid on home. Pure
-     additive UI; no other layout depends on it. */
+  /* Daily Quest — full-width (legacy) or compact inside welcome panel */
   .daily-quest {
     position: relative;
     margin: 18px 0 14px;
@@ -1007,6 +1006,157 @@
     .daily-quest .dq-stems-col { padding: 0 4px; }
     .daily-quest .dq-stems { text-align: left; max-width: 320px; margin: 0 auto; }
     .daily-quest .dq-cta { width: 100%; }
+  }
+
+  /* Compact Today's Special — thumb (left, full height) | ribbon + stems | CTA */
+  .hero .panel:first-child { display: flex; flex-direction: column; overflow: visible; }
+  .daily-quest.daily-quest--hero {
+    margin: 14px 0 0;
+    padding: 0 10px 8px 0;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    column-gap: 10px;
+    row-gap: 4px;
+    align-items: center;
+  }
+  .daily-quest--hero .dq-ribbon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    padding: 5px calc(12px + 7.2ch) 5px 10px;
+    border-radius: 0 0 10px 0;
+    margin: 0;
+    box-shadow: 0 3px 10px rgba(255,170,0,0.35);
+    pointer-events: none;
+    white-space: nowrap;
+    width: max-content;
+    box-sizing: border-box;
+    max-width: calc(100% - 12px);
+    text-align: left;
+  }
+  .daily-quest--hero .dq-hero-body { display: contents; }
+  .daily-quest--hero .dq-thumb {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 96px;
+    height: 96px;
+    margin: 22px 0 0 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    position: relative;
+    z-index: 3;
+    align-self: center;
+  }
+  .daily-quest--hero .dq-hero-mid {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    min-width: 0;
+    align-self: start;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 22px 18px 0 8px;
+  }
+  .daily-quest--hero .dq-title { display: none; }
+  .daily-quest--hero .dq-sub.dq-sub--visible {
+    display: block;
+    font-size: 11px;
+    line-height: 1.2;
+    margin: 0;
+    opacity: 0.88;
+  }
+  .daily-quest--hero .dq-stems-col {
+    padding: 0;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .daily-quest--hero .dq-stems {
+    width: auto;
+    font-size: 13px;
+    line-height: 1.2;
+    gap: 2px;
+    margin: 0 14px 0 auto;
+    max-width: 100%;
+    text-align: left;
+  }
+  .daily-quest--hero .dq-stem {
+    padding-left: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .daily-quest--hero .dq-stem::before { left: 0; top: 0; font-size: 11px; }
+  .daily-quest--hero .dq-cta-col {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    align-self: center;
+    justify-self: end;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .daily-quest--hero .dq-xp-badge {
+    position: absolute;
+    top: -32px;
+    right: -20px;
+    width: 69px;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.6));
+    pointer-events: none;
+    z-index: 8;
+  }
+  .daily-quest--hero .dq-cta-col .dq-cta,
+  .daily-quest--hero .dq-cta-col .dq-cta-done {
+    min-width: 96px;
+    max-width: 112px;
+    padding: 7px 11px;
+    font-size: 11px;
+    letter-spacing: 0.9px;
+    line-height: 1.05;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: 0 5px 14px rgba(255,170,0,0.38);
+  }
+  @media (max-width: 520px) {
+    .daily-quest--hero {
+      grid-template-columns: 80px minmax(0, 1fr);
+      grid-template-rows: auto auto auto;
+      row-gap: 6px;
+      padding: 0 8px 8px 0;
+    }
+    .daily-quest--hero .dq-thumb {
+      width: 80px;
+      height: 80px;
+      margin: 20px 0 0 20px;
+      grid-row: 1 / 3;
+    }
+    .daily-quest--hero .dq-hero-mid { grid-column: 2; grid-row: 2; }
+    .daily-quest--hero .dq-cta-col {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      align-items: stretch;
+    }
+    .daily-quest--hero .dq-xp-badge {
+      top: -28px;
+      right: -16px;
+      width: 62px;
+    }
+    .daily-quest--hero .dq-cta-col .dq-cta,
+    .daily-quest--hero .dq-cta-col .dq-cta-done {
+      max-width: none;
+      width: 100%;
+    }
+    .daily-quest--hero .dq-stem { white-space: normal; }
   }
   /* Gold banner shown inside the forge result modal when the player
      just claimed today's Daily Quest 2× XP bonus. */
@@ -3143,22 +3293,27 @@ function ensureDailyQuest() {
   return state.dailyQuest;
 }
 
-// Build the "Today's Special" hero tile shown above the stories grid.
-// Returns null if there's nothing to feature (shouldn't happen in
-// practice — STORIES is always populated).
-function buildDailyQuestTile() {
+// XP multiplier badge art (transparent PNGs in ui/).
+const DQ_XP_BADGES = { 2: 'ui/xp-2x.png', 3: 'ui/xp-3x.png', 5: 'ui/xp-5x.png' };
+const DAILY_QUEST_XP_MULT = 2;
+
+// Build Today's Special tile. compact=true nests it under topic tabs in
+// the welcome panel (thumb + stems + CTA; title de-emphasised).
+function buildDailyQuestTile(opts) {
+  opts = opts || {};
+  const compact = !!opts.compact;
   const dq = ensureDailyQuest();
   if (!dq || !dq.storyId) return null;
   const story = STORIES.find(s => s.id === dq.storyId);
   if (!story) return null;
   const topic = TOPICS.find(t => t.id === story.topic) || {};
   const claimed = !!dq.claimed;
-  const wrap = el('div', { class: 'daily-quest' + (claimed ? ' claimed' : '') });
+  const wrap = el('div', {
+    class: 'daily-quest' + (compact ? ' daily-quest--hero' : '') + (claimed ? ' claimed' : '')
+  });
   wrap.appendChild(el('div', { class: 'dq-ribbon' },
     claimed ? '✅ CLAIMED TODAY' : '✨ TODAY\u2019S SPECIAL · 2× XP'));
-  // Thumbnail of the actual story art. Same loading chain as the story
-  // grid cards (png → jpg → webp), with the topic emoji as a graceful
-  // fallback so the tile never looks broken if an art file is missing.
+
   const thumb = el('div', { class: 'dq-thumb' });
   const thumbFallback = el('div', { class: 'dq-thumb-fallback' }, topic.emoji || '🎯');
   thumbFallback.style.display = 'none';
@@ -3183,11 +3338,60 @@ function buildDailyQuestTile() {
   });
   tryNextThumb();
   thumb.appendChild(thumbImg);
+
+  const onForge = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (state.selectedTopic !== story.topic) state.selectedTopic = story.topic;
+    startForge(story.id);
+  };
+
+  const done = !!state.completed[story.id];
+  const hasParagon = storyHasParagon(story.id);
+
+  if (compact) {
+    const body = el('div', { class: 'dq-hero-body' });
+    body.appendChild(thumb);
+    const mid = el('div', { class: 'dq-hero-mid' });
+    if (claimed) {
+      mid.appendChild(el('p', { class: 'dq-sub dq-sub--visible' },
+        'Come back tomorrow for a fresh challenge.'));
+    } else if (story.sentences && story.sentences.length) {
+      const stemsCol = el('div', { class: 'dq-stems-col' });
+      const stems = el('ul', { class: 'dq-stems' });
+      for (let i = 0; i < story.sentences.length; i++) {
+        const opener = (story.sentences[i] && story.sentences[i].opener) || '';
+        if (!opener) continue;
+        const clean = opener.replace(/,\s*$/, '').trim();
+        const li = el('li', { class: 'dq-stem' });
+        li.appendChild(el('em', {}, clean));
+        li.appendChild(document.createTextNode(' …'));
+        stems.appendChild(li);
+      }
+      if (stems.childElementCount > 0) stemsCol.appendChild(stems);
+      mid.appendChild(stemsCol);
+    }
+    body.appendChild(mid);
+    const ctaCol = el('div', { class: 'dq-cta-col' });
+    if (!claimed) {
+      const badgeSrc = DQ_XP_BADGES[DAILY_QUEST_XP_MULT] || DQ_XP_BADGES[2];
+      const badge = document.createElement('img');
+      badge.className = 'dq-xp-badge';
+      badge.src = badgeSrc;
+      badge.alt = DAILY_QUEST_XP_MULT + '\u00d7 XP';
+      badge.draggable = false;
+      wrap.appendChild(badge);
+      ctaCol.appendChild(el('button', { class: 'dq-cta', onclick: onForge }, 'FORGE NOW →'));
+    } else {
+      ctaCol.appendChild(el('div', { class: 'dq-cta dq-cta-done' }, 'See you tomorrow'));
+    }
+    body.appendChild(ctaCol);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
   wrap.appendChild(thumb);
   const txt = el('div', { class: 'dq-text' });
   txt.appendChild(el('h3', { class: 'dq-title' }, story.title));
-  const done = !!state.completed[story.id];
-  const hasParagon = storyHasParagon(story.id);
   let dqSub;
   if (claimed) {
     dqSub = 'Nice work! Come back tomorrow for a fresh challenge.';
@@ -3200,8 +3404,6 @@ function buildDailyQuestTile() {
   }
   txt.appendChild(el('p', { class: 'dq-sub' }, dqSub));
   wrap.appendChild(txt);
-  // Trailer beats live in the middle band (between title block and CTA),
-  // not under the subtitle — fills the empty space in the banner.
   if (!claimed && story.sentences && story.sentences.length) {
     const stemsCol = el('div', { class: 'dq-stems-col' });
     const stems = el('ul', { class: 'dq-stems' });
@@ -3220,13 +3422,7 @@ function buildDailyQuestTile() {
     }
   }
   if (!claimed) {
-    wrap.appendChild(el('button', { class: 'dq-cta', onclick: (e) => {
-      if (e && e.stopPropagation) e.stopPropagation();
-      // If the daily pick is in a different topic, switch first so the
-      // home view is coherent when the kid returns from the forge.
-      if (state.selectedTopic !== story.topic) state.selectedTopic = story.topic;
-      startForge(story.id);
-    } }, 'FORGE NOW →'));
+    wrap.appendChild(el('button', { class: 'dq-cta', onclick: onForge }, 'FORGE NOW →'));
   } else {
     wrap.appendChild(el('div', { class: 'dq-cta dq-cta-done' }, 'See you tomorrow'));
   }
@@ -3504,6 +3700,8 @@ function renderHome(app) {
     tabs.appendChild(tab);
   }
   left.appendChild(tabs);
+  const dqTile = buildDailyQuestTile({ compact: true });
+  if (dqTile) left.appendChild(dqTile);
   hero.appendChild(left);
 
   // Stats card
@@ -3519,12 +3717,6 @@ function renderHome(app) {
   right.appendChild(buildStreakLadderEl());
   hero.appendChild(right);
   app.appendChild(hero);
-
-  // Daily Quest hero tile — one rotating "Today's Special" story per
-  // local day, granting 2× XP exactly once. Sits above the stories grid
-  // so it's the first thing the kid sees after the topic tabs.
-  const dqTile = buildDailyQuestTile();
-  if (dqTile) app.appendChild(dqTile);
 
   // Stories grid for current topic
   const stories = STORIES.filter(s => s.topic === state.selectedTopic);
