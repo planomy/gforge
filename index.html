@@ -356,6 +356,18 @@
     pointer-events: none;
     filter: drop-shadow(0 2px 8px rgba(0,0,0,0.55));
   }
+  .critter-slot .critter-helmet {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: auto;
+    object-fit: contain;
+    pointer-events: none;
+    z-index: 5;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45));
+  }
   .critter-slot-meta {
     position: absolute;
     left: 0;
@@ -573,6 +585,7 @@
     .critter-slot-visual { width: 52px; height: 42px; flex-basis: 42px; }
     .critter-slot-base { width: 52px; height: 42px; }
     .critter-slot .critter-occupant { width: 39px; height: 39px; }
+    .critter-slot .critter-helmet { width: 32px; top: -6px; }
     .critter-slot-meta { bottom: -1px; }
     .critter-slot.egg.hatch-1d .critter-slot-visual::before {
       width: 48px; height: 30px;
@@ -2892,7 +2905,7 @@ const BABY_CARD_DEFS = {
   }
 };
 let babyGalleryStart = 0;
-const BABY_CARD_ART_V = 5;
+const BABY_CARD_ART_V = 6;
 // One row per theme: trading-card slug + matching hatchling sprite (must be the same character).
 const CRITTER_ART = {
   sport:     { slug: 'zinglet',   sprite: 'baby6' },
@@ -3444,6 +3457,15 @@ function buildCritterNest() {
       img.draggable = false;
       img.onerror = () => { img.remove(); };
       visual.appendChild(img);
+      if (state.equippedCritterTopic === topic) {
+        const helmet = document.createElement('img');
+        helmet.className = 'critter-helmet';
+        helmet.alt = '';
+        helmet.src = `pets/shared/helmet.png?v=${BABY_CARD_ART_V}`;
+        helmet.draggable = false;
+        helmet.onerror = () => { helmet.remove(); };
+        visual.appendChild(helmet);
+      }
     }
     slot.appendChild(visual);
 
