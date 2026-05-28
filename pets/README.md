@@ -22,3 +22,8 @@ pets/
 ```
 
 Until files exist, the game shows topic-coloured placeholder eggs/critters.
+
+### Baby gallery cards (`cards/`)
+
+Transparent trading-card art per theme (see `cards/README.md`). Used for the
+home-screen baby card carousel.

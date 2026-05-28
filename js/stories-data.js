@@ -217,7 +217,7 @@ const STORIES = [
     title: 'The Tackle',
     context: "The defender has one last chance to save the match.",
     sentences: [
-      { opener: 'As the striker bore down on goal,', slots: [
+      { opener: 'As the striker bore down on the goal,', slots: [
         { role: 'Who', options: [
           { text: 'Jordan', correct: true },
           { text: 'the defender', why: 'Less personal — name him.' },
